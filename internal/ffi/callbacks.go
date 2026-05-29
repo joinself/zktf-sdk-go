@@ -8,6 +8,12 @@ extern void goOnStatus(void *user_data, struct zktf_status_event *event);
 extern void goOnMessage(void *user_data, struct zktf_message *message);
 extern void goOnGroup(void *user_data, struct zktf_group_event *event);
 extern void goOnWorkflow(void *user_data, struct zktf_workflow_event *event);
+extern void goOnLog(struct zktf_log_entry *log_entry);
+
+// c_on_log has no user_data parameter, so the handler is process-global.
+static void c_on_log(struct zktf_log_entry *log_entry) {
+	goOnLog(log_entry);
+}
 
 static void c_on_status(void *user_data, struct zktf_status_event *event) {
 	goOnStatus(user_data, event);
@@ -54,7 +60,7 @@ static zktf_account_config *zktf_account_config_new(
 	c->encryption_key_buf = encryption_key_buf;
 	c->encryption_key_len = encryption_key_len;
 	c->log_level = log_level;
-	c->log_callback = NULL;
+	c->log_callback = c_on_log;
 	c->integrity_callback = NULL;
 	return c;
 }
@@ -151,4 +157,10 @@ func goOnGroup(userData unsafe.Pointer, event *C.zktf_group_event) {
 //export goOnWorkflow
 func goOnWorkflow(userData unsafe.Pointer, event *C.zktf_workflow_event) {
 	dispatch(userData).OnWorkflow(newWorkflowEvent(event))
+}
+
+//export goOnLog
+func goOnLog(entry *C.zktf_log_entry) {
+	dispatchLog(newLogEntry(entry))
+	C.zktf_log_entry_destroy(entry)
 }

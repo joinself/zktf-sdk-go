@@ -6,7 +6,7 @@
 //
 // Run against the preview environment (the default):
 //
-//	CGO_CFLAGS=-I/path/to/zktf-sdk/crates/self-ffi \
+//	CGO_CFLAGS=-I/path/to/zktf-sdk/crates/zktf-ffi \
 //	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \
 //	LD_LIBRARY_PATH=/path/to/zktf-sdk/target/debug \
 //	go test -tags integration -run TestIntegration -v ./account/

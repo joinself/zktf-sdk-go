@@ -70,6 +70,56 @@ const (
 	LogTrace LogLevel = LogLevel(ffi.LogTrace)
 )
 
+// LogField is a single structured key/value pair attached to a LogEntry.
+type LogField struct {
+	Key   string
+	Value string
+}
+
+// LogEntry is a structured log record emitted by the native library.
+type LogEntry struct {
+	Level     LogLevel
+	AccountID string
+	Target    string
+	Message   string
+	Timestamp time.Time
+	Fields    []LogField
+}
+
+// LogHandler receives structured log entries from the native library.
+type LogHandler func(LogEntry)
+
+// SetLogHandler registers a process-global handler for native log entries. The
+// native log callback carries no per-account context, so the handler is shared
+// across every account in the process. A nil handler disables delivery. New
+// also registers Config.LogHandler when set.
+func SetLogHandler(h LogHandler) {
+	if h == nil {
+		ffi.SetLogHandler(nil)
+		return
+	}
+
+	ffi.SetLogHandler(func(e ffi.LogEntry) {
+		h(toLogEntry(e))
+	})
+}
+
+func toLogEntry(e ffi.LogEntry) LogEntry {
+	fields := make([]LogField, len(e.Fields))
+	for i, f := range e.Fields {
+		fields[i] = LogField{Key: f.Key, Value: f.Value}
+	}
+
+	return LogEntry{
+		Level:     LogLevel(e.Level),
+		AccountID: e.AccountID,
+		Target:    e.Target,
+		Message:   e.Message,
+		Timestamp: e.Timestamp,
+		Fields:    fields,
+	}
+}
+
 // Config configures an account.
 type Config struct {
 	// Target selects the network and its endpoints. Defaults to TargetProduction
@@ -83,6 +133,10 @@ type Config struct {
 	EncryptionKey []byte
 	// LogLevel controls verbosity of native logging. Defaults to LogError.
 	LogLevel LogLevel
+	// LogHandler, when set, is registered as the process-global log handler via
+	// SetLogHandler before the account is configured. Because the native log
+	// callback is process-global, the most recently configured account wins.
+	LogHandler LogHandler
 }
 
 // Account is a configured zktf account.
@@ -110,6 +164,10 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 	logLevel := cfg.LogLevel
 	if logLevel == 0 {
 		logLevel = LogError
+	}
+
+	if cfg.LogHandler != nil {
+		SetLogHandler(cfg.LogHandler)
 	}
 
 	a := &Account{h: ffi.NewAccount()}
