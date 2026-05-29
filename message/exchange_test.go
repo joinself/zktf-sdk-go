@@ -66,6 +66,95 @@ func TestVerificationRequestRoundTrip(t *testing.T) {
 	}
 }
 
+// TestVerificationParameterRoundTrip exercises attaching typed parameters of
+// every supported kind to a verification action, then reading them back after
+// an encode/decode through an exchange request. (Evidence requires an uploaded
+// object and is covered by the integration test.)
+func TestVerificationParameterRoundTrip(t *testing.T) {
+	verReq, err := message.NewVerificationRequest().
+		CredentialType("PassportCredential").
+		Parameter("country", "GB").
+		Parameter("min_age", int64(18)).
+		Parameter("max_attempts", uint64(3)).
+		Parameter("score", 0.95).
+		Parameter("manual_review", true).
+		Parameter("nonce", []byte{0x01, 0x02, 0x03}).
+		Parameter("accepted_docs", []string{"passport", "driving_licence"}).
+		Finish()
+	if err != nil {
+		t.Fatalf("verification Finish: %v", err)
+	}
+
+	content, err := message.NewExchangeRequest().
+		Purpose("verify passport").
+		Action(verReq.AsAction()).
+		Finish()
+	if err != nil {
+		t.Fatalf("exchange Finish: %v", err)
+	}
+
+	decoded, err := message.ExchangeRequestDecode(content)
+	if err != nil {
+		t.Fatalf("DecodeExchangeRequest: %v", err)
+	}
+	actions, err := decoded.Actions()
+	if err != nil {
+		t.Fatalf("Actions: %v", err)
+	}
+	if len(actions) != 1 {
+		t.Fatalf("len(Actions) = %d, want 1", len(actions))
+	}
+	v, err := actions[0].AsVerification()
+	if err != nil {
+		t.Fatalf("AsVerification: %v", err)
+	}
+
+	want := map[string]any{
+		"country":       "GB",
+		"min_age":       int64(18),
+		"max_attempts":  uint64(3),
+		"score":         0.95,
+		"manual_review": true,
+		"nonce":         []byte{0x01, 0x02, 0x03},
+		"accepted_docs": []string{"passport", "driving_licence"},
+	}
+
+	params := v.Parameters()
+	if len(params) != len(want) {
+		t.Fatalf("len(Parameters) = %d, want %d", len(params), len(want))
+	}
+	for _, p := range params {
+		exp, ok := want[p.Key()]
+		if !ok {
+			t.Fatalf("unexpected parameter key %q", p.Key())
+		}
+		if !equalParam(exp, p.Value()) {
+			t.Fatalf("parameter %q = %#v (%T), want %#v (%T)", p.Key(), p.Value(), p.Value(), exp, exp)
+		}
+	}
+}
+
+func equalParam(want, got any) bool {
+	switch w := want.(type) {
+	case []byte:
+		g, ok := got.([]byte)
+		return ok && bytes.Equal(w, g)
+	case []string:
+		g, ok := got.([]string)
+		if !ok || len(g) != len(w) {
+			return false
+		}
+		for i := range w {
+			if w[i] != g[i] {
+				return false
+			}
+		}
+		return true
+	default:
+		return want == got
+	}
+}
+
 // TestPresentationRequestRoundTrip exercises building a presentation request
 // (challenge + types) and downcasting back via an exchange request.
 func TestPresentationRequestRoundTrip(t *testing.T) {

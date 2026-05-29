@@ -39,6 +39,8 @@ var (
 	ToCredentialGraph          func(*CredentialGraph) any
 	RevocationProofOf          func(any) *RevocationProof
 	ToRevocationProof          func(*RevocationProof) any
+	CredentialExchangeOf       func(any) *CredentialExchange
+	ToCredentialExchange       func(*CredentialExchange) any
 )
 
 // credential/predicate
@@ -93,6 +95,8 @@ var (
 var (
 	TokenOf                 func(any) *Token
 	ToToken                 func(*Token) any
+	TokenRequestOf          func(any) *TokenRequest
+	ToTokenRequest          func(*TokenRequest) any
 	ObjectOf                func(any) *Object
 	ToObject                func(*Object) any
 	TrustedIssuerRegistryOf func(any) *TrustedIssuerRegistry

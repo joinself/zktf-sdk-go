@@ -96,3 +96,8 @@ func (m *Message) Timestamp() time.Time { return time.Unix(m.h.Timestamp(), 0) }
 
 // Content decodes and returns the message content.
 func (m *Message) Content() *Content { return &Content{h: m.h.Content()} }
+
+// Metadata returns the opaque metadata payload attached to the message, if one
+// was present. The payload is internal to the network and is not interpreted by
+// this SDK. The boolean is false when no metadata is present.
+func (m *Message) Metadata() ([]byte, bool) { return m.h.Metadata() }

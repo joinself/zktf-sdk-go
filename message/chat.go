@@ -1,6 +1,9 @@
 package message
 
-import "github.com/joinself/zktf-sdk-go/internal/ffi"
+import (
+	"github.com/joinself/zktf-sdk-go/internal/ffi"
+	"github.com/joinself/zktf-sdk-go/object"
+)
 
 // Chat is a decoded chat message.
 type Chat struct {
@@ -28,6 +31,17 @@ func (c *Chat) Message() string { return c.h.Message() }
 // Referencing returns the id of the message this chat references, or nil.
 func (c *Chat) Referencing() []byte { return c.h.Referencing() }
 
+// Attachments returns the objects attached to the chat message.
+func (c *Chat) Attachments() []*object.Object {
+	os := c.h.Attachments()
+	out := make([]*object.Object, len(os))
+	for i, o := range os {
+		out[i] = ffi.ToObject(o).(*object.Object)
+	}
+
+	return out
+}
+
 // NewChat starts building a chat message.
 func NewChat() *ChatBuilder { return &ChatBuilder{h: ffi.NewChatBuilder()} }
 
@@ -40,6 +54,12 @@ func (b *ChatBuilder) Message(message string) *ChatBuilder {
 // Reference sets the id of a message this chat references.
 func (b *ChatBuilder) Reference(messageID []byte) *ChatBuilder {
 	b.h.Reference(messageID)
+	return b
+}
+
+// Attach attaches an object to the chat message.
+func (b *ChatBuilder) Attach(attachment *object.Object) *ChatBuilder {
+	b.h.Attach(ffi.ObjectOf(attachment))
 	return b
 }
 

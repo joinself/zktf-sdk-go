@@ -17,7 +17,6 @@ import (
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/object"
 	"github.com/joinself/zktf-sdk-go/revocation"
-	"github.com/joinself/zktf-sdk-go/trust"
 )
 
 // Network identifies the underlying zktf network. Most callers should use the
@@ -377,7 +376,7 @@ func (a *Account) CredentialSharedWith(with *signing.PublicKey, tree *predicate.
 
 // CredentialGraphCreate validates a set of presentations against the trusted
 // issuer registry and returns the resulting verified credential graph.
-func (a *Account) CredentialGraphCreate(registry *trust.Registry, presentations []*credential.VerifiablePresentation, options ...CallOption) (*credential.Graph, error) {
+func (a *Account) CredentialGraphCreate(registry *credential.TrustedIssuerRegistry, presentations []*credential.VerifiablePresentation, options ...CallOption) (*credential.Graph, error) {
 	o := collectCallOpts(options)
 
 	ps := make([]*ffi.VerifiablePresentation, len(presentations))

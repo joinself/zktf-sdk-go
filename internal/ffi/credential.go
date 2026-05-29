@@ -140,6 +140,20 @@ func (b *CredentialBuilder) ValidFrom(unix int64) *CredentialBuilder {
 	return b
 }
 
+// ValidUntil sets the unix timestamp (seconds) the credential is valid until.
+func (b *CredentialBuilder) ValidUntil(unix int64) *CredentialBuilder {
+	C.zktf_credential_builder_valid_until(b.ptr, C.int64_t(unix))
+	return b
+}
+
+// CredentialSubjectJSON sets the subject claims from a raw JSON document.
+func (b *CredentialBuilder) CredentialSubjectJSON(json []byte) *CredentialBuilder {
+	buf, length := cbytes(json)
+	defer free(unsafe.Pointer(buf))
+	C.zktf_credential_builder_credential_subject_json(b.ptr, buf, length)
+	return b
+}
+
 // SignWith records the signing key and issuance time for the credential.
 func (b *CredentialBuilder) SignWith(signer *SigningPublicKey, issuedAtUnix int64) *CredentialBuilder {
 	C.zktf_credential_builder_sign_with(b.ptr, signer.ptr, C.int64_t(issuedAtUnix))
@@ -216,9 +230,51 @@ func (c *VerifiableCredential) SubjectClaim(key string) string {
 	return C.GoString(C.zktf_string_buffer_ptr(buf))
 }
 
+// SubjectJSON returns the subject claims as a raw JSON document, or nil.
+func (c *VerifiableCredential) SubjectJSON() []byte {
+	return goBytesFromBuffer(C.zktf_verifiable_credential_credential_subject_json(c.ptr))
+}
+
 // ValidFrom returns the unix timestamp (seconds) the credential is valid from.
 func (c *VerifiableCredential) ValidFrom() int64 {
 	return int64(C.zktf_verifiable_credential_valid_from(c.ptr))
+}
+
+// ValidUntil returns the unix timestamp (seconds) the credential is valid until.
+func (c *VerifiableCredential) ValidUntil() int64 {
+	return int64(C.zktf_verifiable_credential_valid_until(c.ptr))
+}
+
+// Created returns the unix timestamp (seconds) the credential was created.
+func (c *VerifiableCredential) Created() int64 {
+	return int64(C.zktf_verifiable_credential_created(c.ptr))
+}
+
+// Signer returns the DID address that signed the credential.
+func (c *VerifiableCredential) Signer() (*DIDAddress, error) {
+	var out *C.zktf_did_address
+	if err := status(C.zktf_verifiable_credential_signer(c.ptr, &out)); err != nil {
+		return nil, err
+	}
+	return newDIDAddress(out), nil
+}
+
+// SigningKey returns the signing key that signed the credential.
+func (c *VerifiableCredential) SigningKey() (*SigningPublicKey, error) {
+	var out *C.zktf_signing_public_key
+	if err := status(C.zktf_verifiable_credential_signing_key(c.ptr, &out)); err != nil {
+		return nil, err
+	}
+	return newSigningPublicKey(out), nil
+}
+
+// RevocationHashes returns the revocation hashes of the credential, one per proof.
+func (c *VerifiableCredential) RevocationHashes() ([][]byte, error) {
+	var out *C.zktf_collection_bytes_buffer
+	if err := status(C.zktf_verifiable_credential_revocation_hashes(c.ptr, &out)); err != nil {
+		return nil, err
+	}
+	return bytesFromBufferCollection(out), nil
 }
 
 // Encode returns the JSON-encoded credential.

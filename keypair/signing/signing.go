@@ -44,6 +44,11 @@ func (p *PublicKey) String() string { return p.h.String() }
 // Bytes returns the raw bytes of the public key.
 func (p *PublicKey) Bytes() []byte { return p.h.Bytes() }
 
+// Verify reports whether signature is a valid signature of message by this key.
+func (p *PublicKey) Verify(message, signature []byte) bool {
+	return p.h.Verify(message, signature)
+}
+
 // Matches reports whether two public keys are equal.
 func (p *PublicKey) Matches(other *PublicKey) bool {
 	if other == nil {

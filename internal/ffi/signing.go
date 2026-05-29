@@ -86,6 +86,17 @@ func (k *SigningPublicKey) Bytes() []byte {
 }
 
 // Matches reports whether two public keys are equal.
+// Verify reports whether signature is a valid signature of message by this key.
+func (k *SigningPublicKey) Verify(message, signature []byte) bool {
+	msgBuf, msgLen := cbytes(message)
+	defer free(unsafe.Pointer(msgBuf))
+
+	sigBuf, sigLen := cbytes(signature)
+	defer free(unsafe.Pointer(sigBuf))
+
+	return bool(C.zktf_signing_public_key_verify(k.ptr, msgBuf, msgLen, sigBuf, sigLen))
+}
+
 func (k *SigningPublicKey) Matches(other *SigningPublicKey) bool {
 	if other == nil {
 		return false

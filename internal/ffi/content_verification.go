@@ -6,7 +6,10 @@ package ffi
 */
 import "C"
 
-import "runtime"
+import (
+	"runtime"
+	"unsafe"
+)
 
 // VerificationAction is a credential-verification request (issuer/verifier
 // asking for proof a credential should be (re-)issued or verified).
@@ -42,9 +45,82 @@ func (a *VerificationAction) Proof() []*VerifiablePresentation {
 	)
 }
 
+// Evidence returns the objects attached to the action as evidence.
+func (a *VerificationAction) Evidence() []*VerificationEvidence {
+	return verificationEvidenceFrom(
+		C.zktf_message_content_credential_verification_action_evidence(a.ptr),
+	)
+}
+
+// Parameters returns the typed parameters attached to the action.
+func (a *VerificationAction) Parameters() []*VerificationParameter {
+	return verificationParametersFrom(
+		C.zktf_message_content_credential_verification_action_parameters(a.ptr),
+	)
+}
+
 // AsAction wraps this verification action into a generic Action (consuming it).
 func (a *VerificationAction) AsAction() *Action {
 	return newAction(C.zktf_message_content_action_verification(a.ptr))
+}
+
+// VerificationEvidence is an object attached to a verification action as
+// supporting evidence, tagged with an evidence type.
+type VerificationEvidence struct {
+	ptr *C.zktf_credential_verification_evidence
+}
+
+func newVerificationEvidence(ptr *C.zktf_credential_verification_evidence) *VerificationEvidence {
+	if ptr == nil {
+		return nil
+	}
+	e := &VerificationEvidence{ptr: ptr}
+	runtime.AddCleanup(e, func(ptr *C.zktf_credential_verification_evidence) {
+		C.zktf_credential_verification_evidence_destroy(ptr)
+	}, e.ptr)
+	return e
+}
+
+// EvidenceType returns the evidence type tag.
+func (e *VerificationEvidence) EvidenceType() string {
+	return C.GoString(C.zktf_credential_verification_evidence_evidence_type(e.ptr))
+}
+
+// Object returns the object forming the evidence.
+func (e *VerificationEvidence) Object() *Object {
+	return newObject(C.zktf_credential_verification_evidence_object(e.ptr))
+}
+
+// VerificationParameter is a typed key/value parameter attached to a
+// verification action.
+type VerificationParameter struct {
+	ptr *C.zktf_credential_verification_parameter
+}
+
+func newVerificationParameter(ptr *C.zktf_credential_verification_parameter) *VerificationParameter {
+	if ptr == nil {
+		return nil
+	}
+	p := &VerificationParameter{ptr: ptr}
+	runtime.AddCleanup(p, func(ptr *C.zktf_credential_verification_parameter) {
+		C.zktf_credential_verification_parameter_destroy(ptr)
+	}, p.ptr)
+	return p
+}
+
+// Key returns the parameter key.
+func (p *VerificationParameter) Key() string {
+	return C.GoString(C.zktf_credential_verification_parameter_parameter_key(p.ptr))
+}
+
+// Value decodes the parameter value into a native Go type. See
+// ParameterValue.Value for the supported types.
+func (p *VerificationParameter) Value() any {
+	pv := newParameterValue(C.zktf_credential_verification_parameter_value(p.ptr))
+	if pv == nil {
+		return nil
+	}
+	return pv.Value()
 }
 
 // VerificationActionBuilder builds a credential-verification action.
@@ -71,6 +147,22 @@ func (b *VerificationActionBuilder) CredentialType(types *CredentialTypeCollecti
 // Proof attaches a verifiable presentation as proof.
 func (b *VerificationActionBuilder) Proof(p *VerifiablePresentation) *VerificationActionBuilder {
 	C.zktf_message_content_credential_verification_action_builder_proof(b.ptr, p.ptr)
+	return b
+}
+
+// Evidence attaches an object as supporting evidence under a named type.
+func (b *VerificationActionBuilder) Evidence(evidenceType string, object *Object) *VerificationActionBuilder {
+	ct := cstring(evidenceType)
+	C.zktf_message_content_credential_verification_action_builder_evidence(b.ptr, ct, object.ptr)
+	free(unsafe.Pointer(ct))
+	return b
+}
+
+// Parameter attaches a typed key/value parameter.
+func (b *VerificationActionBuilder) Parameter(key string, value *ParameterValue) *VerificationActionBuilder {
+	ck := cstring(key)
+	C.zktf_message_content_credential_verification_action_builder_parameter(b.ptr, ck, value.ptr)
+	free(unsafe.Pointer(ck))
 	return b
 }
 

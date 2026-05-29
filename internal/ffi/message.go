@@ -97,3 +97,11 @@ func (m *Message) Timestamp() int64 {
 func (m *Message) Content() *Content {
 	return newContent(C.zktf_message_message_content(m.ptr))
 }
+
+// Metadata returns the opaque metadata payload attached to the message, if any.
+// The payload is internal to the network and is not interpreted by this SDK; the
+// boolean is false when no metadata is present.
+func (m *Message) Metadata() ([]byte, bool) {
+	b := goBytesFromBuffer(C.zktf_message_message_metadata(m.ptr))
+	return b, b != nil
+}

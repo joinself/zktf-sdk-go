@@ -115,6 +115,18 @@ func (b *Builder) ValidFrom(t time.Time) *Builder {
 	return b
 }
 
+// ValidUntil sets when the credential stops being valid.
+func (b *Builder) ValidUntil(t time.Time) *Builder {
+	b.h.ValidUntil(t.Unix())
+	return b
+}
+
+// ClaimJSON sets the subject claims from a raw JSON document.
+func (b *Builder) ClaimJSON(json []byte) *Builder {
+	b.h.CredentialSubjectJSON(json)
+	return b
+}
+
 // SignWith records the signing key and issuance time.
 func (b *Builder) SignWith(signer *signing.PublicKey, issuedAt time.Time) *Builder {
 	b.h.SignWith(ffi.SigningPublicKeyOf(signer), issuedAt.Unix())
@@ -156,8 +168,40 @@ func (v *Verifiable) Subject() *Address { return &Address{h: v.h.Subject()} }
 // Claim returns a string claim about the subject, or "" if absent.
 func (v *Verifiable) Claim(key string) string { return v.h.SubjectClaim(key) }
 
+// ClaimJSON returns the subject claims as a raw JSON document, or nil.
+func (v *Verifiable) ClaimJSON() []byte { return v.h.SubjectJSON() }
+
 // ValidFrom returns when the credential became valid.
 func (v *Verifiable) ValidFrom() time.Time { return time.Unix(v.h.ValidFrom(), 0) }
+
+// ValidUntil returns when the credential stops being valid.
+func (v *Verifiable) ValidUntil() time.Time { return time.Unix(v.h.ValidUntil(), 0) }
+
+// Created returns when the credential was created.
+func (v *Verifiable) Created() time.Time { return time.Unix(v.h.Created(), 0) }
+
+// Signer returns the DID address that signed the credential.
+func (v *Verifiable) Signer() (*Address, error) {
+	a, err := v.h.Signer()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Address{h: a}, nil
+}
+
+// SigningKey returns the signing key that signed the credential.
+func (v *Verifiable) SigningKey() (*signing.PublicKey, error) {
+	k, err := v.h.SigningKey()
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToSigningPublicKey(k).(*signing.PublicKey), nil
+}
+
+// RevocationHashes returns the credential's revocation hashes, one per proof.
+func (v *Verifiable) RevocationHashes() ([][]byte, error) { return v.h.RevocationHashes() }
 
 // Encode returns the JSON-encoded credential.
 func (v *Verifiable) Encode() ([]byte, error) { return v.h.Encode() }

@@ -50,6 +50,11 @@ func (c *Chat) Referencing() []byte {
 	return C.GoBytes(unsafe.Pointer(ptr), messageIDLen)
 }
 
+// Attachments returns the objects attached to this chat message.
+func (c *Chat) Attachments() []*Object {
+	return objectsFrom(C.zktf_message_content_chat_attachments(c.ptr))
+}
+
 // ChatBuilder wraps a zktf_message_content_chat_builder handle.
 type ChatBuilder struct {
 	ptr *C.zktf_message_content_chat_builder
@@ -78,6 +83,12 @@ func (b *ChatBuilder) Reference(messageID []byte) *ChatBuilder {
 	buf, _ := cbytes(messageID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_chat_builder_reference(b.ptr, buf)
+	return b
+}
+
+// Attach attaches an object to the chat message.
+func (b *ChatBuilder) Attach(attachment *Object) *ChatBuilder {
+	C.zktf_message_content_chat_builder_attach(b.ptr, attachment.ptr)
 	return b
 }
 

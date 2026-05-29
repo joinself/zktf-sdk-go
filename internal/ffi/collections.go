@@ -20,6 +20,78 @@ func goBytesFromBuffer(buf *C.zktf_bytes_buffer) []byte {
 	)
 }
 
+// goStringFromBuffer copies a zktf_string_buffer into a Go string and destroys
+// the buffer. A nil buffer yields the empty string.
+func goStringFromBuffer(buf *C.zktf_string_buffer) string {
+	if buf == nil {
+		return ""
+	}
+	defer C.zktf_string_buffer_destroy(buf)
+	return C.GoString(C.zktf_string_buffer_ptr(buf))
+}
+
+// bytesFromBufferCollection copies a caller-owned zktf_collection_bytes_buffer
+// into Go slices and destroys the collection.
+func bytesFromBufferCollection(c *C.zktf_collection_bytes_buffer) [][]byte {
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_bytes_buffer_destroy(c)
+	n := int(C.zktf_collection_bytes_buffer_len(c))
+	out := make([][]byte, n)
+	for i := 0; i < n; i++ {
+		out[i] = goBytesFromBuffer(C.zktf_collection_bytes_buffer_at(c, C.size_t(i)))
+	}
+	return out
+}
+
+// stringsFromBufferCollection copies a caller-owned zktf_collection_string_buffer
+// into Go strings and destroys the collection.
+func stringsFromBufferCollection(c *C.zktf_collection_string_buffer) []string {
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_string_buffer_destroy(c)
+	n := int(C.zktf_collection_string_buffer_len(c))
+	out := make([]string, n)
+	for i := 0; i < n; i++ {
+		out[i] = goStringFromBuffer(C.zktf_collection_string_buffer_at(c, C.size_t(i)))
+	}
+	return out
+}
+
+// verificationEvidenceFrom copies a caller-owned
+// zktf_collection_credential_verification_evidence into Go wrappers and
+// destroys the collection.
+func verificationEvidenceFrom(c *C.zktf_collection_credential_verification_evidence) []*VerificationEvidence {
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_credential_verification_evidence_destroy(c)
+	n := int(C.zktf_collection_credential_verification_evidence_len(c))
+	out := make([]*VerificationEvidence, n)
+	for i := 0; i < n; i++ {
+		out[i] = newVerificationEvidence(C.zktf_collection_credential_verification_evidence_at(c, C.size_t(i)))
+	}
+	return out
+}
+
+// verificationParametersFrom copies a caller-owned
+// zktf_collection_credential_verification_parameter into Go wrappers and
+// destroys the collection.
+func verificationParametersFrom(c *C.zktf_collection_credential_verification_parameter) []*VerificationParameter {
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_credential_verification_parameter_destroy(c)
+	n := int(C.zktf_collection_credential_verification_parameter_len(c))
+	out := make([]*VerificationParameter, n)
+	for i := 0; i < n; i++ {
+		out[i] = newVerificationParameter(C.zktf_collection_credential_verification_parameter_at(c, C.size_t(i)))
+	}
+	return out
+}
+
 // didAddressesFrom copies a caller-owned zktf_collection_did_address into Go
 // wrappers and destroys the collection.
 func didAddressesFrom(c *C.zktf_collection_did_address) []*DIDAddress {
