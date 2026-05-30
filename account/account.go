@@ -555,22 +555,6 @@ func (a *Account) PresentationLookup(tree *predicate.Tree) ([]*credential.Verifi
 	return out, nil
 }
 
-// TokenIssue issues a fresh token from a validated request.
-func (a *Account) TokenIssue(req *token.Request) (*token.Token, error) {
-	tk, err := a.h.TokenIssue(ffi.TokenRequestOf(req))
-	if err != nil {
-		return nil, err
-	}
-
-	return ffi.ToToken(tk).(*token.Token), nil
-}
-
-// TokenStore stores a token. Its issuer, bearer and local owner are derived
-// from the token itself.
-func (a *Account) TokenStore(tk *token.Token) error {
-	return a.h.TokenStore(ffi.TokenOf(tk))
-}
-
 // IdentityResolve resolves the identity document for an address.
 func (a *Account) IdentityResolve(address *credential.Address, options ...CallOption) (*identity.Document, error) {
 	o := collectCallOpts(options)
@@ -657,37 +641,6 @@ func (a *Account) ObjectRetrieve(objectID []byte) (*object.Object, error) {
 	}
 
 	return ffi.ToObject(o).(*object.Object), nil
-}
-
-// PresentationSign signs a presentation with any account keys it requires.
-func (a *Account) PresentationSign(p *credential.VerifiablePresentation) error {
-	return a.h.PresentationSign(ffi.VerifiablePresentationOf(p))
-}
-
-// PresentationStore stores a presentation on the account for later retrieval.
-func (a *Account) PresentationStore(p *credential.VerifiablePresentation) error {
-	return a.h.PresentationStore(ffi.VerifiablePresentationOf(p))
-}
-
-// PresentationLookup returns presentations stored on the account that satisfy
-// the predicate tree. A nil tree returns every stored presentation.
-func (a *Account) PresentationLookup(tree *predicate.Tree) ([]*credential.VerifiablePresentation, error) {
-	var t *ffi.PredicateTree
-	if tree != nil {
-		t = ffi.PredicateTreeOf(tree)
-	}
-
-	vps, err := a.h.PresentationLookup(t)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]*credential.VerifiablePresentation, len(vps))
-	for i, vp := range vps {
-		out[i] = ffi.ToVerifiablePresentation(vp).(*credential.VerifiablePresentation)
-	}
-
-	return out, nil
 }
 
 // ValueKeys lists the keys of values stored on this account. An empty prefix
