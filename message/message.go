@@ -173,6 +173,10 @@ func (m *Message) Timestamp() time.Time { return time.Unix(m.h.Timestamp(), 0) }
 // Content decodes and returns the message content.
 func (m *Message) Content() *Content { return &Content{h: m.h.Content()} }
 
+// ContentHash returns the sha3 hash of the message content. Recipients use this
+// as the leaf value to validate the merkle proof carried in the metadata.
+func (m *Message) ContentHash() []byte { return m.h.ContentHash() }
+
 // Metadata returns the opaque metadata payload attached to the message, if one
 // was present. The payload is internal to the network and is not interpreted by
 // this SDK. The boolean is false when no metadata is present.

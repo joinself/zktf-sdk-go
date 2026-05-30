@@ -30,6 +30,9 @@ const (
 // messageIDLen is the length of a message/content id.
 const messageIDLen = 16
 
+// messageContentHashLen is the length of a message content hash (sha3-256).
+const messageContentHashLen = 32
+
 // Content wraps a zktf_message_content handle — the decoded payload of a message
 // or the output of a content builder, ready to send.
 type Content struct {
@@ -96,6 +99,12 @@ func (m *Message) Timestamp() int64 {
 // Content decodes and returns the message content. The caller owns the result.
 func (m *Message) Content() *Content {
 	return newContent(C.zktf_message_message_content(m.ptr))
+}
+
+// ContentHash returns the 32-byte sha3 hash of the message content. This is the
+// leaf value recipients use to validate the merkle proof carried in the metadata.
+func (m *Message) ContentHash() []byte {
+	return C.GoBytes(unsafe.Pointer(C.zktf_message_message_content_hash(m.ptr)), messageContentHashLen)
 }
 
 // Metadata returns the opaque metadata payload attached to the message, if any.
