@@ -13,10 +13,12 @@ import (
 	"github.com/joinself/zktf-sdk-go/group"
 	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
+	"github.com/joinself/zktf-sdk-go/keypair/exchange"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/object"
 	"github.com/joinself/zktf-sdk-go/revocation"
+	"github.com/joinself/zktf-sdk-go/token"
 )
 
 // Network identifies the underlying zktf network. Most callers should use the
@@ -185,6 +187,94 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 	}
 
 	return a, nil
+}
+
+// KeychainSigningCreate generates a new signing key in the keychain and returns
+// its public address.
+func (a *Account) KeychainSigningCreate() (*signing.PublicKey, error) {
+	k, err := a.h.KeychainSigningCreate()
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToSigningPublicKey(k).(*signing.PublicKey), nil
+}
+
+// KeychainExchangeCreate generates a new exchange key in the keychain and
+// returns its public address.
+func (a *Account) KeychainExchangeCreate() (*exchange.PublicKey, error) {
+	k, err := a.h.KeychainExchangeCreate()
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToExchangePublicKey(k).(*exchange.PublicKey), nil
+}
+
+// KeychainSign signs payload with the keychain key identified by address.
+func (a *Account) KeychainSign(address *signing.PublicKey, payload []byte) ([]byte, error) {
+	return a.h.KeychainSign(ffi.SigningPublicKeyOf(address), payload)
+}
+
+// KeychainLookupOption is one of the variadic filters accepted by
+// KeychainLookup.
+type KeychainLookupOption func(*keychainLookupOpts)
+
+type keychainLookupOpts struct {
+	identity *signing.PublicKey
+	roles    identity.KeyRole
+	hasRoles bool
+}
+
+// ByIdentity restricts the lookup to keys associated with the given identity.
+func ByIdentity(key *signing.PublicKey) KeychainLookupOption {
+	return func(o *keychainLookupOpts) {
+		o.identity = key
+	}
+}
+
+// WithRoles restricts the lookup to keys carrying every role in roles. Only
+// applies in combination with ByIdentity.
+func WithRoles(roles identity.KeyRole) KeychainLookupOption {
+	return func(o *keychainLookupOpts) {
+		o.roles = roles
+		o.hasRoles = true
+	}
+}
+
+// KeychainLookup returns the signing keys held in the keychain that satisfy the
+// given filters. With no filters it returns every signing key.
+func (a *Account) KeychainLookup(options ...KeychainLookupOption) ([]*signing.PublicKey, error) {
+	var o keychainLookupOpts
+	for _, opt := range options {
+		opt(&o)
+	}
+
+	l := ffi.NewKeychainLookup()
+	if o.identity != nil {
+		l.ByIdentity(ffi.SigningPublicKeyOf(o.identity))
+	}
+	if o.hasRoles {
+		l.WithRoles(ffi.IdentityKeyRole(o.roles))
+	}
+
+	ks, err := a.h.KeychainLookup(l)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*signing.PublicKey, len(ks))
+	for i, k := range ks {
+		out[i] = ffi.ToSigningPublicKey(k).(*signing.PublicKey)
+	}
+
+	return out, nil
+}
+
+// SetupPairingCode sets the account up for pairing with an application identity
+// and returns the pairing code. It fails if the account is already paired.
+func (a *Account) SetupPairingCode() (string, error) {
+	return a.h.SetupPairingCode()
 }
 
 // MessageSend sends content to the given recipient address. Delivery is reported
@@ -374,6 +464,38 @@ func (a *Account) CredentialSharedWith(with *signing.PublicKey, tree *predicate.
 	return out, nil
 }
 
+// CredentialExchangeTrack records that a credential was exchanged with an address.
+func (a *Account) CredentialExchangeTrack(with *signing.PublicKey, c *credential.Verifiable) error {
+	return a.h.CredentialExchangeTrack(ffi.SigningPublicKeyOf(with), ffi.VerifiableCredentialOf(c))
+}
+
+// CredentialExchangeLog returns the credential exchange log, optionally
+// restricted to exchanges with an address and to credentials satisfying a
+// predicate tree. Either filter may be nil.
+func (a *Account) CredentialExchangeLog(with *signing.PublicKey, tree *predicate.Tree) ([]*credential.Exchange, error) {
+	var w *ffi.SigningPublicKey
+	if with != nil {
+		w = ffi.SigningPublicKeyOf(with)
+	}
+
+	var t *ffi.PredicateTree
+	if tree != nil {
+		t = ffi.PredicateTreeOf(tree)
+	}
+
+	es, err := a.h.CredentialExchangeLog(w, t)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*credential.Exchange, len(es))
+	for i, e := range es {
+		out[i] = ffi.ToCredentialExchange(e).(*credential.Exchange)
+	}
+
+	return out, nil
+}
+
 // CredentialGraphCreate validates a set of presentations against the trusted
 // issuer registry and returns the resulting verified credential graph.
 func (a *Account) CredentialGraphCreate(registry *credential.TrustedIssuerRegistry, presentations []*credential.VerifiablePresentation, options ...CallOption) (*credential.Graph, error) {
@@ -400,6 +522,53 @@ func (a *Account) PresentationIssue(p *credential.Presentation) (*credential.Ver
 	}
 
 	return ffi.ToVerifiablePresentation(vp).(*credential.VerifiablePresentation), nil
+}
+
+// PresentationSign signs a presentation with any account keys it requires.
+func (a *Account) PresentationSign(p *credential.VerifiablePresentation) error {
+	return a.h.PresentationSign(ffi.VerifiablePresentationOf(p))
+}
+
+// PresentationStore stores a presentation on the account for later retrieval.
+func (a *Account) PresentationStore(p *credential.VerifiablePresentation) error {
+	return a.h.PresentationStore(ffi.VerifiablePresentationOf(p))
+}
+
+// PresentationLookup returns presentations stored on the account that satisfy
+// the predicate tree. A nil tree returns every stored presentation.
+func (a *Account) PresentationLookup(tree *predicate.Tree) ([]*credential.VerifiablePresentation, error) {
+	var t *ffi.PredicateTree
+	if tree != nil {
+		t = ffi.PredicateTreeOf(tree)
+	}
+
+	vps, err := a.h.PresentationLookup(t)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*credential.VerifiablePresentation, len(vps))
+	for i, vp := range vps {
+		out[i] = ffi.ToVerifiablePresentation(vp).(*credential.VerifiablePresentation)
+	}
+
+	return out, nil
+}
+
+// TokenIssue issues a fresh token from a validated request.
+func (a *Account) TokenIssue(req *token.Request) (*token.Token, error) {
+	tk, err := a.h.TokenIssue(ffi.TokenRequestOf(req))
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToToken(tk).(*token.Token), nil
+}
+
+// TokenStore stores a token. Its issuer, bearer and local owner are derived
+// from the token itself.
+func (a *Account) TokenStore(tk *token.Token) error {
+	return a.h.TokenStore(ffi.TokenOf(tk))
 }
 
 // IdentityResolve resolves the identity document for an address.
@@ -473,4 +642,94 @@ func (a *Account) ObjectDownload(obj *object.Object, options ...CallOption) erro
 	o := collectCallOpts(options)
 
 	return a.h.ObjectDownload(ffi.ObjectOf(obj), o.timeout)
+}
+
+// ObjectStore stores an object in the account's local data store.
+func (a *Account) ObjectStore(obj *object.Object) error {
+	return a.h.ObjectStore(ffi.ObjectOf(obj))
+}
+
+// ObjectRetrieve loads a locally stored object by its id.
+func (a *Account) ObjectRetrieve(objectID []byte) (*object.Object, error) {
+	o, err := a.h.ObjectRetrieve(objectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToObject(o).(*object.Object), nil
+}
+
+// PresentationSign signs a presentation with any account keys it requires.
+func (a *Account) PresentationSign(p *credential.VerifiablePresentation) error {
+	return a.h.PresentationSign(ffi.VerifiablePresentationOf(p))
+}
+
+// PresentationStore stores a presentation on the account for later retrieval.
+func (a *Account) PresentationStore(p *credential.VerifiablePresentation) error {
+	return a.h.PresentationStore(ffi.VerifiablePresentationOf(p))
+}
+
+// PresentationLookup returns presentations stored on the account that satisfy
+// the predicate tree. A nil tree returns every stored presentation.
+func (a *Account) PresentationLookup(tree *predicate.Tree) ([]*credential.VerifiablePresentation, error) {
+	var t *ffi.PredicateTree
+	if tree != nil {
+		t = ffi.PredicateTreeOf(tree)
+	}
+
+	vps, err := a.h.PresentationLookup(t)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*credential.VerifiablePresentation, len(vps))
+	for i, vp := range vps {
+		out[i] = ffi.ToVerifiablePresentation(vp).(*credential.VerifiablePresentation)
+	}
+
+	return out, nil
+}
+
+// ValueKeys lists the keys of values stored on this account. An empty prefix
+// lists every key; otherwise only keys with the given prefix are returned.
+func (a *Account) ValueKeys(prefix string) ([]string, error) {
+	return a.h.ValueKeys(prefix)
+}
+
+// ValueLookup returns the value stored under key. The boolean is false when no
+// value is stored for that key.
+func (a *Account) ValueLookup(key string) ([]byte, bool, error) {
+	return a.h.ValueLookup(key)
+}
+
+// ValueStore stores a key/value pair. A zero expires means the value never
+// expires; otherwise it is removed at that time.
+func (a *Account) ValueStore(key string, value []byte, expires time.Time) error {
+	var unix int64
+	if !expires.IsZero() {
+		unix = expires.Unix()
+	}
+
+	return a.h.ValueStore(key, value, unix)
+}
+
+// ValueRemove deletes the value stored under key.
+func (a *Account) ValueRemove(key string) error {
+	return a.h.ValueRemove(key)
+}
+
+// TokenIssue issues a fresh token from a validated request.
+func (a *Account) TokenIssue(req *token.Request) (*token.Token, error) {
+	tk, err := a.h.TokenIssue(ffi.TokenRequestOf(req))
+	if err != nil {
+		return nil, err
+	}
+
+	return ffi.ToToken(tk).(*token.Token), nil
+}
+
+// TokenStore stores a token. Its issuer, bearer and local owner are derived
+// from the token itself.
+func (a *Account) TokenStore(tk *token.Token) error {
+	return a.h.TokenStore(ffi.TokenOf(tk))
 }
