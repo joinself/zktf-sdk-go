@@ -6,6 +6,7 @@ import (
 
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
+	"github.com/joinself/zktf-sdk-go/object"
 )
 
 // ContentType identifies the type of a message content payload.
@@ -77,6 +78,81 @@ func (s *ContentSummary) ID() []byte { return s.h.ID() }
 
 // Type returns the type of the summarized content.
 func (s *ContentSummary) Type() ContentType { return ContentType(s.h.TypeOf()) }
+
+// Descriptions returns the structured descriptions that make up the summary.
+func (s *ContentSummary) Descriptions() []*ContentSummaryDescription {
+	ds := s.h.Descriptions()
+	out := make([]*ContentSummaryDescription, len(ds))
+	for i, d := range ds {
+		out[i] = &ContentSummaryDescription{h: d}
+	}
+	return out
+}
+
+// ContentSummaryDescriptionKind identifies the kind of a ContentSummaryDescription.
+type ContentSummaryDescriptionKind uint32
+
+const (
+	SummaryUnknown        ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionUnknown)
+	SummaryChatMessage    ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionChatMessage)
+	SummaryChatReference  ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionChatReference)
+	SummaryChatAttachment ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionChatAttachment)
+	SummaryCredential     ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionCredential)
+	SummaryPresentation   ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionPresentation)
+	SummaryAsset          ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionAsset)
+	SummarySignature      ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionSignature)
+	SummaryVerification   ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionVerification)
+	SummaryPairing        ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionPairing)
+)
+
+// ContentSummaryDescription is one structured element of a ContentSummary.
+type ContentSummaryDescription struct {
+	h *ffi.SummaryDescription
+}
+
+// Kind returns which kind of description this is.
+func (d *ContentSummaryDescription) Kind() ContentSummaryDescriptionKind {
+	return ContentSummaryDescriptionKind(d.h.Kind())
+}
+
+// ChatMessage returns the chat message text (SummaryChatMessage descriptions).
+func (d *ContentSummaryDescription) ChatMessage() string { return d.h.AsChatMessage() }
+
+// ChatReference returns the referenced message id (SummaryChatReference descriptions).
+func (d *ContentSummaryDescription) ChatReference() []byte { return d.h.AsChatReference() }
+
+// ChatAttachment returns the attached object (SummaryChatAttachment descriptions).
+func (d *ContentSummaryDescription) ChatAttachment() *object.Object {
+	o := d.h.AsChatAttachment()
+	if o == nil {
+		return nil
+	}
+	return ffi.ToObject(o).(*object.Object)
+}
+
+// Credential returns the credential types (SummaryCredential descriptions).
+func (d *ContentSummaryDescription) Credential() []string { return d.h.AsCredential() }
+
+// Presentation returns the presentation types (SummaryPresentation descriptions).
+func (d *ContentSummaryDescription) Presentation() []string { return d.h.AsPresentation() }
+
+// Asset returns the asset object (SummaryAsset descriptions).
+func (d *ContentSummaryDescription) Asset() *object.Object {
+	o := d.h.AsAsset()
+	if o == nil {
+		return nil
+	}
+	return ffi.ToObject(o).(*object.Object)
+}
+
+// Signature returns the signature bytes (SummarySignature descriptions).
+func (d *ContentSummaryDescription) Signature() []byte { return d.h.AsSignature() }
+
+// Verification returns the verified credential types (SummaryVerification descriptions).
+func (d *ContentSummaryDescription) Verification() []string { return d.h.AsVerification() }
+
+// Pairing returns the pairing roles bitmask (SummaryPairing descriptions).
+func (d *ContentSummaryDescription) Pairing() uint64 { return d.h.AsPairing() }
 
 // ID returns the message id.
 func (m *Message) ID() []byte { return m.h.ID() }

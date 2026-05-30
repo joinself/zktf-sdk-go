@@ -61,7 +61,6 @@ static zktf_account_config *zktf_account_config_new(
 	c->encryption_key_len = encryption_key_len;
 	c->log_level = log_level;
 	c->log_callback = c_on_log;
-	c->integrity_callback = NULL;
 	return c;
 }
 
