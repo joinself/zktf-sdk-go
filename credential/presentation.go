@@ -2,6 +2,18 @@ package credential
 
 import "github.com/joinself/zktf-sdk-go/internal/ffi"
 
+// Presentation type strings, used with PresentationBuilder.Type.
+const (
+	PresentationTypePassport                    = "PassportPresentation"
+	PresentationTypeFacialComparison            = "FacialComparisonPresentation"
+	PresentationTypeLivenessAndFacialComparison = "LivenessAndFacialComparisonPresentation"
+	PresentationTypeBiometricAnchor             = "BiometricAnchorPresentation"
+	PresentationTypeSharingAgreement            = "SharingAgreementPresentation"
+	PresentationTypeProfile                     = "ProfilePresentation"
+	PresentationTypeContactDetails              = "ContactDetailsPresentation"
+	PresentationTypeApplicationPublisher        = "ApplicationPublisherPresentation"
+)
+
 // Presentation is an unsigned presentation produced by a PresentationBuilder.
 type Presentation struct {
 	h *ffi.Presentation

@@ -9,6 +9,54 @@ import (
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 )
 
+// Credential type strings, used with Builder.Type.
+const (
+	TypeEmail                       = "EmailCredential"
+	TypePhone                       = "PhoneCredential"
+	TypePassport                    = "PassportCredential"
+	TypeFacialComparison            = "FacialComparisonCredential"
+	TypeLivenessAndFacialComparison = "LivenessAndFacialComparisonCredential"
+	TypeBiometricAnchor             = "BiometricAnchorCredential"
+	TypeSharingAgreement            = "SharingAgreementCredential"
+	TypeOrganisation                = "OrganisationCredential"
+	TypeApplication                 = "ApplicationCredential"
+)
+
+// Credential field paths (RFC 6901 JSON pointers), used with Claim and predicates.
+const (
+	FieldType                                              = "/type"
+	FieldIssuer                                            = "/issuer"
+	FieldValidFrom                                         = "/validFrom"
+	FieldValidUntil                                        = "/validUntil"
+	FieldSubject                                           = "/credentialSubject/id"
+	FieldSubjectClaims                                     = "/credentialSubject"
+	FieldSubjectEmailAddress                               = "/credentialSubject/email/emailAddress"
+	FieldSubjectPhoneNumber                                = "/credentialSubject/phone/phoneNumber"
+	FieldSubjectBiometricAnchorSourceImageHash             = "/credentialSubject/biometricAnchor/sourceImageHash"
+	FieldSubjectBiometricAnchorComputedHashes              = "/credentialSubject/biometricAnchor/computedHashes"
+	FieldSubjectFacialComparisonSourceImageHash            = "/credentialSubject/facialComparison/sourceImageHash"
+	FieldSubjectFacialComparisonTargetImageHash            = "/credentialSubject/facialComparison/targetImageHash"
+	FieldSubjectLivenessAndFacialComparisonSourceImageHash = "/credentialSubject/livenessAndFacialComparison/sourceImageHash"
+	FieldSubjectLivenessAndFacialComparisonTargetImageHash = "/credentialSubject/livenessAndFacialComparison/targetImageHash"
+	FieldSubjectLivenessAndFacialComparisonChallenge       = "/credentialSubject/livenessAndFacialComparison/challenge"
+	FieldSubjectLivenessAndFacialComparisonComputedHashes  = "/credentialSubject/livenessAndFacialComparison/computedHashes"
+	FieldSubjectPassportDocumentNumber                     = "/credentialSubject/passport/documentNumber"
+	FieldSubjectPassportGivenNames                         = "/credentialSubject/passport/givenNames"
+	FieldSubjectPassportSurname                            = "/credentialSubject/passport/surname"
+	FieldSubjectPassportSex                                = "/credentialSubject/passport/sex"
+	FieldSubjectPassportNationality                        = "/credentialSubject/passport/nationality"
+	FieldSubjectPassportDateOfBirth                        = "/credentialSubject/passport/dateOfBirth"
+	FieldSubjectPassportDateOfExpiration                   = "/credentialSubject/passport/dateOfExpiration"
+	FieldSubjectPassportCountryOfIssuance                  = "/credentialSubject/passport/countryOfIssuance"
+	FieldSubjectPassportDocumentMrz                        = "/credentialSubject/passport/mrz"
+	FieldSubjectPassportImageType                          = "/credentialSubject/passport/imageType"
+	FieldSubjectPassportImageHash                          = "/credentialSubject/passport/imageHash"
+	FieldSubjectPassportTargetImageHash                    = "/credentialSubject/passport/targetImageHash"
+	FieldSubjectOrganisationName                           = "/credentialSubject/organisation/organisationName"
+	FieldSubjectApplicationName                            = "/credentialSubject/application/applicationName"
+	FieldSubjectApplicationSubsidiaryOf                    = "/credentialSubject/application/subsidiaryOf"
+)
+
 // Address is a decentralized identifier (DID) address.
 type Address struct {
 	h *ffi.DIDAddress
@@ -66,6 +114,17 @@ func (a *Address) Key() *signing.PublicKey {
 
 // String returns the encoded DID string.
 func (a *Address) String() string { return a.h.String() }
+
+// Preset terms covering the common access durations. Month and Year use the
+// average Gregorian second counts.
+var (
+	TermSingleUse = NewTerm(0)
+	TermHour      = NewTerm(time.Hour)
+	TermDay       = NewTerm(24 * time.Hour)
+	TermWeek      = NewTerm(7 * 24 * time.Hour)
+	TermMonth     = NewTerm(2629746 * time.Second)
+	TermYear      = NewTerm(31556952 * time.Second)
+)
 
 // NewTerm creates a credential term lasting the given duration.
 func NewTerm(duration time.Duration) *Term {
