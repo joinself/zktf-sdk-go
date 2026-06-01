@@ -5,6 +5,7 @@ package credential
 import (
 	"time"
 
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 )
@@ -57,11 +58,6 @@ const (
 	FieldSubjectApplicationSubsidiaryOf                    = "/credentialSubject/application/subsidiaryOf"
 )
 
-// Address is a decentralized identifier (DID) address.
-type Address struct {
-	h *ffi.DIDAddress
-}
-
 // Term describes the duration under which a verifier wishes to access requested
 // credentials.
 type Term struct {
@@ -79,9 +75,6 @@ type Verifiable struct {
 }
 
 func init() {
-	ffi.DIDAddressOf = func(o any) *ffi.DIDAddress { return o.(*Address).h }
-	ffi.ToDIDAddress = func(h *ffi.DIDAddress) any { return &Address{h: h} }
-
 	ffi.CredentialTermOf = func(o any) *ffi.CredentialTerm { return o.(*Term).h }
 	ffi.ToCredentialTerm = func(h *ffi.CredentialTerm) any { return &Term{h: h} }
 
@@ -91,29 +84,6 @@ func init() {
 	ffi.VerifiableCredentialOf = func(o any) *ffi.VerifiableCredential { return o.(*Verifiable).h }
 	ffi.ToVerifiableCredential = func(h *ffi.VerifiableCredential) any { return &Verifiable{h: h} }
 }
-
-// AddressKey builds a key-method DID address from a signing key.
-func AddressKey(key *signing.PublicKey) *Address {
-	return &Address{h: ffi.DIDAddressKey(ffi.SigningPublicKeyOf(key))}
-}
-
-// ParseAddress decodes a DID string into an address.
-func ParseAddress(did string) (*Address, error) {
-	a, err := ffi.DIDAddressDecode(did)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Address{h: a}, nil
-}
-
-// Key returns the signing public key embedded in the address.
-func (a *Address) Key() *signing.PublicKey {
-	return ffi.ToSigningPublicKey(a.h.Address()).(*signing.PublicKey)
-}
-
-// String returns the encoded DID string.
-func (a *Address) String() string { return a.h.String() }
 
 // Preset terms covering the common access durations. Month and Year use the
 // average Gregorian second counts.
@@ -151,14 +121,14 @@ func (b *Builder) Type(types ...string) *Builder {
 }
 
 // Issuer sets the credential's issuer.
-func (b *Builder) Issuer(issuer *Address) *Builder {
-	b.h.Issuer(issuer.h)
+func (b *Builder) Issuer(issuer *identity.Address) *Builder {
+	b.h.Issuer(ffi.DIDAddressOf(issuer))
 	return b
 }
 
 // Subject sets the credential's subject.
-func (b *Builder) Subject(subject *Address) *Builder {
-	b.h.CredentialSubject(subject.h)
+func (b *Builder) Subject(subject *identity.Address) *Builder {
+	b.h.CredentialSubject(ffi.DIDAddressOf(subject))
 	return b
 }
 
@@ -219,10 +189,14 @@ func (v *Verifiable) Validate() error { return v.h.Validate() }
 func (v *Verifiable) Types() []string { return v.h.TypeOf().Strings() }
 
 // Issuer returns the issuer address.
-func (v *Verifiable) Issuer() *Address { return &Address{h: v.h.Issuer()} }
+func (v *Verifiable) Issuer() *identity.Address {
+	return ffi.ToDIDAddress(v.h.Issuer()).(*identity.Address)
+}
 
 // Subject returns the subject address.
-func (v *Verifiable) Subject() *Address { return &Address{h: v.h.Subject()} }
+func (v *Verifiable) Subject() *identity.Address {
+	return ffi.ToDIDAddress(v.h.Subject()).(*identity.Address)
+}
 
 // Claim returns a string claim about the subject, or "" if absent.
 func (v *Verifiable) Claim(key string) string { return v.h.SubjectClaim(key) }
@@ -240,13 +214,13 @@ func (v *Verifiable) ValidUntil() time.Time { return time.Unix(v.h.ValidUntil(),
 func (v *Verifiable) Created() time.Time { return time.Unix(v.h.Created(), 0) }
 
 // Signer returns the DID address that signed the credential.
-func (v *Verifiable) Signer() (*Address, error) {
+func (v *Verifiable) Signer() (*identity.Address, error) {
 	a, err := v.h.Signer()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Address{h: a}, nil
+	return ffi.ToDIDAddress(a).(*identity.Address), nil
 }
 
 // SigningKey returns the signing key that signed the credential.

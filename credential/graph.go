@@ -3,6 +3,7 @@ package credential
 import (
 	"time"
 
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 )
@@ -29,8 +30,8 @@ func init() {
 }
 
 // ValidCredentialsFor returns the holder's currently-valid credentials.
-func (g *Graph) ValidCredentialsFor(holder *Address) ([]*Verifiable, error) {
-	cs, err := g.h.ValidCredentialsFor(holder.h)
+func (g *Graph) ValidCredentialsFor(holder *identity.Address) ([]*Verifiable, error) {
+	cs, err := g.h.ValidCredentialsFor(ffi.DIDAddressOf(holder))
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +45,8 @@ func (g *Graph) ValidCredentialsFor(holder *Address) ([]*Verifiable, error) {
 }
 
 // RevokedCredentialsFor returns the holder's revoked credentials.
-func (g *Graph) RevokedCredentialsFor(holder *Address) ([]*Verifiable, error) {
-	cs, err := g.h.RevokedCredentialsFor(holder.h)
+func (g *Graph) RevokedCredentialsFor(holder *identity.Address) ([]*Verifiable, error) {
+	cs, err := g.h.RevokedCredentialsFor(ffi.DIDAddressOf(holder))
 	if err != nil {
 		return nil, err
 	}
@@ -60,14 +61,14 @@ func (g *Graph) RevokedCredentialsFor(holder *Address) ([]*Verifiable, error) {
 
 // ValidDocumentFor reports whether the document at the address is currently
 // valid (no effective recovery / deactivation).
-func (g *Graph) ValidDocumentFor(document *Address) bool {
-	return g.h.ValidDocumentFor(document.h)
+func (g *Graph) ValidDocumentFor(document *identity.Address) bool {
+	return g.h.ValidDocumentFor(ffi.DIDAddressOf(document))
 }
 
 // BiometricAnchorHashFor returns the holder's 20-byte biometric anchor hash,
 // or nil if not present.
-func (g *Graph) BiometricAnchorHashFor(holder *Address) []byte {
-	return g.h.BiometricAnchorHashFor(holder.h)
+func (g *Graph) BiometricAnchorHashFor(holder *identity.Address) []byte {
+	return g.h.BiometricAnchorHashFor(ffi.DIDAddressOf(holder))
 }
 
 // RevocationProof returns the revocation proof for the given hash, or nil.

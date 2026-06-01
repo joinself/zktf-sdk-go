@@ -556,7 +556,7 @@ func (a *Account) PresentationLookup(tree *predicate.Tree) ([]*credential.Verifi
 }
 
 // IdentityResolve resolves the identity document for an address.
-func (a *Account) IdentityResolve(address *credential.Address, options ...CallOption) (*identity.Document, error) {
+func (a *Account) IdentityResolve(address *identity.Address, options ...CallOption) (*identity.Document, error) {
 	o := collectCallOpts(options)
 
 	d, err := a.h.IdentityResolve(ffi.DIDAddressOf(address), o.timeout)
@@ -580,7 +580,7 @@ func (a *Account) IdentitySign(op *identity.Operation) error {
 }
 
 // IdentityLookup returns DID addresses matching the lookup query.
-func (a *Account) IdentityLookup(options ...identity.LookupOption) ([]*credential.Address, error) {
+func (a *Account) IdentityLookup(options ...identity.LookupOption) ([]*identity.Address, error) {
 	l := identity.BuildLookup(options...)
 
 	as, err := a.h.IdentityLookup(ffi.IdentityLookupOf(l))
@@ -588,9 +588,9 @@ func (a *Account) IdentityLookup(options ...identity.LookupOption) ([]*credentia
 		return nil, err
 	}
 
-	out := make([]*credential.Address, len(as))
+	out := make([]*identity.Address, len(as))
 	for i, addr := range as {
-		out[i] = ffi.ToDIDAddress(addr).(*credential.Address)
+		out[i] = ffi.ToDIDAddress(addr).(*identity.Address)
 	}
 
 	return out, nil

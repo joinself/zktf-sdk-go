@@ -2,6 +2,7 @@ package message
 
 import (
 	"github.com/joinself/zktf-sdk-go/credential"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/object"
 	"github.com/joinself/zktf-sdk-go/pairwise"
@@ -29,8 +30,8 @@ func IntroductionDecode(content *Content) (*Introduction, error) {
 }
 
 // DocumentAddress returns the sender's document DID address.
-func (i *Introduction) DocumentAddress() *credential.Address {
-	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*credential.Address)
+func (i *Introduction) DocumentAddress() *identity.Address {
+	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*identity.Address)
 }
 
 // Presentations returns the verified presentations shared by the sender.
@@ -88,7 +89,7 @@ func NewIntroduction() *IntroductionBuilder {
 }
 
 // DocumentAddress sets the document address the sender identifies as.
-func (b *IntroductionBuilder) DocumentAddress(address *credential.Address) *IntroductionBuilder {
+func (b *IntroductionBuilder) DocumentAddress(address *identity.Address) *IntroductionBuilder {
 	b.h.DocumentAddress(ffi.DIDAddressOf(address))
 	return b
 }

@@ -1,6 +1,9 @@
 package credential
 
-import "github.com/joinself/zktf-sdk-go/internal/ffi"
+import (
+	"github.com/joinself/zktf-sdk-go/identity"
+	"github.com/joinself/zktf-sdk-go/internal/ffi"
+)
 
 // Presentation type strings, used with PresentationBuilder.Type.
 const (
@@ -53,8 +56,8 @@ func (b *PresentationBuilder) Type(types ...string) *PresentationBuilder {
 }
 
 // Holder sets the holder/bearer address.
-func (b *PresentationBuilder) Holder(holder *Address) *PresentationBuilder {
-	b.h.Holder(holder.h)
+func (b *PresentationBuilder) Holder(holder *identity.Address) *PresentationBuilder {
+	b.h.Holder(ffi.DIDAddressOf(holder))
 	return b
 }
 
@@ -94,13 +97,13 @@ func (v *VerifiablePresentation) Validate() error { return v.h.Validate() }
 func (v *VerifiablePresentation) Types() []string { return v.h.Types() }
 
 // Holder returns the holder address, or nil.
-func (v *VerifiablePresentation) Holder() *Address {
+func (v *VerifiablePresentation) Holder() *identity.Address {
 	h := v.h.Holder()
 	if h == nil {
 		return nil
 	}
 
-	return &Address{h: h}
+	return ffi.ToDIDAddress(h).(*identity.Address)
 }
 
 // Credentials returns the credentials contained in the presentation.

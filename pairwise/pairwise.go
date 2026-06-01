@@ -5,6 +5,7 @@ package pairwise
 
 import (
 	"github.com/joinself/zktf-sdk-go/credential"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 )
 
@@ -47,8 +48,8 @@ func DecodeIdentity(data []byte) (*Identity, error) {
 }
 
 // DocumentAddress returns the counterparty's document DID address.
-func (i *Identity) DocumentAddress() *credential.Address {
-	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*credential.Address)
+func (i *Identity) DocumentAddress() *identity.Address {
+	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*identity.Address)
 }
 
 // BiometricAnchorHash returns the 20-byte biometric anchor hash, or nil.
@@ -72,8 +73,8 @@ func (r *Relationship) WithIdentity() *Identity { return &Identity{h: r.h.WithId
 func (r *Relationship) Status() Status { return Status(r.h.Status()) }
 
 // DocumentAddress returns the introduced party's document DID address.
-func (i *Introduction) DocumentAddress() *credential.Address {
-	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*credential.Address)
+func (i *Introduction) DocumentAddress() *identity.Address {
+	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*identity.Address)
 }
 
 // Presentations returns the presentations shared by the sender.

@@ -3,6 +3,7 @@ package credential
 import (
 	"time"
 
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 )
 
@@ -45,18 +46,18 @@ func DefaultCredentialTypes() []string { return ffi.DefaultIssuedCredentialTypes
 func DefaultIssuerEpoch() time.Time { return time.Unix(ffi.DefaultIssuerEpoch(), 0) }
 
 // AddIssuer adds an issuer. Returns false if it was already present.
-func (r *TrustedIssuerRegistry) AddIssuer(issuer *Address) bool {
+func (r *TrustedIssuerRegistry) AddIssuer(issuer *identity.Address) bool {
 	return r.h.IssuerAdd(ffi.DIDAddressOf(issuer))
 }
 
 // RemoveIssuer removes an issuer. Returns false if it was not present.
-func (r *TrustedIssuerRegistry) RemoveIssuer(issuer *Address) bool {
+func (r *TrustedIssuerRegistry) RemoveIssuer(issuer *identity.Address) bool {
 	return r.h.IssuerRemove(ffi.DIDAddressOf(issuer))
 }
 
 // GrantAuthority grants the issuer authority over a credential type from
 // granted until revoked (a zero revoked means no end).
-func (r *TrustedIssuerRegistry) GrantAuthority(issuer *Address, credentialType string, granted, revoked time.Time) error {
+func (r *TrustedIssuerRegistry) GrantAuthority(issuer *identity.Address, credentialType string, granted, revoked time.Time) error {
 	var revokedUnix int64
 	if !revoked.IsZero() {
 		revokedUnix = revoked.Unix()
@@ -67,28 +68,28 @@ func (r *TrustedIssuerRegistry) GrantAuthority(issuer *Address, credentialType s
 
 // RevokeAuthority marks the issuer's authority over a credential type revoked
 // from the given time.
-func (r *TrustedIssuerRegistry) RevokeAuthority(issuer *Address, credentialType string, revoked time.Time) error {
+func (r *TrustedIssuerRegistry) RevokeAuthority(issuer *identity.Address, credentialType string, revoked time.Time) error {
 	return r.h.AuthorityRevoke(ffi.DIDAddressOf(issuer), credentialType, revoked.Unix())
 }
 
 // AuthorityFor returns the credential types the issuer is authorized for.
-func (r *TrustedIssuerRegistry) AuthorityFor(issuer *Address) ([]string, error) {
+func (r *TrustedIssuerRegistry) AuthorityFor(issuer *identity.Address) ([]string, error) {
 	return r.h.AuthorityFor(ffi.DIDAddressOf(issuer))
 }
 
 // AuthorityAt reports whether the issuer was authorized for the credential type
 // at the given time.
-func (r *TrustedIssuerRegistry) AuthorityAt(issuer *Address, credentialType string, issued time.Time) bool {
+func (r *TrustedIssuerRegistry) AuthorityAt(issuer *identity.Address, credentialType string, issued time.Time) bool {
 	return r.h.AuthorityAt(ffi.DIDAddressOf(issuer), credentialType, issued.Unix())
 }
 
 // Issuers returns all issuers in the registry.
-func (r *TrustedIssuerRegistry) Issuers() []*Address {
+func (r *TrustedIssuerRegistry) Issuers() []*identity.Address {
 	as := r.h.Issuers()
-	out := make([]*Address, len(as))
+	out := make([]*identity.Address, len(as))
 
 	for i, a := range as {
-		out[i] = ffi.ToDIDAddress(a).(*Address)
+		out[i] = ffi.ToDIDAddress(a).(*identity.Address)
 	}
 
 	return out

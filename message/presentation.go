@@ -3,6 +3,7 @@ package message
 import (
 	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/credential/predicate"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 )
 
@@ -46,13 +47,13 @@ func init() {
 func (r *PresentationRequest) PresentationTypes() []string { return r.h.PresentationTypes() }
 
 // Holder returns the expected holder address, or an error if not set.
-func (r *PresentationRequest) Holder() (*credential.Address, error) {
+func (r *PresentationRequest) Holder() (*identity.Address, error) {
 	h, err := r.h.Holder()
 	if err != nil {
 		return nil, err
 	}
 
-	return ffi.ToDIDAddress(h).(*credential.Address), nil
+	return ffi.ToDIDAddress(h).(*identity.Address), nil
 }
 
 // Challenge returns the random challenge bytes, or nil.
@@ -110,7 +111,7 @@ func (b *PresentationRequestBuilder) PresentationType(types ...string) *Presenta
 }
 
 // Holder sets the expected holder address.
-func (b *PresentationRequestBuilder) Holder(holder *credential.Address) *PresentationRequestBuilder {
+func (b *PresentationRequestBuilder) Holder(holder *identity.Address) *PresentationRequestBuilder {
 	b.h.Holder(ffi.DIDAddressOf(holder))
 	return b
 }
