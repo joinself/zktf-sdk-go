@@ -21,7 +21,7 @@ func TestVerificationRequestRoundTrip(t *testing.T) {
 		t.Fatalf("verification Finish: %v", err)
 	}
 
-	id := bytes.Repeat([]byte{0x42}, 16)
+	id := bytes.Repeat([]byte{0x42}, 20)
 	content, err := message.NewExchangeRequest().
 		ID(id).
 		Purpose("verify email").
@@ -210,8 +210,8 @@ func TestExchangeResponseRoundTrip(t *testing.T) {
 		t.Fatalf("verification response Finish: %v", err)
 	}
 
-	requestID := bytes.Repeat([]byte{0x42}, 16)
-	actionID := bytes.Repeat([]byte{0x99}, 16)
+	requestID := bytes.Repeat([]byte{0x42}, 20)
+	actionID := bytes.Repeat([]byte{0x99}, 20)
 
 	outcome, err := message.NewOutcome().
 		ActionID(actionID).

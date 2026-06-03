@@ -42,7 +42,7 @@ func AnonymousMessageDecodeFromString(encoded string) (*AnonymousMessage, error)
 	return newAnonymousMessage(ptr), nil
 }
 
-// ID returns the 16 byte id of the message.
+// ID returns the id of the message.
 func (m *AnonymousMessage) ID() []byte {
 	return C.GoBytes(unsafe.Pointer(C.zktf_anonymous_message_id(m.ptr)), messageIDLen)
 }

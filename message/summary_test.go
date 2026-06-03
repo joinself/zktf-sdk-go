@@ -20,7 +20,7 @@ func TestContentSummaryOf(t *testing.T) {
 	if got := summary.Type(); got != message.ContentChat {
 		t.Fatalf("Type = %d, want ContentChat", got)
 	}
-	if len(summary.ID()) != 16 {
-		t.Fatalf("ID len = %d, want 16", len(summary.ID()))
+	if len(summary.ID()) != 20 {
+		t.Fatalf("ID len = %d, want 20", len(summary.ID()))
 	}
 }

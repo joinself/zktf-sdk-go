@@ -30,7 +30,7 @@ func TestCustomRoundTrip(t *testing.T) {
 }
 
 func TestReceiptRoundTrip(t *testing.T) {
-	id := bytes.Repeat([]byte{0xab}, 16)
+	id := bytes.Repeat([]byte{0xab}, 20)
 
 	content, err := message.NewReceipt().Delivered(id).Read(id).Finish()
 	if err != nil {

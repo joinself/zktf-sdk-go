@@ -28,7 +28,7 @@ const (
 )
 
 // messageIDLen is the length of a message/content id.
-const messageIDLen = 16
+const messageIDLen = 20
 
 // messageContentHashLen is the length of a message content hash (sha3-256).
 const messageContentHashLen = 32
