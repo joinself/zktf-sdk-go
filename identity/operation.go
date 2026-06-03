@@ -33,7 +33,7 @@ const (
 type AddressMethod uint32
 
 const (
-	AddressMethodAure AddressMethod = AddressMethod(ffi.AddressMethodAure)
+	AddressMethodZktf AddressMethod = AddressMethod(ffi.AddressMethodZktf)
 	AddressMethodKey  AddressMethod = AddressMethod(ffi.AddressMethodKey)
 )
 

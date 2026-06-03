@@ -37,7 +37,7 @@ const (
 type AddressMethod uint32
 
 const (
-	AddressMethodAure AddressMethod = C.METHOD_AURE
+	AddressMethodZktf AddressMethod = C.METHOD_ZKTF
 	AddressMethodKey  AddressMethod = C.METHOD_KEY
 )
 
