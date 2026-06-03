@@ -71,7 +71,13 @@ type IdentityOperationBuilder struct {
 
 // NewIdentityOperationBuilder initializes an operation builder.
 func NewIdentityOperationBuilder() *IdentityOperationBuilder {
-	ptr := C.zktf_identity_operation_builder_init()
+	return newIdentityOperationBuilder(C.zktf_identity_operation_builder_init())
+}
+
+func newIdentityOperationBuilder(ptr *C.zktf_identity_operation_builder) *IdentityOperationBuilder {
+	if ptr == nil {
+		return nil
+	}
 	b := &IdentityOperationBuilder{ptr: ptr}
 	runtime.AddCleanup(b, func(ptr *C.zktf_identity_operation_builder) {
 		C.zktf_identity_operation_builder_destroy(ptr)
@@ -389,6 +395,38 @@ func (d *OperationDescriptionReference) AddressAsExchange() *ExchangePublicKey {
 // Controller returns the controller address, or nil.
 func (d *OperationDescriptionReference) Controller() *SigningPublicKey {
 	return newSigningPublicKey(C.zktf_identity_operation_description_reference_controller(d.ptr))
+}
+
+// IdentityOperationDescription is a key description recorded in a document
+// (embedded or referenced).
+type IdentityOperationDescription struct {
+	ptr *C.zktf_identity_operation_description
+}
+
+func newIdentityOperationDescription(ptr *C.zktf_identity_operation_description) *IdentityOperationDescription {
+	if ptr == nil {
+		return nil
+	}
+	d := &IdentityOperationDescription{ptr: ptr}
+	runtime.AddCleanup(d, func(ptr *C.zktf_identity_operation_description) {
+		C.zktf_identity_operation_description_destroy(ptr)
+	}, d.ptr)
+	return d
+}
+
+// Kind returns whether the description is embedded or referenced.
+func (d *IdentityOperationDescription) Kind() OperationDescriptionKind {
+	return OperationDescriptionKind(C.zktf_identity_operation_description_type_of(d.ptr))
+}
+
+// Embedded returns the embedded description, or nil if not embedded.
+func (d *IdentityOperationDescription) Embedded() *OperationDescriptionEmbedded {
+	return newOperationDescriptionEmbedded(C.zktf_identity_operation_description_as_embedded(d.ptr))
+}
+
+// Reference returns the reference description, or nil if not a reference.
+func (d *IdentityOperationDescription) Reference() *OperationDescriptionReference {
+	return newOperationDescriptionReference(C.zktf_identity_operation_description_as_reference(d.ptr))
 }
 
 // IdentityLookup builds a query for identities.
