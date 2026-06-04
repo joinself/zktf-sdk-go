@@ -8,18 +8,18 @@ import "github.com/joinself/zktf-sdk-go/internal/ffi"
 type PredicatorKind uint32
 
 const (
-	Equals             PredicatorKind = PredicatorKind(ffi.PredicatorEquals)
-	NotEquals          PredicatorKind = PredicatorKind(ffi.PredicatorNotEquals)
-	GreaterThan        PredicatorKind = PredicatorKind(ffi.PredicatorGreaterThan)
-	GreaterThanOrEqual PredicatorKind = PredicatorKind(ffi.PredicatorGreaterThanOrEqual)
-	LessThan           PredicatorKind = PredicatorKind(ffi.PredicatorLessThan)
-	LessThanOrEqual    PredicatorKind = PredicatorKind(ffi.PredicatorLessThanOrEqual)
-	Contains           PredicatorKind = PredicatorKind(ffi.PredicatorContains)
-	NotContains        PredicatorKind = PredicatorKind(ffi.PredicatorNotContains)
-	OneOf              PredicatorKind = PredicatorKind(ffi.PredicatorOneOf)
-	NotOneOf           PredicatorKind = PredicatorKind(ffi.PredicatorNotOneOf)
-	Empty              PredicatorKind = PredicatorKind(ffi.PredicatorEmpty)
-	NotEmpty           PredicatorKind = PredicatorKind(ffi.PredicatorNotEmpty)
+	PredicatorEquals             PredicatorKind = PredicatorKind(ffi.PredicatorEquals)
+	PredicatorNotEquals          PredicatorKind = PredicatorKind(ffi.PredicatorNotEquals)
+	PredicatorGreaterThan        PredicatorKind = PredicatorKind(ffi.PredicatorGreaterThan)
+	PredicatorGreaterThanOrEqual PredicatorKind = PredicatorKind(ffi.PredicatorGreaterThanOrEqual)
+	PredicatorLessThan           PredicatorKind = PredicatorKind(ffi.PredicatorLessThan)
+	PredicatorLessThanOrEqual    PredicatorKind = PredicatorKind(ffi.PredicatorLessThanOrEqual)
+	PredicatorContains           PredicatorKind = PredicatorKind(ffi.PredicatorContains)
+	PredicatorNotContains        PredicatorKind = PredicatorKind(ffi.PredicatorNotContains)
+	PredicatorOneOf              PredicatorKind = PredicatorKind(ffi.PredicatorOneOf)
+	PredicatorNotOneOf           PredicatorKind = PredicatorKind(ffi.PredicatorNotOneOf)
+	PredicatorEmpty              PredicatorKind = PredicatorKind(ffi.PredicatorEmpty)
+	PredicatorNotEmpty           PredicatorKind = PredicatorKind(ffi.PredicatorNotEmpty)
 )
 
 // Tree is a built predicate tree ready to evaluate against credentials.
@@ -37,63 +37,63 @@ type Predicate struct {
 	h *ffi.Predicate
 }
 
-// FieldEquals checks if a credential field equals the given value.
-func FieldEquals(field, value string) *Predicate {
+// Equals checks if a credential field equals the given value.
+func Equals(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateEquals(field, value)}
 }
 
-// FieldNotEquals is the negation of FieldEquals.
-func FieldNotEquals(field, value string) *Predicate {
+// NotEquals is the negation of Equals.
+func NotEquals(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateNotEquals(field, value)}
 }
 
-// FieldGreaterThan checks if a credential field is greater than value.
-func FieldGreaterThan(field, value string) *Predicate {
+// GreaterThan checks if a credential field is greater than value.
+func GreaterThan(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateGreaterThan(field, value)}
 }
 
-// FieldGreaterThanOrEquals checks if a credential field is >= value.
-func FieldGreaterThanOrEquals(field, value string) *Predicate {
+// GreaterThanOrEquals checks if a credential field is >= value.
+func GreaterThanOrEquals(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateGreaterThanOrEquals(field, value)}
 }
 
-// FieldLessThan checks if a credential field is less than value.
-func FieldLessThan(field, value string) *Predicate {
+// LessThan checks if a credential field is less than value.
+func LessThan(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateLessThan(field, value)}
 }
 
-// FieldLessThanOrEquals checks if a credential field is <= value.
-func FieldLessThanOrEquals(field, value string) *Predicate {
+// LessThanOrEquals checks if a credential field is <= value.
+func LessThanOrEquals(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateLessThanOrEquals(field, value)}
 }
 
-// FieldContains checks if a credential field contains value.
-func FieldContains(field, value string) *Predicate {
+// Contains checks if a credential field contains value.
+func Contains(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateContains(field, value)}
 }
 
-// FieldNotContains is the negation of FieldContains.
-func FieldNotContains(field, value string) *Predicate {
+// NotContains is the negation of Contains.
+func NotContains(field, value string) *Predicate {
 	return &Predicate{h: ffi.PredicateNotContains(field, value)}
 }
 
-// FieldOneOf checks if a credential field is one of the given values.
-func FieldOneOf(field string, values []string) *Predicate {
+// OneOf checks if a credential field is one of the given values.
+func OneOf(field string, values []string) *Predicate {
 	return &Predicate{h: ffi.PredicateOneOf(field, values)}
 }
 
-// FieldNotOneOf is the negation of FieldOneOf.
-func FieldNotOneOf(field string, values []string) *Predicate {
+// NotOneOf is the negation of OneOf.
+func NotOneOf(field string, values []string) *Predicate {
 	return &Predicate{h: ffi.PredicateNotOneOf(field, values)}
 }
 
-// FieldEmpty checks if a credential field is empty.
-func FieldEmpty(field string) *Predicate {
+// Empty checks if a credential field is empty.
+func Empty(field string) *Predicate {
 	return &Predicate{h: ffi.PredicateEmpty(field)}
 }
 
-// FieldNotEmpty checks if a credential field is not empty.
-func FieldNotEmpty(field string) *Predicate {
+// NotEmpty checks if a credential field is not empty.
+func NotEmpty(field string) *Predicate {
 	return &Predicate{h: ffi.PredicateNotEmpty(field)}
 }
 
