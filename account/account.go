@@ -189,6 +189,11 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 	return a, nil
 }
 
+// Close shuts down the account
+func (a *Account) Close() {
+	a.h.Close()
+}
+
 // KeychainSigningCreate generates a new signing key in the keychain and returns
 // its public address.
 func (a *Account) KeychainSigningCreate() (*signing.PublicKey, error) {

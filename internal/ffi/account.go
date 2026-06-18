@@ -48,19 +48,36 @@ type AccountConfig struct {
 
 // Account wraps a zktf_account handle.
 type Account struct {
-	ptr    *C.zktf_account
-	handle cgo.Handle
+	ptr     *C.zktf_account
+	handle  cgo.Handle
+	cleanup runtime.Cleanup
 }
 
 // NewAccount allocates an unconfigured account.
 func NewAccount() *Account {
 	a := &Account{ptr: C.zktf_account_init()}
 
-	runtime.AddCleanup(a, func(ptr *C.zktf_account) {
+	a.cleanup = runtime.AddCleanup(a, func(ptr *C.zktf_account) {
 		C.zktf_account_destroy(ptr)
 	}, a.ptr)
 
 	return a
+}
+
+// Close destroys the native account and releases the cgo.Handle pinning its
+// callbacks, stopping the GC cleanup to avoid a double free. No-op if already
+// closed.
+func (a *Account) Close() {
+	if a.ptr == nil {
+		return
+	}
+	a.cleanup.Stop()
+	C.zktf_account_destroy(a.ptr)
+	a.ptr = nil
+	if a.handle != 0 {
+		a.handle.Delete()
+		a.handle = 0
+	}
 }
 
 // Configure configures the account and registers its callbacks. The callbacks
