@@ -170,6 +170,9 @@ func (m *Message) To() *signing.PublicKey {
 // Timestamp returns when the message was sent.
 func (m *Message) Timestamp() time.Time { return time.Unix(m.h.Timestamp(), 0) }
 
+// Sequence returns the per-sender sequence number of the message.
+func (m *Message) Sequence() uint64 { return m.h.Sequence() }
+
 // Content decodes and returns the message content.
 func (m *Message) Content() *Content { return &Content{h: m.h.Content()} }
 

@@ -96,6 +96,11 @@ func (m *Message) Timestamp() int64 {
 	return int64(C.zktf_message_timestamp(m.ptr))
 }
 
+// Sequence returns the per-sender sequence number of the message.
+func (m *Message) Sequence() uint64 {
+	return uint64(C.zktf_message_sequence(m.ptr))
+}
+
 // Content decodes and returns the message content. The caller owns the result.
 func (m *Message) Content() *Content {
 	return newContent(C.zktf_message_message_content(m.ptr))
