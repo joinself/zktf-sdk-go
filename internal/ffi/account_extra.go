@@ -69,7 +69,7 @@ func (a *Account) ObjectRetrieve(objectID []byte) (*Object, error) {
 
 // CredentialExchangeTrack records that a credential was exchanged with an address.
 func (a *Account) CredentialExchangeTrack(with *SigningPublicKey, vc *VerifiableCredential) error {
-	return status(C.zktf_account_credential_exchange_track(a.ptr, with.ptr, vc.ptr, nil))
+	return status(C.zktf_account_credential_exchange_track(a.ptr, with.ptr, vc.ptr))
 }
 
 // CredentialExchangeLog returns the credential exchange log, optionally
