@@ -25,9 +25,9 @@
 package ffi
 
 /*
-#cgo LDFLAGS: -lstdc++ -lm -ldl
 #cgo linux LDFLAGS: -lzktf_sdk
 #cgo darwin LDFLAGS: -lzktf_sdk -framework CoreFoundation -framework SystemConfiguration -framework Security
+#cgo LDFLAGS: -lstdc++ -lm -ldl
 #include <zktf-sdk.h>
 #include <stdlib.h>
 */
