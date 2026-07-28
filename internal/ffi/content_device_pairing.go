@@ -112,6 +112,15 @@ func (r *DevicePairingResult) Assets() []*Object {
 	return objectsFrom(C.zktf_message_content_device_pairing_result_assets(r.ptr))
 }
 
+// Tokens returns the tokens issued to the paired device.
+func (r *DevicePairingResult) Tokens() ([]*Token, error) {
+	var c *C.zktf_collection_token
+	if err := status(C.zktf_message_content_device_pairing_result_tokens(r.ptr, &c)); err != nil {
+		return nil, err
+	}
+	return tokensFrom(c), nil
+}
+
 // DevicePairingResultBuilder builds a device-pairing result.
 type DevicePairingResultBuilder struct {
 	ptr *C.zktf_message_content_device_pairing_result_builder
@@ -148,6 +157,13 @@ func (b *DevicePairingResultBuilder) Presentation(p *VerifiablePresentation) *De
 // Asset attaches a supporting object asset.
 func (b *DevicePairingResultBuilder) Asset(o *Object) *DevicePairingResultBuilder {
 	C.zktf_message_content_device_pairing_result_builder_asset(b.ptr, o.ptr)
+	return b
+}
+
+// Token attaches a token for the paired device, such as the identity token it
+// authenticates its grant publish with.
+func (b *DevicePairingResultBuilder) Token(t *Token) *DevicePairingResultBuilder {
+	C.zktf_message_content_device_pairing_result_builder_token(b.ptr, t.ptr)
 	return b
 }
 
