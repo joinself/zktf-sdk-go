@@ -6,6 +6,7 @@ import (
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/object"
+	"github.com/joinself/zktf-sdk-go/token"
 )
 
 // DevicePairingRequest asks a counterparty to pair a device into an identity
@@ -117,6 +118,23 @@ func (r *DevicePairingResponse) Assets() []*object.Object {
 	return out
 }
 
+// Tokens returns the tokens issued to the paired device. A device cannot obtain
+// an identity token itself — it is being granted its rights by the operation
+// this response carries — so it authenticates the publish with one issued here.
+func (r *DevicePairingResponse) Tokens() ([]*token.Token, error) {
+	ts, err := r.h.Tokens()
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*token.Token, len(ts))
+	for i, t := range ts {
+		out[i] = ffi.ToToken(t).(*token.Token)
+	}
+
+	return out, nil
+}
+
 // NewDevicePairingResponse starts building a device-pairing response.
 func NewDevicePairingResponse() *DevicePairingResponseBuilder {
 	return &DevicePairingResponseBuilder{h: ffi.NewDevicePairingResultBuilder()}
@@ -143,6 +161,13 @@ func (b *DevicePairingResponseBuilder) Presentation(p *credential.VerifiablePres
 // Asset attaches a supporting object asset.
 func (b *DevicePairingResponseBuilder) Asset(o *object.Object) *DevicePairingResponseBuilder {
 	b.h.Asset(ffi.ObjectOf(o))
+	return b
+}
+
+// Token attaches a token for the paired device, such as the identity token it
+// authenticates its grant publish with.
+func (b *DevicePairingResponseBuilder) Token(t *token.Token) *DevicePairingResponseBuilder {
+	b.h.Token(ffi.TokenOf(t))
 	return b
 }
 
