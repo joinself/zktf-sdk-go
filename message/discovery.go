@@ -6,6 +6,7 @@ import (
 	"github.com/joinself/zktf-sdk-go/crypto"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
+	"github.com/joinself/zktf-sdk-go/token"
 )
 
 // DiscoveryRequest is a decoded discovery / out-of-band onboarding request.
@@ -130,6 +131,21 @@ func (r *DiscoveryResponse) Status() ResponseStatus { return ResponseStatus(r.h.
 // ErrorMessage returns the response error message, or "".
 func (r *DiscoveryResponse) ErrorMessage() string { return r.h.ErrorMessage() }
 
+// Tokens returns the tokens issued to the recipient.
+func (r *DiscoveryResponse) Tokens() ([]*token.Token, error) {
+	ts, err := r.h.Tokens()
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*token.Token, len(ts))
+	for i, t := range ts {
+		out[i] = ffi.ToToken(t).(*token.Token)
+	}
+
+	return out, nil
+}
+
 // NewDiscoveryResponse starts building a discovery response.
 func NewDiscoveryResponse() *DiscoveryResponseBuilder {
 	return &DiscoveryResponseBuilder{h: ffi.NewDiscoveryResponseBuilder()}
@@ -150,6 +166,12 @@ func (b *DiscoveryResponseBuilder) Status(s ResponseStatus) *DiscoveryResponseBu
 // ErrorMessage sets the response error message.
 func (b *DiscoveryResponseBuilder) ErrorMessage(msg string) *DiscoveryResponseBuilder {
 	b.h.ErrorMessage(msg)
+	return b
+}
+
+// Token attaches a token for the recipient.
+func (b *DiscoveryResponseBuilder) Token(t *token.Token) *DiscoveryResponseBuilder {
+	b.h.Token(ffi.TokenOf(t))
 	return b
 }
 
