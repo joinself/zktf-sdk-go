@@ -148,6 +148,15 @@ func (r *DiscoveryResponse) ErrorMessage() string {
 	return C.GoString(C.zktf_message_content_discovery_response_error_message(r.ptr))
 }
 
+// Tokens returns the tokens issued to the recipient.
+func (r *DiscoveryResponse) Tokens() ([]*Token, error) {
+	var c *C.zktf_collection_token
+	if err := status(C.zktf_message_content_discovery_response_tokens(r.ptr, &c)); err != nil {
+		return nil, err
+	}
+	return tokensFrom(c), nil
+}
+
 // DiscoveryResponseBuilder builds a discovery response.
 type DiscoveryResponseBuilder struct {
 	ptr *C.zktf_message_content_discovery_response_builder
@@ -182,6 +191,12 @@ func (b *DiscoveryResponseBuilder) ErrorMessage(msg string) *DiscoveryResponseBu
 	cmsg := cstring(msg)
 	defer free(unsafe.Pointer(cmsg))
 	C.zktf_message_content_discovery_response_builder_error_message(b.ptr, cmsg)
+	return b
+}
+
+// Token attaches a token for the recipient.
+func (b *DiscoveryResponseBuilder) Token(t *Token) *DiscoveryResponseBuilder {
+	C.zktf_message_content_discovery_response_builder_token(b.ptr, t.ptr)
 	return b
 }
 
