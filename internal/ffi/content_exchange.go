@@ -20,6 +20,7 @@ const (
 	ActionKindCredentialVerification ActionKind = C.ACTION_KIND_CREDENTIAL_VERIFICATION
 	ActionKindIdentitySigning        ActionKind = C.ACTION_KIND_IDENTITY_SIGNING
 	ActionKindDevicePairing          ActionKind = C.ACTION_KIND_DEVICE_PAIRING
+	ActionKindRevocationSigning      ActionKind = C.ACTION_KIND_REVOCATION_SIGNING
 )
 
 // OutcomeKind mirrors zktf_message_content_outcome_kind.
@@ -31,6 +32,7 @@ const (
 	OutcomeKindCredentialVerification OutcomeKind = C.OUTCOME_KIND_CREDENTIAL_VERIFICATION
 	OutcomeKindIdentitySigning        OutcomeKind = C.OUTCOME_KIND_IDENTITY_SIGNING
 	OutcomeKindDevicePairing          OutcomeKind = C.OUTCOME_KIND_DEVICE_PAIRING
+	OutcomeKindRevocationSigning      OutcomeKind = C.OUTCOME_KIND_REVOCATION_SIGNING
 )
 
 // ResponseStatus mirrors zktf_message_response_status.
@@ -102,6 +104,15 @@ func (a *Action) AsIdentitySigning() (*IdentitySigningAction, error) {
 		return nil, err
 	}
 	return newIdentitySigningAction(out), nil
+}
+
+// AsRevocationSigning downcasts the action to a revocation-signing action.
+func (a *Action) AsRevocationSigning() (*RevocationSigningAction, error) {
+	var out *C.zktf_message_content_revocation_signing_action
+	if err := status(C.zktf_message_content_action_as_revocation_signing(a.ptr, &out)); err != nil {
+		return nil, err
+	}
+	return newRevocationSigningAction(out), nil
 }
 
 // AsDevicePairing downcasts the action to a device-pairing action.
@@ -178,6 +189,15 @@ func (o *Outcome) AsIdentitySigning() (*IdentitySigningResult, error) {
 	return newIdentitySigningResult(out), nil
 }
 
+// AsRevocationSigning downcasts the outcome to a revocation-signing result.
+func (o *Outcome) AsRevocationSigning() (*RevocationSigningResult, error) {
+	var out *C.zktf_message_content_revocation_signing_result
+	if err := status(C.zktf_message_content_outcome_as_revocation_signing(o.ptr, &out)); err != nil {
+		return nil, err
+	}
+	return newRevocationSigningResult(out), nil
+}
+
 // AsDevicePairing downcasts the outcome to a device-pairing result.
 func (o *Outcome) AsDevicePairing() (*DevicePairingResult, error) {
 	var out *C.zktf_message_content_device_pairing_result
@@ -239,6 +259,12 @@ func (b *OutcomeBuilder) ResultVerification(r *VerificationResult) *OutcomeBuild
 // ResultSigning attaches an identity-signing result.
 func (b *OutcomeBuilder) ResultSigning(r *IdentitySigningResult) *OutcomeBuilder {
 	C.zktf_message_content_outcome_builder_result_signing(b.ptr, r.ptr)
+	return b
+}
+
+// ResultRevocationSigning attaches a revocation-signing result.
+func (b *OutcomeBuilder) ResultRevocationSigning(r *RevocationSigningResult) *OutcomeBuilder {
+	C.zktf_message_content_outcome_builder_result_revocation_signing(b.ptr, r.ptr)
 	return b
 }
 

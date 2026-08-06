@@ -64,9 +64,10 @@ type Term struct {
 	h *ffi.CredentialTerm
 }
 
-// Credential is an unsigned credential produced by a Builder.
+// Credential is an unsigned credential produced by a Builder, carrying its
+// pending signers. Sign it via Account.CredentialIssue.
 type Credential struct {
-	h *ffi.Credential
+	h *ffi.VerifiableCredential
 }
 
 // Verifiable is a signed, verifiable credential.
@@ -78,8 +79,8 @@ func init() {
 	ffi.CredentialTermOf = func(o any) *ffi.CredentialTerm { return o.(*Term).h }
 	ffi.ToCredentialTerm = func(h *ffi.CredentialTerm) any { return &Term{h: h} }
 
-	ffi.CredentialOf = func(o any) *ffi.Credential { return o.(*Credential).h }
-	ffi.ToCredential = func(h *ffi.Credential) any { return &Credential{h: h} }
+	ffi.CredentialOf = func(o any) *ffi.VerifiableCredential { return o.(*Credential).h }
+	ffi.ToCredential = func(h *ffi.VerifiableCredential) any { return &Credential{h: h} }
 
 	ffi.VerifiableCredentialOf = func(o any) *ffi.VerifiableCredential { return o.(*Verifiable).h }
 	ffi.ToVerifiableCredential = func(h *ffi.VerifiableCredential) any { return &Verifiable{h: h} }

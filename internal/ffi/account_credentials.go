@@ -6,15 +6,15 @@ package ffi
 */
 import "C"
 
-// CredentialIssue signs an unsigned credential into a verifiable credential.
-func (a *Account) CredentialIssue(credential *Credential) (*VerifiableCredential, error) {
-	var out *C.zktf_verifiable_credential
-
-	if err := status(C.zktf_account_credential_issue(a.ptr, credential.ptr, &out)); err != nil {
+// CredentialIssue signs a credential (with pending signers queued via
+// CredentialBuilder.SignWith) into a verifiable credential. The signature is
+// applied in place; the same credential is returned once signed.
+func (a *Account) CredentialIssue(credential *VerifiableCredential) (*VerifiableCredential, error) {
+	if err := status(C.zktf_account_credential_sign(a.ptr, credential.ptr)); err != nil {
 		return nil, err
 	}
 
-	return newVerifiableCredential(out), nil
+	return credential, nil
 }
 
 // CredentialStore stores a verifiable credential in the account's local store.

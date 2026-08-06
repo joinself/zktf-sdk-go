@@ -92,9 +92,6 @@ func (r *PresentationRequest) Term() *credential.Term {
 	return ffi.ToCredentialTerm(t).(*credential.Term)
 }
 
-// BiometricAnchor returns the 20-byte biometric anchor hash, or nil.
-func (r *PresentationRequest) BiometricAnchor() []byte { return r.h.BiometricAnchor() }
-
 // AsAction wraps this request into a generic Action for inclusion in an
 // ExchangeRequest.
 func (r *PresentationRequest) AsAction() *Action { return &Action{h: r.h.AsAction()} }
@@ -137,12 +134,6 @@ func (b *PresentationRequestBuilder) Proof(p *credential.VerifiablePresentation)
 // Term sets the access term.
 func (b *PresentationRequestBuilder) Term(term *credential.Term) *PresentationRequestBuilder {
 	b.h.Term(ffi.CredentialTermOf(term))
-	return b
-}
-
-// BiometricAnchor sets the biometric anchor hash.
-func (b *PresentationRequestBuilder) BiometricAnchor(anchor []byte) *PresentationRequestBuilder {
-	b.h.BiometricAnchor(anchor)
 	return b
 }
 
