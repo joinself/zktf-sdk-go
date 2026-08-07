@@ -23,24 +23,24 @@ var (
 
 // credential
 var (
-	DIDAddressOf               func(any) *DIDAddress
-	ToDIDAddress               func(*DIDAddress) any
-	CredentialTermOf           func(any) *CredentialTerm
-	ToCredentialTerm           func(*CredentialTerm) any
-	CredentialOf               func(any) *Credential
-	ToCredential               func(*Credential) any
-	VerifiableCredentialOf     func(any) *VerifiableCredential
-	ToVerifiableCredential     func(*VerifiableCredential) any
-	PresentationOf             func(any) *Presentation
-	ToPresentation             func(*Presentation) any
-	VerifiablePresentationOf   func(any) *VerifiablePresentation
-	ToVerifiablePresentation   func(*VerifiablePresentation) any
-	CredentialGraphOf          func(any) *CredentialGraph
-	ToCredentialGraph          func(*CredentialGraph) any
-	RevocationProofOf          func(any) *RevocationProof
-	ToRevocationProof          func(*RevocationProof) any
-	CredentialExchangeOf       func(any) *CredentialExchange
-	ToCredentialExchange       func(*CredentialExchange) any
+	DIDAddressOf             func(any) *DIDAddress
+	ToDIDAddress             func(*DIDAddress) any
+	CredentialTermOf         func(any) *CredentialTerm
+	ToCredentialTerm         func(*CredentialTerm) any
+	CredentialOf             func(any) *VerifiableCredential
+	ToCredential             func(*VerifiableCredential) any
+	VerifiableCredentialOf   func(any) *VerifiableCredential
+	ToVerifiableCredential   func(*VerifiableCredential) any
+	PresentationOf           func(any) *Presentation
+	ToPresentation           func(*Presentation) any
+	VerifiablePresentationOf func(any) *VerifiablePresentation
+	ToVerifiablePresentation func(*VerifiablePresentation) any
+	CredentialGraphOf        func(any) *CredentialGraph
+	ToCredentialGraph        func(*CredentialGraph) any
+	RevocationProofOf        func(any) *RevocationProof
+	ToRevocationProof        func(*RevocationProof) any
+	CredentialExchangeOf     func(any) *CredentialExchange
+	ToCredentialExchange     func(*CredentialExchange) any
 )
 
 // credential/predicate
@@ -115,10 +115,10 @@ var (
 
 // message — exchange action/outcome polymorphism
 var (
-	ActionOf         func(any) *Action
-	ToAction         func(*Action) any
-	OutcomeOf        func(any) *Outcome
-	ToOutcome        func(*Outcome) any
+	ActionOf           func(any) *Action
+	ToAction           func(*Action) any
+	OutcomeOf          func(any) *Outcome
+	ToOutcome          func(*Outcome) any
 	ExchangeRequestOf  func(any) *ExchangeRequest
 	ToExchangeRequest  func(*ExchangeRequest) any
 	ExchangeResponseOf func(any) *ExchangeResponse
@@ -127,40 +127,44 @@ var (
 
 // message — per-kind request/response bodies
 var (
-	PresentationActionOf       func(any) *PresentationAction
-	ToPresentationAction       func(*PresentationAction) any
-	PresentationResultOf       func(any) *PresentationResult
-	ToPresentationResult       func(*PresentationResult) any
-	VerificationActionOf       func(any) *VerificationAction
-	ToVerificationAction       func(*VerificationAction) any
-	VerificationResultOf       func(any) *VerificationResult
-	ToVerificationResult       func(*VerificationResult) any
-	IdentitySigningActionOf    func(any) *IdentitySigningAction
-	ToIdentitySigningAction    func(*IdentitySigningAction) any
-	IdentitySigningResultOf    func(any) *IdentitySigningResult
-	ToIdentitySigningResult    func(*IdentitySigningResult) any
-	DevicePairingActionOf      func(any) *DevicePairingAction
-	ToDevicePairingAction      func(*DevicePairingAction) any
-	DevicePairingResultOf      func(any) *DevicePairingResult
-	ToDevicePairingResult      func(*DevicePairingResult) any
+	PresentationActionOf      func(any) *PresentationAction
+	ToPresentationAction      func(*PresentationAction) any
+	PresentationResultOf      func(any) *PresentationResult
+	ToPresentationResult      func(*PresentationResult) any
+	VerificationActionOf      func(any) *VerificationAction
+	ToVerificationAction      func(*VerificationAction) any
+	VerificationResultOf      func(any) *VerificationResult
+	ToVerificationResult      func(*VerificationResult) any
+	IdentitySigningActionOf   func(any) *IdentitySigningAction
+	ToIdentitySigningAction   func(*IdentitySigningAction) any
+	IdentitySigningResultOf   func(any) *IdentitySigningResult
+	ToIdentitySigningResult   func(*IdentitySigningResult) any
+	RevocationSigningActionOf func(any) *RevocationSigningAction
+	ToRevocationSigningAction func(*RevocationSigningAction) any
+	RevocationSigningResultOf func(any) *RevocationSigningResult
+	ToRevocationSigningResult func(*RevocationSigningResult) any
+	DevicePairingActionOf     func(any) *DevicePairingAction
+	ToDevicePairingAction     func(*DevicePairingAction) any
+	DevicePairingResultOf     func(any) *DevicePairingResult
+	ToDevicePairingResult     func(*DevicePairingResult) any
 )
 
 // event — status + group + workflow + the wire events nested under group
 var (
-	StatusEventOf    func(any) *StatusEvent
-	ToStatusEvent    func(*StatusEvent) any
-	GroupEventOf     func(any) *GroupEvent
-	ToGroupEvent     func(*GroupEvent) any
-	WorkflowEventOf  func(any) *WorkflowEvent
-	ToWorkflowEvent  func(*WorkflowEvent) any
+	StatusEventOf     func(any) *StatusEvent
+	ToStatusEvent     func(*StatusEvent) any
+	GroupEventOf      func(any) *GroupEvent
+	ToGroupEvent      func(*GroupEvent) any
+	WorkflowEventOf   func(any) *WorkflowEvent
+	ToWorkflowEvent   func(*WorkflowEvent) any
 	KeyPackageEventOf func(any) *KeyPackageEvent
 	ToKeyPackageEvent func(*KeyPackageEvent) any
-	WelcomeEventOf   func(any) *WelcomeEvent
-	ToWelcomeEvent   func(*WelcomeEvent) any
-	CommitEventOf    func(any) *CommitEvent
-	ToCommitEvent    func(*CommitEvent) any
-	ProposalEventOf  func(any) *ProposalEvent
-	ToProposalEvent  func(*ProposalEvent) any
-	DroppedEventOf   func(any) *DroppedEvent
-	ToDroppedEvent   func(*DroppedEvent) any
+	WelcomeEventOf    func(any) *WelcomeEvent
+	ToWelcomeEvent    func(*WelcomeEvent) any
+	CommitEventOf     func(any) *CommitEvent
+	ToCommitEvent     func(*CommitEvent) any
+	ProposalEventOf   func(any) *ProposalEvent
+	ToProposalEvent   func(*ProposalEvent) any
+	DroppedEventOf    func(any) *DroppedEvent
+	ToDroppedEvent    func(*DroppedEvent) any
 )

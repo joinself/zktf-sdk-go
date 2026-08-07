@@ -15,8 +15,27 @@
 //     public package — ever mentions a C type.
 //
 // Build prerequisites: the native header `zktf-sdk.h` must be on the C include
-// path and `libzktf_sdk` on the linker path. For local development point cgo at
-// the zktf-sdk checkout, e.g.:
+// path and `libzktf_sdk` on the linker path, matching the version pinned in
+// `zktf-sdk-version` at the repo root.
+//
+// Primary path — scripted fetch of the prebuilt archive:
+//
+//	eval "$(scripts/fetch-native.sh)"
+//	go build ./...
+//
+// `scripts/fetch-native.sh` reads `zktf-sdk-version`, maps GOOS/GOARCH to the
+// matching Rust target triple, downloads
+// `zktf-sdk-<triple>-<version>.tar.gz` from
+// `gs://download.joinself.com/zktf-sdk/` (via curl/wget against the public
+// HTTPS mirror, falling back to `gcloud storage cp`) into `.zktf-native/`,
+// and prints the `CGO_CFLAGS` / `CGO_LDFLAGS` / `LD_LIBRARY_PATH` values
+// needed to build against it (it also writes them to a sourceable `.env`).
+// CI runs this same script before `go build` / `go test`.
+//
+// Fallback — local dev against a sibling zktf-sdk checkout:
+//
+// If you are iterating on the native side too, point cgo directly at a
+// sibling `zktf-sdk` checkout instead of the pinned prebuilt archive:
 //
 //	CGO_CFLAGS=-I/path/to/zktf-sdk/crates/zktf-ffi \
 //	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \

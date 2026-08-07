@@ -73,15 +73,6 @@ func (a *PresentationAction) Term() *CredentialTerm {
 	return newCredentialTerm(C.zktf_message_content_credential_presentation_action_term(a.ptr))
 }
 
-// BiometricAnchor returns the 20-byte biometric anchor hash, or nil.
-func (a *PresentationAction) BiometricAnchor() []byte {
-	p := C.zktf_message_content_credential_presentation_action_biometric_anchor(a.ptr)
-	if p == nil {
-		return nil
-	}
-	return C.GoBytes(unsafe.Pointer(p), biometricAnchorHashLen)
-}
-
 // AsAction wraps this presentation action into a generic Action (consuming it).
 func (a *PresentationAction) AsAction() *Action {
 	return newAction(C.zktf_message_content_action_presentation(a.ptr))
@@ -137,14 +128,6 @@ func (b *PresentationActionBuilder) Proof(p *VerifiablePresentation) *Presentati
 // Term sets the term the requester would like to access the credentials under.
 func (b *PresentationActionBuilder) Term(term *CredentialTerm) *PresentationActionBuilder {
 	C.zktf_message_content_credential_presentation_action_builder_term(b.ptr, term.ptr)
-	return b
-}
-
-// BiometricAnchor sets the biometric anchor hash.
-func (b *PresentationActionBuilder) BiometricAnchor(anchor []byte) *PresentationActionBuilder {
-	buf, _ := cbytes(anchor)
-	defer free(unsafe.Pointer(buf))
-	C.zktf_message_content_credential_presentation_action_builder_biometric_anchor(b.ptr, buf)
 	return b
 }
 

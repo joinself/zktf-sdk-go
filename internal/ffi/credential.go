@@ -76,22 +76,6 @@ func (t *CredentialTerm) Duration() uint64 {
 	return uint64(C.zktf_credential_term_duration(t.ptr))
 }
 
-// Credential wraps an unsigned zktf_credential handle.
-type Credential struct {
-	ptr *C.zktf_credential
-}
-
-func newCredential(ptr *C.zktf_credential) *Credential {
-	if ptr == nil {
-		return nil
-	}
-	c := &Credential{ptr: ptr}
-	runtime.AddCleanup(c, func(ptr *C.zktf_credential) {
-		C.zktf_credential_destroy(ptr)
-	}, c.ptr)
-	return c
-}
-
 // CredentialBuilder wraps a zktf_credential_builder handle.
 type CredentialBuilder struct {
 	ptr *C.zktf_credential_builder
@@ -160,13 +144,15 @@ func (b *CredentialBuilder) SignWith(signer *SigningPublicKey, issuedAtUnix int6
 	return b
 }
 
-// Finish finalizes the unsigned credential.
-func (b *CredentialBuilder) Finish() (*Credential, error) {
-	var ptr *C.zktf_credential
+// Finish finalizes the credential, ready to be signed via Account.CredentialIssue.
+// This also carries any signers queued via SignWith as pending signers, so the
+// first signature is applied the same way as any other.
+func (b *CredentialBuilder) Finish() (*VerifiableCredential, error) {
+	var ptr *C.zktf_verifiable_credential
 	if err := status(C.zktf_credential_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err
 	}
-	return newCredential(ptr), nil
+	return newVerifiableCredential(ptr), nil
 }
 
 // VerifiableCredential wraps a signed zktf_verifiable_credential handle.

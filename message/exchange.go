@@ -15,6 +15,7 @@ const (
 	ActionCredentialVerification ActionKind = ActionKind(ffi.ActionKindCredentialVerification)
 	ActionIdentitySigning        ActionKind = ActionKind(ffi.ActionKindIdentitySigning)
 	ActionDevicePairing          ActionKind = ActionKind(ffi.ActionKindDevicePairing)
+	ActionRevocationSigning      ActionKind = ActionKind(ffi.ActionKindRevocationSigning)
 )
 
 // OutcomeKind identifies the per-kind type of a polymorphic Outcome.
@@ -26,6 +27,7 @@ const (
 	OutcomeCredentialVerification OutcomeKind = OutcomeKind(ffi.OutcomeKindCredentialVerification)
 	OutcomeIdentitySigning        OutcomeKind = OutcomeKind(ffi.OutcomeKindIdentitySigning)
 	OutcomeDevicePairing          OutcomeKind = OutcomeKind(ffi.OutcomeKindDevicePairing)
+	OutcomeRevocationSigning      OutcomeKind = OutcomeKind(ffi.OutcomeKindRevocationSigning)
 )
 
 // ResponseStatus is the per-action or overall status of an exchange response.
@@ -131,6 +133,16 @@ func (a *Action) AsIdentitySigning() (*IdentitySigningRequest, error) {
 	return &IdentitySigningRequest{h: r}, nil
 }
 
+// AsRevocationSigning downcasts the action to a revocation-signing request.
+func (a *Action) AsRevocationSigning() (*RevocationSigningRequest, error) {
+	r, err := a.h.AsRevocationSigning()
+	if err != nil {
+		return nil, err
+	}
+
+	return &RevocationSigningRequest{h: r}, nil
+}
+
 // AsDevicePairing downcasts the action to a device-pairing request.
 func (a *Action) AsDevicePairing() (*DevicePairingRequest, error) {
 	r, err := a.h.AsDevicePairing()
@@ -183,6 +195,16 @@ func (o *Outcome) AsIdentitySigning() (*IdentitySigningResponse, error) {
 	return &IdentitySigningResponse{h: r}, nil
 }
 
+// AsRevocationSigning downcasts the outcome to a revocation-signing result.
+func (o *Outcome) AsRevocationSigning() (*RevocationSigningResponse, error) {
+	r, err := o.h.AsRevocationSigning()
+	if err != nil {
+		return nil, err
+	}
+
+	return &RevocationSigningResponse{h: r}, nil
+}
+
 // AsDevicePairing downcasts the outcome to a device-pairing result.
 func (o *Outcome) AsDevicePairing() (*DevicePairingResponse, error) {
 	r, err := o.h.AsDevicePairing()
@@ -229,6 +251,12 @@ func (b *OutcomeBuilder) ResultVerification(r *VerificationResponse) *OutcomeBui
 // ResultSigning attaches an identity-signing response.
 func (b *OutcomeBuilder) ResultSigning(r *IdentitySigningResponse) *OutcomeBuilder {
 	b.h.ResultSigning(r.h)
+	return b
+}
+
+// ResultRevocationSigning attaches a revocation-signing response.
+func (b *OutcomeBuilder) ResultRevocationSigning(r *RevocationSigningResponse) *OutcomeBuilder {
+	b.h.ResultRevocationSigning(r.h)
 	return b
 }
 
