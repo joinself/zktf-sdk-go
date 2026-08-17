@@ -35,11 +35,6 @@ static void c_future_identity_document_done(void *user_data, zktf_status reason,
 static void c_future_credential_graph_done(void *user_data, zktf_status reason, zktf_credential_graph *graph) {
 	goFutureCredentialGraphComplete((uintptr_t)user_data, reason, graph);
 }
-// The header declares zktf_future_group_on_complete as taking zktf_on_group_cb
-// (a 2-arg event callback) but the Rust implementation actually invokes the
-// callback with 3 args (user_data, status, group). Cast through this 3-arg
-// shim so we receive the real signature.
-typedef void (*future_group_cb_t)(void *user_data, zktf_status reason, zktf_group *group);
 static void c_future_group_done(void *user_data, zktf_status reason, zktf_group *group) {
 	goFutureGroupComplete((uintptr_t)user_data, reason, group);
 }
@@ -57,7 +52,7 @@ static void zktf_future_credential_graph_await(struct zktf_future_credential_gra
 	zktf_future_credential_graph_on_complete(fut, timeout_ms, c_future_credential_graph_done, (void *)ud);
 }
 static void zktf_future_group_await(struct zktf_future_group *fut, uint32_t timeout_ms, uintptr_t ud) {
-	zktf_future_group_on_complete(fut, timeout_ms, (zktf_on_group_cb)c_future_group_done, (void *)ud);
+	zktf_future_group_on_complete(fut, timeout_ms, c_future_group_done, (void *)ud);
 }
 */
 import "C"
