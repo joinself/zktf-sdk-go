@@ -5,7 +5,10 @@ package ffi
 */
 import "C"
 
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 // goBytesFromBuffer copies a zktf_bytes_buffer into a Go slice and destroys the
 // buffer. A nil buffer yields nil.
@@ -56,6 +59,46 @@ func stringsFromBufferCollection(c *C.zktf_collection_string_buffer) []string {
 	out := make([]string, n)
 	for i := 0; i < n; i++ {
 		out[i] = goStringFromBuffer(C.zktf_collection_string_buffer_at(c, C.size_t(i)))
+	}
+	return out
+}
+
+// TypeCollection wraps a zktf_collection_string_buffer handle holding a set of
+// credential or presentation type names. It backs both NewCredentialTypes and
+// NewPresentationTypes, which are otherwise identical.
+type TypeCollection struct {
+	ptr *C.zktf_collection_string_buffer
+}
+
+func newTypeCollection(ptr *C.zktf_collection_string_buffer) *TypeCollection {
+	if ptr == nil {
+		return nil
+	}
+	c := &TypeCollection{ptr: ptr}
+	runtime.AddCleanup(c, func(ptr *C.zktf_collection_string_buffer) {
+		C.zktf_collection_string_buffer_destroy(ptr)
+	}, c.ptr)
+	return c
+}
+
+// newTypeCollectionFromStrings builds a type collection from the given type
+// strings (e.g. "VerifiableCredential", "PassportPresentation").
+func newTypeCollectionFromStrings(types []string) *TypeCollection {
+	ptr := C.zktf_collection_string_buffer_init()
+	for _, t := range types {
+		ct := cstring(t)
+		C.zktf_collection_string_buffer_append(ptr, ct)
+		free(unsafe.Pointer(ct))
+	}
+	return newTypeCollection(ptr)
+}
+
+// Strings returns the type strings in the collection.
+func (c *TypeCollection) Strings() []string {
+	n := int(C.zktf_collection_string_buffer_len(c.ptr))
+	out := make([]string, n)
+	for i := 0; i < n; i++ {
+		out[i] = goStringFromBuffer(C.zktf_collection_string_buffer_at(c.ptr, C.size_t(i)))
 	}
 	return out
 }
@@ -209,21 +252,6 @@ func verifiablePresentationsFrom(c *C.zktf_collection_verifiable_presentation) [
 	out := make([]*VerifiablePresentation, n)
 	for i := 0; i < n; i++ {
 		out[i] = newVerifiablePresentation(C.zktf_collection_verifiable_presentation_at(c, C.size_t(i)))
-	}
-	return out
-}
-
-// presentationTypesFrom copies a zktf_collection_presentation_type into Go
-// strings and destroys the collection.
-func presentationTypesFrom(c *C.zktf_collection_presentation_type) []string {
-	if c == nil {
-		return nil
-	}
-	defer C.zktf_collection_presentation_type_destroy(c)
-	n := int(C.zktf_collection_presentation_type_len(c))
-	out := make([]string, n)
-	for i := 0; i < n; i++ {
-		out[i] = C.GoString(C.zktf_collection_presentation_type_at(c, C.size_t(i)))
 	}
 	return out
 }

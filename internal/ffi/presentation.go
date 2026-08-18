@@ -11,41 +11,9 @@ import (
 	"unsafe"
 )
 
-// PresentationTypeCollection wraps a zktf_collection_presentation_type handle.
-type PresentationTypeCollection struct {
-	ptr *C.zktf_collection_presentation_type
-}
-
-func newPresentationTypeCollection(ptr *C.zktf_collection_presentation_type) *PresentationTypeCollection {
-	if ptr == nil {
-		return nil
-	}
-	c := &PresentationTypeCollection{ptr: ptr}
-	runtime.AddCleanup(c, func(ptr *C.zktf_collection_presentation_type) {
-		C.zktf_collection_presentation_type_destroy(ptr)
-	}, c.ptr)
-	return c
-}
-
 // NewPresentationTypes builds a presentation type collection from type strings.
-func NewPresentationTypes(types []string) *PresentationTypeCollection {
-	ptr := C.zktf_collection_presentation_type_init()
-	for _, t := range types {
-		ct := cstring(t)
-		C.zktf_collection_presentation_type_append(ptr, ct)
-		free(unsafe.Pointer(ct))
-	}
-	return newPresentationTypeCollection(ptr)
-}
-
-// Strings returns the type strings in the collection.
-func (c *PresentationTypeCollection) Strings() []string {
-	n := int(C.zktf_collection_presentation_type_len(c.ptr))
-	out := make([]string, n)
-	for i := 0; i < n; i++ {
-		out[i] = C.GoString(C.zktf_collection_presentation_type_at(c.ptr, C.size_t(i)))
-	}
-	return out
+func NewPresentationTypes(types []string) *TypeCollection {
+	return newTypeCollectionFromStrings(types)
 }
 
 // Presentation wraps an unsigned zktf_presentation handle.
@@ -80,7 +48,7 @@ func NewPresentationBuilder() *PresentationBuilder {
 }
 
 // PresentationType sets the presentation's types.
-func (b *PresentationBuilder) PresentationType(types *PresentationTypeCollection) *PresentationBuilder {
+func (b *PresentationBuilder) PresentationType(types *TypeCollection) *PresentationBuilder {
 	C.zktf_presentation_builder_presentation_type(b.ptr, types.ptr)
 	return b
 }
@@ -141,7 +109,7 @@ func (p *VerifiablePresentation) Validate() error {
 
 // Types returns the presentation's type strings.
 func (p *VerifiablePresentation) Types() []string {
-	return presentationTypesFrom(C.zktf_verifiable_presentation_type_of(p.ptr))
+	return stringsFromBufferCollection(C.zktf_verifiable_presentation_type_of(p.ptr))
 }
 
 // Holder returns the holder address, or nil.

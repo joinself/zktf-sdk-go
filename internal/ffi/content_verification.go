@@ -30,12 +30,9 @@ func newVerificationAction(ptr *C.zktf_message_content_credential_verification_a
 
 // CredentialTypes returns the requested credential types.
 func (a *VerificationAction) CredentialTypes() []string {
-	c := C.zktf_message_content_credential_verification_action_credential_type(a.ptr)
-	if c == nil {
-		return nil
-	}
-	wrapped := newCredentialTypeCollection(c)
-	return wrapped.Strings()
+	return stringsFromBufferCollection(
+		C.zktf_message_content_credential_verification_action_credential_type(a.ptr),
+	)
 }
 
 // Proof returns the verifiable presentations attached as proof.
@@ -139,7 +136,7 @@ func NewVerificationActionBuilder() *VerificationActionBuilder {
 }
 
 // CredentialType sets the requested credential types.
-func (b *VerificationActionBuilder) CredentialType(types *CredentialTypeCollection) *VerificationActionBuilder {
+func (b *VerificationActionBuilder) CredentialType(types *TypeCollection) *VerificationActionBuilder {
 	C.zktf_message_content_credential_verification_action_builder_credential_type(b.ptr, types.ptr)
 	return b
 }
