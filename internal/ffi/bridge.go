@@ -31,8 +31,6 @@ var (
 	ToCredential             func(*VerifiableCredential) any
 	VerifiableCredentialOf   func(any) *VerifiableCredential
 	ToVerifiableCredential   func(*VerifiableCredential) any
-	PresentationOf           func(any) *Presentation
-	ToPresentation           func(*Presentation) any
 	VerifiablePresentationOf func(any) *VerifiablePresentation
 	ToVerifiablePresentation func(*VerifiablePresentation) any
 	CredentialGraphOf        func(any) *CredentialGraph
