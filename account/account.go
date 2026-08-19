@@ -519,17 +519,8 @@ func (a *Account) CredentialGraphCreate(registry *credential.TrustedIssuerRegist
 	return ffi.ToCredentialGraph(g).(*credential.Graph), nil
 }
 
-// PresentationIssue signs an unsigned presentation into a verifiable presentation.
-func (a *Account) PresentationIssue(p *credential.Presentation) (*credential.VerifiablePresentation, error) {
-	vp, err := a.h.PresentationIssue(ffi.PresentationOf(p))
-	if err != nil {
-		return nil, err
-	}
-
-	return ffi.ToVerifiablePresentation(vp).(*credential.VerifiablePresentation), nil
-}
-
-// PresentationSign signs a presentation with any account keys it requires.
+// PresentationSign signs a presentation with any account keys it requires —
+// also how a presentation is issued for the first time.
 func (a *Account) PresentationSign(p *credential.VerifiablePresentation) error {
 	return a.h.PresentationSign(ffi.VerifiablePresentationOf(p))
 }

@@ -16,22 +16,6 @@ func NewPresentationTypes(types []string) *TypeCollection {
 	return newTypeCollectionFromStrings(types)
 }
 
-// Presentation wraps an unsigned zktf_presentation handle.
-type Presentation struct {
-	ptr *C.zktf_presentation
-}
-
-func newPresentation(ptr *C.zktf_presentation) *Presentation {
-	if ptr == nil {
-		return nil
-	}
-	p := &Presentation{ptr: ptr}
-	runtime.AddCleanup(p, func(ptr *C.zktf_presentation) {
-		C.zktf_presentation_destroy(ptr)
-	}, p.ptr)
-	return p
-}
-
 // PresentationBuilder wraps a zktf_presentation_builder handle.
 type PresentationBuilder struct {
 	ptr *C.zktf_presentation_builder
@@ -65,13 +49,13 @@ func (b *PresentationBuilder) Holder(holder *DIDAddress) *PresentationBuilder {
 	return b
 }
 
-// Finish finalizes the unsigned presentation.
-func (b *PresentationBuilder) Finish() (*Presentation, error) {
-	var ptr *C.zktf_presentation
+// Finish finalizes the presentation, ready to be signed via Account.PresentationSign.
+func (b *PresentationBuilder) Finish() (*VerifiablePresentation, error) {
+	var ptr *C.zktf_verifiable_presentation
 	if err := status(C.zktf_presentation_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err
 	}
-	return newPresentation(ptr), nil
+	return newVerifiablePresentation(ptr), nil
 }
 
 // VerifiablePresentation wraps a signed zktf_verifiable_presentation handle.

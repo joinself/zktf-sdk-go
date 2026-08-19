@@ -45,14 +45,3 @@ func (a *Account) CredentialSharedWith(with *SigningPublicKey, tree *PredicateTr
 
 	return verifiableCredentialsFrom(c), nil
 }
-
-// PresentationIssue signs an unsigned presentation into a verifiable presentation.
-func (a *Account) PresentationIssue(presentation *Presentation) (*VerifiablePresentation, error) {
-	var out *C.zktf_verifiable_presentation
-
-	if err := status(C.zktf_account_presentation_issue(a.ptr, presentation.ptr, &out)); err != nil {
-		return nil, err
-	}
-
-	return newVerifiablePresentation(out), nil
-}

@@ -17,20 +17,12 @@ const (
 	PresentationTypeApplicationPublisher        = "ApplicationPublisherPresentation"
 )
 
-// Presentation is an unsigned presentation produced by a PresentationBuilder.
-type Presentation struct {
-	h *ffi.Presentation
-}
-
 // VerifiablePresentation is a signed, verifiable presentation.
 type VerifiablePresentation struct {
 	h *ffi.VerifiablePresentation
 }
 
 func init() {
-	ffi.PresentationOf = func(o any) *ffi.Presentation { return o.(*Presentation).h }
-	ffi.ToPresentation = func(h *ffi.Presentation) any { return &Presentation{h: h} }
-
 	ffi.VerifiablePresentationOf = func(o any) *ffi.VerifiablePresentation {
 		return o.(*VerifiablePresentation).h
 	}
@@ -39,7 +31,7 @@ func init() {
 	}
 }
 
-// PresentationBuilder builds an unsigned presentation.
+// PresentationBuilder builds a presentation, ready to be signed via Account.PresentationSign.
 type PresentationBuilder struct {
 	h *ffi.PresentationBuilder
 }
@@ -70,14 +62,14 @@ func (b *PresentationBuilder) Credential(credentials ...*Verifiable) *Presentati
 	return b
 }
 
-// Finish finalizes the unsigned presentation.
-func (b *PresentationBuilder) Finish() (*Presentation, error) {
+// Finish finalizes the presentation, ready to be signed via Account.PresentationSign.
+func (b *PresentationBuilder) Finish() (*VerifiablePresentation, error) {
 	p, err := b.h.Finish()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Presentation{h: p}, nil
+	return &VerifiablePresentation{h: p}, nil
 }
 
 // DecodePresentation decodes a JSON-encoded verifiable presentation.
