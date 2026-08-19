@@ -32,7 +32,7 @@ func newPresentationAction(ptr *C.zktf_message_content_credential_presentation_a
 
 // PresentationTypes returns the requested presentation types.
 func (a *PresentationAction) PresentationTypes() []string {
-	return presentationTypesFrom(
+	return stringsFromBufferCollection(
 		C.zktf_message_content_credential_presentation_action_presentation_type(a.ptr),
 	)
 }
@@ -94,7 +94,7 @@ func NewPresentationActionBuilder() *PresentationActionBuilder {
 }
 
 // PresentationType sets the requested presentation types.
-func (b *PresentationActionBuilder) PresentationType(types *PresentationTypeCollection) *PresentationActionBuilder {
+func (b *PresentationActionBuilder) PresentationType(types *TypeCollection) *PresentationActionBuilder {
 	C.zktf_message_content_credential_presentation_action_builder_presentation_type(b.ptr, types.ptr)
 	return b
 }

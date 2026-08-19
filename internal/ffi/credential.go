@@ -11,42 +11,10 @@ import (
 	"unsafe"
 )
 
-// CredentialTypeCollection wraps a zktf_collection_credential_type handle.
-type CredentialTypeCollection struct {
-	ptr *C.zktf_collection_credential_type
-}
-
-func newCredentialTypeCollection(ptr *C.zktf_collection_credential_type) *CredentialTypeCollection {
-	if ptr == nil {
-		return nil
-	}
-	c := &CredentialTypeCollection{ptr: ptr}
-	runtime.AddCleanup(c, func(ptr *C.zktf_collection_credential_type) {
-		C.zktf_collection_credential_type_destroy(ptr)
-	}, c.ptr)
-	return c
-}
-
 // NewCredentialTypes builds a credential type collection from the given type
 // strings (e.g. "VerifiableCredential", "EmailCredential").
-func NewCredentialTypes(types []string) *CredentialTypeCollection {
-	ptr := C.zktf_collection_credential_type_init()
-	for _, t := range types {
-		ct := cstring(t)
-		C.zktf_collection_credential_type_append(ptr, ct)
-		free(unsafe.Pointer(ct))
-	}
-	return newCredentialTypeCollection(ptr)
-}
-
-// Strings returns the type strings in the collection.
-func (c *CredentialTypeCollection) Strings() []string {
-	n := int(C.zktf_collection_credential_type_len(c.ptr))
-	out := make([]string, n)
-	for i := 0; i < n; i++ {
-		out[i] = C.GoString(C.zktf_collection_credential_type_at(c.ptr, C.size_t(i)))
-	}
-	return out
+func NewCredentialTypes(types []string) *TypeCollection {
+	return newTypeCollectionFromStrings(types)
 }
 
 // CredentialTerm describes the duration under which the requester wishes to
@@ -92,7 +60,7 @@ func NewCredentialBuilder() *CredentialBuilder {
 }
 
 // CredentialType sets the credential's types.
-func (b *CredentialBuilder) CredentialType(types *CredentialTypeCollection) *CredentialBuilder {
+func (b *CredentialBuilder) CredentialType(types *TypeCollection) *CredentialBuilder {
 	C.zktf_credential_builder_credential_type(b.ptr, types.ptr)
 	return b
 }
@@ -189,8 +157,8 @@ func (c *VerifiableCredential) Validate() error {
 }
 
 // TypeOf returns the credential's type strings.
-func (c *VerifiableCredential) TypeOf() *CredentialTypeCollection {
-	return newCredentialTypeCollection(C.zktf_verifiable_credential_type_of(c.ptr))
+func (c *VerifiableCredential) TypeOf() *TypeCollection {
+	return newTypeCollection(C.zktf_verifiable_credential_type_of(c.ptr))
 }
 
 // Issuer returns the issuer DID address.

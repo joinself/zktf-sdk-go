@@ -48,21 +48,7 @@ func DefaultSandboxTrustedIssuerRegistry() *TrustedIssuerRegistry {
 
 // DefaultIssuedCredentialTypes returns the default credential types issued by self.
 func DefaultIssuedCredentialTypes() []string {
-	c := C.zktf_trusted_issuer_registry_default_credential_types()
-	if c == nil {
-		return nil
-	}
-	defer C.zktf_collection_string_buffer_destroy(c)
-	n := int(C.zktf_collection_string_buffer_len(c))
-	out := make([]string, n)
-	for i := 0; i < n; i++ {
-		buf := C.zktf_collection_string_buffer_at(c, C.size_t(i))
-		if buf == nil {
-			continue
-		}
-		out[i] = C.GoString(C.zktf_string_buffer_ptr(buf))
-	}
-	return out
+	return stringsFromBufferCollection(C.zktf_trusted_issuer_registry_default_credential_types())
 }
 
 // DefaultIssuerEpoch returns the default epoch (unix seconds) from when

@@ -116,12 +116,12 @@ func (d *SummaryDescription) AsChatAttachment() *Object {
 
 // AsCredential returns the credential types (CREDENTIAL descriptions).
 func (d *SummaryDescription) AsCredential() []string {
-	return newCredentialTypeCollection(C.zktf_message_content_summary_description_as_credential(d.ptr)).Strings()
+	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_credential(d.ptr))
 }
 
 // AsPresentation returns the presentation types (PRESENTATION descriptions).
 func (d *SummaryDescription) AsPresentation() []string {
-	return presentationTypesFrom(C.zktf_message_content_summary_description_as_presentation(d.ptr))
+	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_presentation(d.ptr))
 }
 
 // AsAsset returns the asset object (ASSET descriptions).
@@ -136,7 +136,7 @@ func (d *SummaryDescription) AsSignature() []byte {
 
 // AsVerification returns the verified credential types (VERIFICATION descriptions).
 func (d *SummaryDescription) AsVerification() []string {
-	return newCredentialTypeCollection(C.zktf_message_content_summary_description_as_verification(d.ptr)).Strings()
+	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_verification(d.ptr))
 }
 
 // AsPairing returns the pairing roles bitmask (PAIRING descriptions).
