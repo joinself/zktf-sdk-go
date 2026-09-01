@@ -42,6 +42,21 @@ func AnonymousMessageDecodeFromString(encoded string) (*AnonymousMessage, error)
 	return newAnonymousMessage(ptr), nil
 }
 
+// NewAnonymousMessage wraps content as an anonymous message, addressed to no
+// particular inbox, ready to encode for out-of-band delivery (e.g. a QR code).
+func NewAnonymousMessage(content *Content) *AnonymousMessage {
+	return newAnonymousMessage(C.zktf_anonymous_message_init(content.ptr))
+}
+
+// EncodeAsString encodes the message as a base64 URL encoded string.
+func (m *AnonymousMessage) EncodeAsString() (string, error) {
+	var buf *C.zktf_string_buffer
+	if err := status(C.zktf_anonymous_message_encode_as_string(m.ptr, &buf)); err != nil {
+		return "", err
+	}
+	return goStringFromBuffer(buf), nil
+}
+
 // ID returns the id of the message.
 func (m *AnonymousMessage) ID() []byte {
 	return C.GoBytes(unsafe.Pointer(C.zktf_anonymous_message_id(m.ptr)), messageIDLen)

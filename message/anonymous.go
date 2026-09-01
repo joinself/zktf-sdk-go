@@ -19,8 +19,18 @@ func AnonymousMessageDecode(code string) (*AnonymousMessage, error) {
 	return &AnonymousMessage{h: m}, nil
 }
 
+// NewAnonymousMessage wraps content as an anonymous message, addressed to no
+// particular inbox, ready to encode for out-of-band delivery (e.g. a QR code).
+func NewAnonymousMessage(content *Content) *AnonymousMessage {
+	return &AnonymousMessage{h: ffi.NewAnonymousMessage(content.h)}
+}
+
 // ID returns the message id.
 func (m *AnonymousMessage) ID() []byte { return m.h.ID() }
 
 // Content returns the message content.
 func (m *AnonymousMessage) Content() *Content { return &Content{h: m.h.Content()} }
+
+// EncodeAsString encodes the message as a base64 URL encoded string, suitable
+// for embedding in a QR code.
+func (m *AnonymousMessage) EncodeAsString() (string, error) { return m.h.EncodeAsString() }
