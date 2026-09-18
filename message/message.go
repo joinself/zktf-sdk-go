@@ -57,6 +57,16 @@ func init() {
 	ffi.ToMessage = func(h *ffi.Message) any { return &Message{h: h} }
 }
 
+// ContentDecode decodes message content from its encoded form.
+func ContentDecode(contentType ContentType, data []byte) (*Content, error) {
+	h, err := ffi.ContentDecode(ffi.ContentType(contentType), data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Content{h: h}, nil
+}
+
 // Type returns the type of content.
 func (c *Content) Type() ContentType { return ContentType(c.h.TypeOf()) }
 

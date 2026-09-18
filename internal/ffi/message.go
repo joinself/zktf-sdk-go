@@ -50,6 +50,20 @@ func newContent(ptr *C.zktf_message_content) *Content {
 	return c
 }
 
+// ContentDecode decodes message content from its encoded form.
+func ContentDecode(contentType ContentType, data []byte) (*Content, error) {
+	buf, length := cbytes(data)
+	defer free(unsafe.Pointer(buf))
+
+	var ptr *C.zktf_message_content
+	if err := status(C.zktf_message_content_decode(
+		&ptr, C.enum_zktf_message_content_type(contentType), buf, length,
+	)); err != nil {
+		return nil, err
+	}
+	return newContent(ptr), nil
+}
+
 // TypeOf returns the type of content.
 func (c *Content) TypeOf() ContentType {
 	return ContentType(C.zktf_message_content_type_of(c.ptr))

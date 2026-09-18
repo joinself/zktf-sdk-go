@@ -54,3 +54,15 @@ func TestReceiptRoundTrip(t *testing.T) {
 		t.Fatalf("Read = %x, want [%x]", rd, id)
 	}
 }
+
+func TestContentDecodeRejectsMalformedBytes(t *testing.T) {
+	if _, err := message.ContentDecode(message.ContentChat, []byte("not flatbuffers")); err == nil {
+		t.Fatal("ContentDecode: want error, got nil")
+	}
+}
+
+func TestContentDecodeRejectsEmptyBytes(t *testing.T) {
+	if _, err := message.ContentDecode(message.ContentChat, nil); err == nil {
+		t.Fatal("ContentDecode: want error, got nil")
+	}
+}
