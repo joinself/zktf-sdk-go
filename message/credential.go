@@ -39,12 +39,12 @@ func (c *CredentialContent) VerifiablePresentations() []*credential.VerifiablePr
 }
 
 // VerifiableCredentials returns the credentials carried in the content.
-func (c *CredentialContent) VerifiableCredentials() []*credential.Verifiable {
+func (c *CredentialContent) VerifiableCredentials() []*credential.VerifiableCredential {
 	cs := c.h.VerifiableCredentials()
-	out := make([]*credential.Verifiable, len(cs))
+	out := make([]*credential.VerifiableCredential, len(cs))
 
 	for i, vc := range cs {
-		out[i] = ffi.ToVerifiableCredential(vc).(*credential.Verifiable)
+		out[i] = ffi.ToVerifiableCredential(vc).(*credential.VerifiableCredential)
 	}
 
 	return out
@@ -74,7 +74,7 @@ func (b *CredentialContentBuilder) VerifiablePresentation(p *credential.Verifiab
 }
 
 // VerifiableCredential adds a credential.
-func (b *CredentialContentBuilder) VerifiableCredential(c *credential.Verifiable) *CredentialContentBuilder {
+func (b *CredentialContentBuilder) VerifiableCredential(c *credential.VerifiableCredential) *CredentialContentBuilder {
 	b.h.VerifiableCredential(ffi.VerifiableCredentialOf(c))
 	return b
 }

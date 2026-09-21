@@ -30,30 +30,30 @@ func init() {
 }
 
 // ValidCredentialsFor returns the holder's currently-valid credentials.
-func (g *Graph) ValidCredentialsFor(holder *identity.Address) ([]*Verifiable, error) {
+func (g *Graph) ValidCredentialsFor(holder *identity.Address) ([]*VerifiableCredential, error) {
 	cs, err := g.h.ValidCredentialsFor(ffi.DIDAddressOf(holder))
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]*Verifiable, len(cs))
+	out := make([]*VerifiableCredential, len(cs))
 	for i, c := range cs {
-		out[i] = &Verifiable{h: c}
+		out[i] = &VerifiableCredential{h: c}
 	}
 
 	return out, nil
 }
 
 // RevokedCredentialsFor returns the holder's revoked credentials.
-func (g *Graph) RevokedCredentialsFor(holder *identity.Address) ([]*Verifiable, error) {
+func (g *Graph) RevokedCredentialsFor(holder *identity.Address) ([]*VerifiableCredential, error) {
 	cs, err := g.h.RevokedCredentialsFor(ffi.DIDAddressOf(holder))
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]*Verifiable, len(cs))
+	out := make([]*VerifiableCredential, len(cs))
 	for i, c := range cs {
-		out[i] = &Verifiable{h: c}
+		out[i] = &VerifiableCredential{h: c}
 	}
 
 	return out, nil

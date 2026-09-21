@@ -27,8 +27,6 @@ var (
 	ToDIDAddress             func(*DIDAddress) any
 	CredentialTermOf         func(any) *CredentialTerm
 	ToCredentialTerm         func(*CredentialTerm) any
-	CredentialOf             func(any) *VerifiableCredential
-	ToCredential             func(*VerifiableCredential) any
 	VerifiableCredentialOf   func(any) *VerifiableCredential
 	ToVerifiableCredential   func(*VerifiableCredential) any
 	VerifiablePresentationOf func(any) *VerifiablePresentation

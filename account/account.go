@@ -422,32 +422,32 @@ func (a *Account) GroupLeave(g *group.Group) error {
 	return a.h.GroupLeave(ffi.GroupOf(g))
 }
 
-// CredentialIssue signs an unsigned credential into a verifiable credential.
-func (a *Account) CredentialIssue(c *credential.Credential) (*credential.Verifiable, error) {
-	vc, err := a.h.CredentialIssue(ffi.CredentialOf(c))
+// CredentialIssue signs an unsigned credential.
+func (a *Account) CredentialIssue(c *credential.VerifiableCredential) (*credential.VerifiableCredential, error) {
+	vc, err := a.h.CredentialIssue(ffi.VerifiableCredentialOf(c))
 	if err != nil {
 		return nil, err
 	}
 
-	return ffi.ToVerifiableCredential(vc).(*credential.Verifiable), nil
+	return ffi.ToVerifiableCredential(vc).(*credential.VerifiableCredential), nil
 }
 
 // CredentialStore stores a verifiable credential in the account's local store.
-func (a *Account) CredentialStore(c *credential.Verifiable) error {
+func (a *Account) CredentialStore(c *credential.VerifiableCredential) error {
 	return a.h.CredentialStore(ffi.VerifiableCredentialOf(c))
 }
 
 // CredentialLookup returns credentials in the account's local store that
 // satisfy the given predicate tree.
-func (a *Account) CredentialLookup(tree *predicate.Tree) ([]*credential.Verifiable, error) {
+func (a *Account) CredentialLookup(tree *predicate.Tree) ([]*credential.VerifiableCredential, error) {
 	cs, err := a.h.CredentialLookup(ffi.PredicateTreeOf(tree))
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]*credential.Verifiable, len(cs))
+	out := make([]*credential.VerifiableCredential, len(cs))
 	for i, c := range cs {
-		out[i] = ffi.ToVerifiableCredential(c).(*credential.Verifiable)
+		out[i] = ffi.ToVerifiableCredential(c).(*credential.VerifiableCredential)
 	}
 
 	return out, nil
@@ -455,22 +455,22 @@ func (a *Account) CredentialLookup(tree *predicate.Tree) ([]*credential.Verifiab
 
 // CredentialSharedWith returns the credentials this account has shared with the
 // given address that satisfy the predicate tree.
-func (a *Account) CredentialSharedWith(with *signing.PublicKey, tree *predicate.Tree) ([]*credential.Verifiable, error) {
+func (a *Account) CredentialSharedWith(with *signing.PublicKey, tree *predicate.Tree) ([]*credential.VerifiableCredential, error) {
 	cs, err := a.h.CredentialSharedWith(ffi.SigningPublicKeyOf(with), ffi.PredicateTreeOf(tree))
 	if err != nil {
 		return nil, err
 	}
 
-	out := make([]*credential.Verifiable, len(cs))
+	out := make([]*credential.VerifiableCredential, len(cs))
 	for i, c := range cs {
-		out[i] = ffi.ToVerifiableCredential(c).(*credential.Verifiable)
+		out[i] = ffi.ToVerifiableCredential(c).(*credential.VerifiableCredential)
 	}
 
 	return out, nil
 }
 
 // CredentialExchangeTrack records that a credential was exchanged with an address.
-func (a *Account) CredentialExchangeTrack(with *signing.PublicKey, c *credential.Verifiable) error {
+func (a *Account) CredentialExchangeTrack(with *signing.PublicKey, c *credential.VerifiableCredential) error {
 	return a.h.CredentialExchangeTrack(ffi.SigningPublicKeyOf(with), ffi.VerifiableCredentialOf(c))
 }
 

@@ -134,7 +134,7 @@ func (b *Builder) Timestamp(t time.Time) *Builder {
 }
 
 // Revoke revokes a verifiable credential at the given time.
-func (b *Builder) Revoke(c *credential.Verifiable, revokedAt time.Time) *Builder {
+func (b *Builder) Revoke(c *credential.VerifiableCredential, revokedAt time.Time) *Builder {
 	b.h.Revoke(ffi.VerifiableCredentialOf(c), revokedAt.Unix())
 	return b
 }
