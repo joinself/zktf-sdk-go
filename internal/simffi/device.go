@@ -1,0 +1,263 @@
+package simffi
+
+/*
+#include <zktf-sim.h>
+#include <stdlib.h>
+*/
+import "C"
+
+import (
+	"runtime"
+	"unsafe"
+)
+
+// goBytesFromBuffer copies a zktf_sim_bytes_buffer into a Go slice and destroys
+// the buffer.
+func goBytesFromBuffer(buf *C.zktf_sim_bytes_buffer) []byte {
+	if buf == nil {
+		return nil
+	}
+	defer C.zktf_sim_bytes_buffer_destroy(buf)
+
+	return C.GoBytes(
+		unsafe.Pointer(C.zktf_sim_bytes_buffer_buf(buf)),
+		C.int(C.zktf_sim_bytes_buffer_len(buf)),
+	)
+}
+
+// MatchKind mirrors zktf_sim_match_kind.
+type MatchKind uint32
+
+const (
+	MatchAny         MatchKind = C.ZKTF_SIM_MATCH_ANY
+	MatchContentType MatchKind = C.ZKTF_SIM_MATCH_CONTENT_TYPE
+	MatchRequestID   MatchKind = C.ZKTF_SIM_MATCH_REQUEST_ID
+)
+
+// ContentType mirrors zktf_sim_content_type.
+type ContentType uint32
+
+const (
+	ContentUnknown           ContentType = C.ZKTF_SIM_CONTENT_UNKNOWN
+	ContentCustom            ContentType = C.ZKTF_SIM_CONTENT_CUSTOM
+	ContentChat              ContentType = C.ZKTF_SIM_CONTENT_CHAT
+	ContentReceipt           ContentType = C.ZKTF_SIM_CONTENT_RECEIPT
+	ContentCredential        ContentType = C.ZKTF_SIM_CONTENT_CREDENTIAL
+	ContentIntroduction      ContentType = C.ZKTF_SIM_CONTENT_INTRODUCTION
+	ContentDiscoveryRequest  ContentType = C.ZKTF_SIM_CONTENT_DISCOVERY_REQUEST
+	ContentDiscoveryResponse ContentType = C.ZKTF_SIM_CONTENT_DISCOVERY_RESPONSE
+	ContentExchangeRequest   ContentType = C.ZKTF_SIM_CONTENT_EXCHANGE_REQUEST
+	ContentExchangeResponse  ContentType = C.ZKTF_SIM_CONTENT_EXCHANGE_RESPONSE
+)
+
+// Behaviour mirrors zktf_sim_behaviour.
+type Behaviour uint32
+
+const (
+	BehaveAccept Behaviour = C.ZKTF_SIM_BEHAVE_ACCEPT
+	BehaveReject Behaviour = C.ZKTF_SIM_BEHAVE_REJECT
+	BehaveIgnore Behaviour = C.ZKTF_SIM_BEHAVE_IGNORE
+)
+
+// Intercepted is a message diverted by Intercept. The device has taken no
+// action on it.
+type Intercepted struct {
+	From        []byte
+	To          []byte
+	ContentType ContentType
+	Content     []byte
+}
+
+// Device wraps a zktf_sim_device handle.
+type Device struct {
+	ptr     *C.zktf_sim_device
+	cleanup runtime.Cleanup
+}
+
+func newDevice(ptr *C.zktf_sim_device) *Device {
+	if ptr == nil {
+		return nil
+	}
+	d := &Device{ptr: ptr}
+	d.cleanup = runtime.AddCleanup(d, func(ptr *C.zktf_sim_device) {
+		C.zktf_sim_device_destroy(ptr)
+	}, d.ptr)
+	return d
+}
+
+// Close destroys the native device, stopping the GC cleanup to avoid a double
+// free. No-op if already closed; not safe for concurrent use.
+func (d *Device) Close() {
+	if d.ptr == nil {
+		return
+	}
+	d.cleanup.Stop()
+	C.zktf_sim_device_destroy(d.ptr)
+	d.ptr = nil
+}
+
+// NewDevice allocates a simulated mobile device connected to the network.
+// logLevel selects the native log verbosity for this device's account.
+func NewDevice(network *Network, logLevel uint32) *Device {
+	return newDevice(C.zktf_sim_device_new(network.ptr, C.uint32_t(logLevel)))
+}
+
+// DeviceAttach allocates a simulated device attached to a real, test-deployed
+// backend at the given endpoints. The device always uses test trust anchors.
+// Returns nil on invalid (non-UTF-8) endpoints. logLevel selects the native log
+// verbosity for this device's account.
+func DeviceAttach(rpcEndpoint, objectEndpoint, messagingEndpoint string, logLevel uint32) *Device {
+	rpc := C.CString(rpcEndpoint)
+	object := C.CString(objectEndpoint)
+	messaging := C.CString(messagingEndpoint)
+	defer free(unsafe.Pointer(rpc))
+	defer free(unsafe.Pointer(object))
+	defer free(unsafe.Pointer(messaging))
+	return newDevice(C.zktf_sim_device_attach(rpc, object, messaging, C.uint32_t(logLevel)))
+}
+
+// Expect registers an auto-response rule. requestID is used only for
+// MatchRequestID; contentType only for MatchContentType; a non-zero delayMs
+// wraps the behaviour in a delay.
+func (d *Device) Expect(kind MatchKind, contentType ContentType, requestID []byte, behaviour Behaviour, delayMs uint64) {
+	buf, length := cbytes(requestID)
+	defer free(unsafe.Pointer(buf))
+	C.zktf_sim_device_expect(
+		d.ptr,
+		C.enum_zktf_sim_match_kind(kind),
+		C.enum_zktf_sim_content_type(contentType),
+		buf, length,
+		C.enum_zktf_sim_behaviour(behaviour),
+		C.uint64_t(delayMs),
+	)
+}
+
+// InterceptedFuture is a pending diverted message. Resolve it with Wait, or
+// discard it with Cancel; either consumes the handle.
+type InterceptedFuture struct {
+	ptr *C.zktf_sim_future_intercepted
+}
+
+// Intercept diverts the message carrying requestID and returns the handle it
+// arrives on.
+func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
+	buf, length := cbytes(requestID)
+	defer free(unsafe.Pointer(buf))
+
+	ptr := C.zktf_sim_device_intercept(d.ptr, buf, length)
+	if ptr == nil {
+		return nil
+	}
+	return &InterceptedFuture{ptr: ptr}
+}
+
+// Wait blocks until a message is diverted or timeoutMs elapses, returning nil
+// on timeout. A zero timeout waits indefinitely. Consumes the handle.
+func (f *InterceptedFuture) Wait(timeoutMs uint64) (*Intercepted, error) {
+	var msg *C.zktf_sim_intercepted
+
+	code := C.zktf_sim_future_intercepted_wait(f.ptr, C.uint64_t(timeoutMs), &msg)
+	if code == C.ZKTF_SIM_TIMEOUT {
+		return nil, nil
+	}
+	if err := status(code); err != nil {
+		return nil, err
+	}
+	defer C.zktf_sim_intercepted_destroy(msg)
+
+	from, err := keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_intercepted_from(msg, buf, signingKeyBytesLen)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_intercepted_to(msg, buf, signingKeyBytesLen)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var content *C.zktf_sim_bytes_buffer
+	if err := status(C.zktf_sim_intercepted_content(msg, &content)); err != nil {
+		return nil, err
+	}
+
+	return &Intercepted{
+		From:        from,
+		To:          to,
+		ContentType: ContentType(C.zktf_sim_intercepted_content_type(msg)),
+		Content:     goBytesFromBuffer(content),
+	}, nil
+}
+
+// Cancel discards the handle without taking a message.
+func (f *InterceptedFuture) Cancel() {
+	C.zktf_sim_future_intercepted_cancel(f.ptr)
+}
+
+// SigningKeyCreate mints a signing keypair the device retains and returns its
+// address, so a credential can name it as issuer before it exists as an identity.
+func (d *Device) SigningKeyCreate() ([]byte, error) {
+	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_device_signing_key_create(d.ptr, buf, signingKeyBytesLen)
+	})
+}
+
+// MintControllerIdentity mints a free-standing anchored identity for identifier
+// and signs credential as that identity, in one liveness-authorized batch.
+// credential is JSON; the signed credential is returned as JSON.
+func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, error) {
+	idBuf, idLen := cbytes(identifier)
+	defer free(unsafe.Pointer(idBuf))
+	credBuf, credLen := cbytes(credential)
+	defer free(unsafe.Pointer(credBuf))
+
+	var signed *C.zktf_sim_bytes_buffer
+	if err := status(C.zktf_sim_device_mint_controller_identity(
+		d.ptr, idBuf, idLen, credBuf, credLen, &signed,
+	)); err != nil {
+		return nil, err
+	}
+
+	return goBytesFromBuffer(signed), nil
+}
+
+func (d *Device) Address() ([]byte, error) {
+	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_device_address(d.ptr, buf, signingKeyBytesLen)
+	})
+}
+
+func (d *Device) Inbox() ([]byte, error) {
+	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_device_inbox(d.ptr, buf, signingKeyBytesLen)
+	})
+}
+
+// Register drives the registration workflow against counterparty (33-byte
+// address). Blocks until the workflow completes, fails, or times out.
+func (d *Device) Register(counterparty []byte) error {
+	buf, length := cbytes(counterparty)
+	defer free(unsafe.Pointer(buf))
+	return status(C.zktf_sim_device_register(d.ptr, buf, length))
+}
+
+// Connect drives the pairwise connect workflow against counterparty (33-byte
+// public key). Blocks until the workflow completes, fails, or times out.
+func (d *Device) Connect(counterparty []byte) error {
+	buf, length := cbytes(counterparty)
+	defer free(unsafe.Pointer(buf))
+	return status(C.zktf_sim_device_connect(d.ptr, buf, length))
+}
+
+// keyBytes runs a getter that writes a 33-byte signing key into a caller buffer.
+func keyBytes(getter func(*C.uint8_t) C.enum_zktf_sim_status) ([]byte, error) {
+	buf := C.malloc(signingKeyBytesLen)
+	defer C.free(buf)
+	if err := status(getter((*C.uint8_t)(buf))); err != nil {
+		return nil, err
+	}
+	return C.GoBytes(buf, signingKeyBytesLen), nil
+}
