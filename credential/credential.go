@@ -64,11 +64,9 @@ type Term struct {
 	h *ffi.CredentialTerm
 }
 
-// Credential is an unsigned credential produced by a Builder, carrying its
-// pending signers. Sign it via Account.CredentialIssue.
-// Verifiable is a verifiable credential. It is unsigned until
-// Account.CredentialIssue signs it.
-type Verifiable struct {
+// VerifiableCredential is a verifiable credential. A Builder produces one
+// unsigned, carrying its pending signers; Account.CredentialIssue signs it.
+type VerifiableCredential struct {
 	h *ffi.VerifiableCredential
 }
 
@@ -76,8 +74,8 @@ func init() {
 	ffi.CredentialTermOf = func(o any) *ffi.CredentialTerm { return o.(*Term).h }
 	ffi.ToCredentialTerm = func(h *ffi.CredentialTerm) any { return &Term{h: h} }
 
-	ffi.VerifiableCredentialOf = func(o any) *ffi.VerifiableCredential { return o.(*Verifiable).h }
-	ffi.ToVerifiableCredential = func(h *ffi.VerifiableCredential) any { return &Verifiable{h: h} }
+	ffi.VerifiableCredentialOf = func(o any) *ffi.VerifiableCredential { return o.(*VerifiableCredential).h }
+	ffi.ToVerifiableCredential = func(h *ffi.VerifiableCredential) any { return &VerifiableCredential{h: h} }
 }
 
 // Preset terms covering the common access durations. Month and Year use the
@@ -159,58 +157,58 @@ func (b *Builder) SignWith(signer *signing.PublicKey, issuedAt time.Time) *Build
 
 // Finish finalizes the credential, unsigned. Sign it via
 // Account.CredentialIssue.
-func (b *Builder) Finish() (*Verifiable, error) {
+func (b *Builder) Finish() (*VerifiableCredential, error) {
 	c, err := b.h.Finish()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Verifiable{h: c}, nil
+	return &VerifiableCredential{h: c}, nil
 }
 
 // Decode decodes a JSON-encoded verifiable credential.
-func Decode(data []byte) (*Verifiable, error) {
+func Decode(data []byte) (*VerifiableCredential, error) {
 	c, err := ffi.VerifiableCredentialDecode(data)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Verifiable{h: c}, nil
+	return &VerifiableCredential{h: c}, nil
 }
 
 // Validate returns an error if the credential is invalid.
-func (v *Verifiable) Validate() error { return v.h.Validate() }
+func (v *VerifiableCredential) Validate() error { return v.h.Validate() }
 
 // Types returns the credential's type strings.
-func (v *Verifiable) Types() []string { return v.h.TypeOf().Strings() }
+func (v *VerifiableCredential) Types() []string { return v.h.TypeOf().Strings() }
 
 // Issuer returns the issuer address.
-func (v *Verifiable) Issuer() *identity.Address {
+func (v *VerifiableCredential) Issuer() *identity.Address {
 	return ffi.ToDIDAddress(v.h.Issuer()).(*identity.Address)
 }
 
 // Subject returns the subject address.
-func (v *Verifiable) Subject() *identity.Address {
+func (v *VerifiableCredential) Subject() *identity.Address {
 	return ffi.ToDIDAddress(v.h.Subject()).(*identity.Address)
 }
 
 // Claim returns a string claim about the subject, or "" if absent.
-func (v *Verifiable) Claim(key string) string { return v.h.SubjectClaim(key) }
+func (v *VerifiableCredential) Claim(key string) string { return v.h.SubjectClaim(key) }
 
 // ClaimJSON returns the subject claims as a raw JSON document, or nil.
-func (v *Verifiable) ClaimJSON() []byte { return v.h.SubjectJSON() }
+func (v *VerifiableCredential) ClaimJSON() []byte { return v.h.SubjectJSON() }
 
 // ValidFrom returns when the credential became valid.
-func (v *Verifiable) ValidFrom() time.Time { return time.Unix(v.h.ValidFrom(), 0) }
+func (v *VerifiableCredential) ValidFrom() time.Time { return time.Unix(v.h.ValidFrom(), 0) }
 
 // ValidUntil returns when the credential stops being valid.
-func (v *Verifiable) ValidUntil() time.Time { return time.Unix(v.h.ValidUntil(), 0) }
+func (v *VerifiableCredential) ValidUntil() time.Time { return time.Unix(v.h.ValidUntil(), 0) }
 
 // Created returns when the credential was created.
-func (v *Verifiable) Created() time.Time { return time.Unix(v.h.Created(), 0) }
+func (v *VerifiableCredential) Created() time.Time { return time.Unix(v.h.Created(), 0) }
 
 // Signer returns the DID address that signed the credential.
-func (v *Verifiable) Signer() (*identity.Address, error) {
+func (v *VerifiableCredential) Signer() (*identity.Address, error) {
 	a, err := v.h.Signer()
 	if err != nil {
 		return nil, err
@@ -220,7 +218,7 @@ func (v *Verifiable) Signer() (*identity.Address, error) {
 }
 
 // SigningKey returns the signing key that signed the credential.
-func (v *Verifiable) SigningKey() (*signing.PublicKey, error) {
+func (v *VerifiableCredential) SigningKey() (*signing.PublicKey, error) {
 	k, err := v.h.SigningKey()
 	if err != nil {
 		return nil, err
@@ -230,7 +228,7 @@ func (v *Verifiable) SigningKey() (*signing.PublicKey, error) {
 }
 
 // RevocationHashes returns the credential's revocation hashes, one per proof.
-func (v *Verifiable) RevocationHashes() ([][]byte, error) { return v.h.RevocationHashes() }
+func (v *VerifiableCredential) RevocationHashes() ([][]byte, error) { return v.h.RevocationHashes() }
 
 // Encode returns the JSON-encoded credential.
-func (v *Verifiable) Encode() ([]byte, error) { return v.h.Encode() }
+func (v *VerifiableCredential) Encode() ([]byte, error) { return v.h.Encode() }

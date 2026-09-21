@@ -54,7 +54,7 @@ func (b *PresentationBuilder) Holder(holder *identity.Address) *PresentationBuil
 }
 
 // Credential adds a verifiable credential to the presentation.
-func (b *PresentationBuilder) Credential(credentials ...*Verifiable) *PresentationBuilder {
+func (b *PresentationBuilder) Credential(credentials ...*VerifiableCredential) *PresentationBuilder {
 	for _, c := range credentials {
 		b.h.CredentialAdd(c.h)
 	}
@@ -99,12 +99,12 @@ func (v *VerifiablePresentation) Holder() *identity.Address {
 }
 
 // Credentials returns the credentials contained in the presentation.
-func (v *VerifiablePresentation) Credentials() []*Verifiable {
+func (v *VerifiablePresentation) Credentials() []*VerifiableCredential {
 	cs := v.h.Credentials()
-	out := make([]*Verifiable, len(cs))
+	out := make([]*VerifiableCredential, len(cs))
 
 	for i, c := range cs {
-		out[i] = &Verifiable{h: c}
+		out[i] = &VerifiableCredential{h: c}
 	}
 
 	return out

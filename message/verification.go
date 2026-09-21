@@ -159,12 +159,12 @@ func (p *VerificationParameter) Key() string { return p.h.Key() }
 func (p *VerificationParameter) Value() any { return p.h.Value() }
 
 // Credentials returns the verifiable credentials in the response.
-func (r *VerificationResponse) Credentials() []*credential.Verifiable {
+func (r *VerificationResponse) Credentials() []*credential.VerifiableCredential {
 	cs := r.h.Credentials()
-	out := make([]*credential.Verifiable, len(cs))
+	out := make([]*credential.VerifiableCredential, len(cs))
 
 	for i, c := range cs {
-		out[i] = ffi.ToVerifiableCredential(c).(*credential.Verifiable)
+		out[i] = ffi.ToVerifiableCredential(c).(*credential.VerifiableCredential)
 	}
 
 	return out
@@ -176,7 +176,7 @@ func NewVerificationResponse() *VerificationResponseBuilder {
 }
 
 // Credential adds a verifiable credential to the response.
-func (b *VerificationResponseBuilder) Credential(c *credential.Verifiable) *VerificationResponseBuilder {
+func (b *VerificationResponseBuilder) Credential(c *credential.VerifiableCredential) *VerificationResponseBuilder {
 	b.h.Credential(ffi.VerifiableCredentialOf(c))
 	return b
 }
