@@ -197,17 +197,13 @@ func (f *InterceptedFuture) Cancel() {
 	C.zktf_sim_future_intercepted_cancel(f.ptr)
 }
 
-// Send delivers encoded content to the 33-byte address to.
-func (d *Device) Send(to []byte, contentType ContentType, content []byte) error {
+// Send delivers content, a borrowed zktf_message_content handle owned by the
+// SDK side, to the 33-byte address to.
+func (d *Device) Send(to []byte, content unsafe.Pointer) error {
 	toBuf, toLen := cbytes(to)
 	defer free(unsafe.Pointer(toBuf))
-	contentBuf, contentLen := cbytes(content)
-	defer free(unsafe.Pointer(contentBuf))
 
-	return status(C.zktf_sim_device_send(
-		d.ptr, toBuf, toLen,
-		C.enum_zktf_sim_content_type(contentType), contentBuf, contentLen,
-	))
+	return status(C.zktf_sim_device_send(d.ptr, toBuf, toLen, content))
 }
 
 // Scan consumes an anonymous message, such as a discovery QR.

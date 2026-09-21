@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/internal/simffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
@@ -236,12 +237,7 @@ func (d *Device) Connect(counterparty *signing.PublicKey) error {
 // Send delivers content to an address, as the application layer would after
 // deciding how to answer a request the device left alone.
 func (d *Device) Send(to *signing.PublicKey, content *message.Content) error {
-	encoded, err := content.Encode()
-	if err != nil {
-		return err
-	}
-
-	return d.h.Send(to.Bytes(), simffi.ContentType(content.Type()), encoded)
+	return d.h.Send(to.Bytes(), ffi.ContentOf(content).Pointer())
 }
 
 // Scan consumes an anonymous message, such as the discovery QR a portal shows
