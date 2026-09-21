@@ -64,6 +64,20 @@ func ContentDecode(contentType ContentType, data []byte) (*Content, error) {
 	return newContent(ptr), nil
 }
 
+// Pointer exposes the native content handle so sibling internal packages can
+// hand it to their own cgo boundary. Never leaves internal/.
+func (c *Content) Pointer() unsafe.Pointer { return unsafe.Pointer(c.ptr) }
+
+// Encode encodes message content to its wire form.
+func (c *Content) Encode() ([]byte, error) {
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_message_content_encode(c.ptr, &buf)); err != nil {
+		return nil, err
+	}
+
+	return goBytesFromBuffer(buf), nil
+}
+
 // TypeOf returns the type of content.
 func (c *Content) TypeOf() ContentType {
 	return ContentType(C.zktf_message_content_type_of(c.ptr))
