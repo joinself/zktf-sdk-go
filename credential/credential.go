@@ -173,6 +173,10 @@ func (b *Builder) Finish() (*Credential, error) {
 	return &Credential{h: c}, nil
 }
 
+// Encode returns the JSON-encoded credential, for a caller that must hand the
+// unsigned credential to something that will sign it.
+func (c *Credential) Encode() ([]byte, error) { return c.h.Encode() }
+
 // Decode decodes a JSON-encoded verifiable credential.
 func Decode(data []byte) (*Verifiable, error) {
 	c, err := ffi.VerifiableCredentialDecode(data)
