@@ -197,6 +197,27 @@ func (f *InterceptedFuture) Cancel() {
 	C.zktf_sim_future_intercepted_cancel(f.ptr)
 }
 
+// Send delivers encoded content to the 33-byte address to.
+func (d *Device) Send(to []byte, contentType ContentType, content []byte) error {
+	toBuf, toLen := cbytes(to)
+	defer free(unsafe.Pointer(toBuf))
+	contentBuf, contentLen := cbytes(content)
+	defer free(unsafe.Pointer(contentBuf))
+
+	return status(C.zktf_sim_device_send(
+		d.ptr, toBuf, toLen,
+		C.enum_zktf_sim_content_type(contentType), contentBuf, contentLen,
+	))
+}
+
+// Scan consumes an anonymous message, such as a discovery QR.
+func (d *Device) Scan(anonymousMessage []byte) error {
+	buf, length := cbytes(anonymousMessage)
+	defer free(unsafe.Pointer(buf))
+
+	return status(C.zktf_sim_device_scan(d.ptr, buf, length))
+}
+
 // SigningKeyCreate mints a signing keypair the device retains and returns its
 // address, so a credential can name it as issuer before it exists as an identity.
 func (d *Device) SigningKeyCreate() ([]byte, error) {

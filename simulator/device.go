@@ -74,6 +74,40 @@ type Intercepted struct {
 	From    *signing.PublicKey
 	To      *signing.PublicKey
 	Content *message.Content
+
+	device *Device
+}
+
+// Respond answers the intercepted request with outcomes, correlating the reply
+// to it: the response goes back to its sender, carries its id in ResponseTo,
+// and each outcome is tagged with the action it answers.
+func (i *Intercepted) Respond(outcomes ...*message.Outcome) error {
+	response := message.NewExchangeResponse().
+		ID(i.Content.ID()).
+		ResponseTo(i.Content.ID()).
+		Status(message.StatusCreated)
+
+	for _, outcome := range outcomes {
+		response.Outcome(outcome)
+	}
+
+	content, err := response.Finish()
+	if err != nil {
+		return err
+	}
+
+	return i.device.Send(i.From, content)
+}
+
+// Actions returns the actions of the intercepted exchange request, so a caller
+// can read what is being asked and tag its outcomes with the matching id.
+func (i *Intercepted) Actions() ([]*message.Action, error) {
+	request, err := message.ExchangeRequestDecode(i.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	return request.Actions()
 }
 
 func (c ContentType) message() (message.ContentType, error) {
@@ -199,10 +233,28 @@ func (d *Device) Connect(counterparty *signing.PublicKey) error {
 	return d.h.Connect(counterparty.Bytes())
 }
 
+// Send delivers content to an address, as the application layer would after
+// deciding how to answer a request the device left alone.
+func (d *Device) Send(to *signing.PublicKey, content *message.Content) error {
+	encoded, err := content.Encode()
+	if err != nil {
+		return err
+	}
+
+	return d.h.Send(to.Bytes(), simffi.ContentType(content.Type()), encoded)
+}
+
+// Scan consumes an anonymous message, such as the discovery QR a portal shows
+// to start a login.
+func (d *Device) Scan(anonymousMessage []byte) error {
+	return d.h.Scan(anonymousMessage)
+}
+
 // InterceptedFuture is a pending diverted message. Resolve it with Wait, or
 // discard it with Cancel; either consumes the handle.
 type InterceptedFuture struct {
-	f *simffi.InterceptedFuture
+	f      *simffi.InterceptedFuture
+	device *Device
 }
 
 // Intercept diverts the message carrying requestID to the caller instead of
@@ -215,7 +267,7 @@ func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
 	if f == nil {
 		return nil
 	}
-	return &InterceptedFuture{f: f}
+	return &InterceptedFuture{f: f, device: d}
 }
 
 // Wait blocks until the message is diverted or timeout elapses, returning nil
@@ -250,6 +302,7 @@ func (i *InterceptedFuture) Wait(timeout time.Duration) (*Intercepted, error) {
 		From:    from,
 		To:      to,
 		Content: content,
+		device:  i.device,
 	}, nil
 }
 

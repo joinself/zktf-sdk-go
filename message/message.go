@@ -67,6 +67,10 @@ func ContentDecode(contentType ContentType, data []byte) (*Content, error) {
 	return &Content{h: h}, nil
 }
 
+// Encode encodes the content to its wire form, for a caller that needs the
+// bytes rather than the handle.
+func (c *Content) Encode() ([]byte, error) { return c.h.Encode() }
+
 // Type returns the type of content.
 func (c *Content) Type() ContentType { return ContentType(c.h.TypeOf()) }
 
