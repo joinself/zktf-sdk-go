@@ -422,9 +422,9 @@ func (a *Account) GroupLeave(g *group.Group) error {
 	return a.h.GroupLeave(ffi.GroupOf(g))
 }
 
-// CredentialIssue signs an unsigned credential into a verifiable credential.
-func (a *Account) CredentialIssue(c *credential.Credential) (*credential.Verifiable, error) {
-	vc, err := a.h.CredentialIssue(ffi.CredentialOf(c))
+// CredentialIssue signs an unsigned credential.
+func (a *Account) CredentialIssue(c *credential.Verifiable) (*credential.Verifiable, error) {
+	vc, err := a.h.CredentialIssue(ffi.VerifiableCredentialOf(c))
 	if err != nil {
 		return nil, err
 	}
