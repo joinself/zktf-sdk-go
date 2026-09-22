@@ -3,9 +3,7 @@
 // Integration tests exercise the native simulator end to end: a simulated
 // device registers against a simulated verifier over an in-process network.
 //
-//	CGO_CFLAGS="-I/path/to/zktf-sdk/crates/sim-ffi -I/path/to/zktf-sdk/crates/zktf-ffi" \
-//	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \
-//	LD_LIBRARY_PATH=/path/to/zktf-sdk/target/debug \
+//	scripts/fetch-native.sh && set -a && . ./.env && set +a
 //	go test -tags integration -v ./...
 package simulator_test
 

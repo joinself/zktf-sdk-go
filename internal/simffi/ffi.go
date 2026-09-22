@@ -32,14 +32,9 @@
 // `CGO_LDFLAGS` / `LD_LIBRARY_PATH` values needed to build against both (it
 // also writes them to a sourceable `.env`).
 //
-// Fallback — local dev against a sibling zktf-sdk checkout:
+// Fetch the pinned native archives and export the cgo environment:
 //
-// If you are iterating on the native side too, point cgo directly at the
-// zktf-sdk checkout instead of the pinned prebuilt archives, e.g.:
-//
-//	CGO_CFLAGS="-I/path/to/zktf-sdk/crates/sim-ffi -I/path/to/zktf-sdk/crates/zktf-ffi" \
-//	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \
-//	LD_LIBRARY_PATH=/path/to/zktf-sdk/target/debug \
+//	scripts/fetch-native.sh && set -a && . ./.env && set +a
 //	go build ./...
 package simffi
 
