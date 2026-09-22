@@ -32,14 +32,11 @@
 // needed to build against it (it also writes them to a sourceable `.env`).
 // CI runs this same script before `go build` / `go test`.
 //
-// Fallback — local dev against a sibling zktf-sdk checkout:
+// Fetch the pinned native archives and export the cgo environment:
 //
-// If you are iterating on the native side too, point cgo directly at a
-// sibling `zktf-sdk` checkout instead of the pinned prebuilt archive:
+// Fetch the pinned native archives and export the cgo environment:
 //
-//	CGO_CFLAGS=-I/path/to/zktf-sdk/crates/zktf-ffi \
-//	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \
-//	LD_LIBRARY_PATH=/path/to/zktf-sdk/target/debug \
+//	scripts/fetch-native.sh && set -a && . ./.env && set +a
 //	go build ./...
 package ffi
 

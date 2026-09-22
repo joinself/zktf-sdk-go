@@ -6,9 +6,7 @@
 //
 // Run against the preview environment (the default):
 //
-//	CGO_CFLAGS=-I/path/to/zktf-sdk/crates/zktf-ffi \
-//	CGO_LDFLAGS=-L/path/to/zktf-sdk/target/debug \
-//	LD_LIBRARY_PATH=/path/to/zktf-sdk/target/debug \
+//	scripts/fetch-native.sh && set -a && . ./.env && set +a
 //	go test -tags integration -run TestIntegration -v ./account/
 //
 // Override the endpoints/network via env vars: ZKTF_RPC / ZKTF_OBJECT /
