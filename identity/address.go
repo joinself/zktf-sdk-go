@@ -20,6 +20,19 @@ func AddressKey(key *signing.PublicKey) *Address {
 	return &Address{h: ffi.DIDAddressKey(ffi.SigningPublicKeyOf(key))}
 }
 
+// AddressZktf builds a zktf-method DID address from an identity's address. This
+// is the form a credential issuer takes: a did:key: issuer requires that exact
+// key to sign, whereas a document may sign with any key it grants the role.
+func AddressZktf(address *signing.PublicKey) *Address {
+	return &Address{h: ffi.DIDAddressZktf(ffi.SigningPublicKeyOf(address))}
+}
+
+// AddressZktfWithKey builds a zktf-method DID address naming a specific key of
+// the identity.
+func AddressZktfWithKey(address, key *signing.PublicKey) *Address {
+	return &Address{h: ffi.DIDAddressZktfWithKey(ffi.SigningPublicKeyOf(address), ffi.SigningPublicKeyOf(key))}
+}
+
 // ParseAddress decodes a DID string into an address.
 func ParseAddress(did string) (*Address, error) {
 	a, err := ffi.DIDAddressDecode(did)
