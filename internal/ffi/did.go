@@ -32,6 +32,17 @@ func DIDAddressKey(key *SigningPublicKey) *DIDAddress {
 	return newDIDAddress(C.zktf_did_address_key(key.ptr))
 }
 
+// DIDAddressZktf builds a zktf-method DID address from an identity's address.
+func DIDAddressZktf(address *SigningPublicKey) *DIDAddress {
+	return newDIDAddress(C.zktf_did_address_zktf(address.ptr))
+}
+
+// DIDAddressZktfWithKey builds a zktf-method DID address naming a specific key
+// of the identity.
+func DIDAddressZktfWithKey(address, key *SigningPublicKey) *DIDAddress {
+	return newDIDAddress(C.zktf_did_address_zktf_with_key(address.ptr, key.ptr))
+}
+
 // DIDAddressDecode decodes a DID string into an address.
 func DIDAddressDecode(did string) (*DIDAddress, error) {
 	cdid := cstring(did)
