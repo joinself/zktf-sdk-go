@@ -128,6 +128,8 @@ type VerifiableCredential struct {
 	ptr *C.zktf_verifiable_credential
 }
 
+func (c *VerifiableCredential) Pointer() unsafe.Pointer { return unsafe.Pointer(c.ptr) }
+
 func newVerifiableCredential(ptr *C.zktf_verifiable_credential) *VerifiableCredential {
 	if ptr == nil {
 		return nil

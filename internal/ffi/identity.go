@@ -22,6 +22,8 @@ type IdentityOperation struct {
 	ptr *C.zktf_identity_operation
 }
 
+func (o *IdentityOperation) Pointer() unsafe.Pointer { return unsafe.Pointer(o.ptr) }
+
 func newIdentityOperation(ptr *C.zktf_identity_operation) *IdentityOperation {
 	if ptr == nil {
 		return nil
