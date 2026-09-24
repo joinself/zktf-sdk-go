@@ -278,3 +278,28 @@ func keyBytes(getter func(*C.uint8_t) C.enum_zktf_sim_status) ([]byte, error) {
 	}
 	return C.GoBytes(buf, signingKeyBytesLen), nil
 }
+
+func (d *Device) ControllerAnchor(document []byte, timeoutMs uint64) ([]byte, error) {
+	docBuf, docLen := cbytes(document)
+	defer free(unsafe.Pointer(docBuf))
+
+	var anchor *C.zktf_sim_bytes_buffer
+	if err := status(C.zktf_sim_device_controller_anchor(
+		d.ptr, docBuf, docLen, C.uint64_t(timeoutMs), &anchor,
+	)); err != nil {
+		return nil, err
+	}
+
+	return goBytesFromBuffer(anchor), nil
+}
+
+func (d *Device) SignIdentity(operation, credential unsafe.Pointer) ([]byte, []byte, error) {
+	var signedOperation, signedCredential *C.zktf_sim_bytes_buffer
+	if err := status(C.zktf_sim_device_sign_identity(
+		d.ptr, operation, credential, &signedOperation, &signedCredential,
+	)); err != nil {
+		return nil, nil, err
+	}
+
+	return goBytesFromBuffer(signedOperation), goBytesFromBuffer(signedCredential), nil
+}

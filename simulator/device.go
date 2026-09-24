@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"unsafe"
+
+	"github.com/joinself/zktf-sdk-go/credential"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/internal/simffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
@@ -321,6 +325,18 @@ func (d *Device) SigningKeyCreate() (*signing.PublicKey, error) {
 // credential is the unsigned credential as JSON; the signed one is returned.
 func (d *Device) MintControllerIdentity(identifier *signing.PublicKey, credential []byte) ([]byte, error) {
 	return d.h.MintControllerIdentity(identifier.Bytes(), credential)
+}
+
+func (d *Device) ControllerAnchor(document *signing.PublicKey, timeout time.Duration) ([]byte, error) {
+	return d.h.ControllerAnchor(document.Bytes(), uint64(timeout.Milliseconds()))
+}
+
+func (d *Device) SignIdentity(operation *identity.Operation, details *credential.VerifiableCredential) ([]byte, []byte, error) {
+	var detailsHandle unsafe.Pointer
+	if details != nil {
+		detailsHandle = ffi.VerifiableCredentialOf(details).Pointer()
+	}
+	return d.h.SignIdentity(ffi.IdentityOperationOf(operation).Pointer(), detailsHandle)
 }
 
 // Close destroys the device's native account
