@@ -49,7 +49,9 @@ static zktf_account_config *zktf_account_config_new(
 	char *storage_path,
 	uint8_t *encryption_key_buf,
 	size_t encryption_key_len,
-	enum zktf_log_level log_level
+	enum zktf_log_level log_level,
+	bool disable_process_hardening,
+	bool disable_storage_memory_security
 ) {
 	zktf_account_config *c = calloc(1, sizeof(zktf_account_config));
 	c->target = target;
@@ -61,6 +63,8 @@ static zktf_account_config *zktf_account_config_new(
 	c->encryption_key_len = encryption_key_len;
 	c->log_level = log_level;
 	c->log_callback = c_on_log;
+	c->disable_process_hardening = disable_process_hardening;
+	c->disable_storage_memory_security = disable_storage_memory_security;
 	return c;
 }
 
@@ -112,12 +116,15 @@ func newAccountConfig(
 	rpc, object, messaging, storage *C.char,
 	keyBuf *C.uint8_t, keyLen C.size_t,
 	logLevel LogLevel,
+	disableProcessHardening, disableStorageMemorySecurity bool,
 ) *C.zktf_account_config {
 	return C.zktf_account_config_new(
 		C.enum_zktf_account_target(network),
 		rpc, object, messaging, storage,
 		keyBuf, keyLen,
 		C.enum_zktf_log_level(logLevel),
+		C.bool(disableProcessHardening),
+		C.bool(disableStorageMemorySecurity),
 	)
 }
 
