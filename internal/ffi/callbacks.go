@@ -29,7 +29,7 @@ static void c_on_workflow(void *user_data, struct zktf_workflow_event *event) {
 }
 
 static zktf_account_callbacks *zktf_account_callbacks_new(void) {
-	zktf_account_callbacks *cb = malloc(sizeof(zktf_account_callbacks));
+	zktf_account_callbacks *cb = calloc(1, sizeof(zktf_account_callbacks));
 	cb->on_status = c_on_status;
 	cb->on_message = c_on_message;
 	cb->on_group = c_on_group;
@@ -51,7 +51,7 @@ static zktf_account_config *zktf_account_config_new(
 	size_t encryption_key_len,
 	enum zktf_log_level log_level
 ) {
-	zktf_account_config *c = malloc(sizeof(zktf_account_config));
+	zktf_account_config *c = calloc(1, sizeof(zktf_account_config));
 	c->target = target;
 	c->rpc_endpoint = rpc_endpoint;
 	c->object_endpoint = object_endpoint;
