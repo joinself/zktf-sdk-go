@@ -138,6 +138,9 @@ type Config struct {
 	// SetLogHandler before the account is configured. Because the native log
 	// callback is process-global, the most recently configured account wins.
 	LogHandler LogHandler
+
+	DisableProcessHardening      bool
+	DisableStorageMemorySecurity bool
 }
 
 // Account is a configured zktf account.
@@ -181,6 +184,9 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 		StoragePath:     storage,
 		EncryptionKey:   key,
 		LogLevel:        ffi.LogLevel(logLevel),
+
+		DisableProcessHardening:      cfg.DisableProcessHardening,
+		DisableStorageMemorySecurity: cfg.DisableStorageMemorySecurity,
 	}, adapter{cb: cb})
 	if err != nil {
 		return nil, err

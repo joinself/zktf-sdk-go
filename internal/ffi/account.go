@@ -44,6 +44,9 @@ type AccountConfig struct {
 	StoragePath     string
 	EncryptionKey   []byte
 	LogLevel        LogLevel
+
+	DisableProcessHardening      bool
+	DisableStorageMemorySecurity bool
 }
 
 // Account wraps a zktf_account handle.
@@ -102,6 +105,8 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		rpc, object, messaging, storage,
 		keyBuf, keyLen,
 		cfg.LogLevel,
+		cfg.DisableProcessHardening,
+		cfg.DisableStorageMemorySecurity,
 	)
 	defer destroyAccountConfig(config)
 
