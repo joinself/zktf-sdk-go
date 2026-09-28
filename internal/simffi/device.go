@@ -88,6 +88,7 @@ func newDevice(ptr *C.zktf_sim_device) *Device {
 // Close destroys the native device, stopping the GC cleanup to avoid a double
 // free. No-op if already closed; not safe for concurrent use.
 func (d *Device) Close() {
+	defer runtime.KeepAlive(d)
 	if d.ptr == nil {
 		return
 	}
@@ -99,6 +100,7 @@ func (d *Device) Close() {
 // NewDevice allocates a simulated mobile device connected to the network.
 // logLevel selects the native log verbosity for this device's account.
 func NewDevice(network *Network, logLevel uint32) *Device {
+	defer runtime.KeepAlive(network)
 	return newDevice(C.zktf_sim_device_new(network.ptr, C.uint32_t(logLevel)))
 }
 
@@ -120,6 +122,7 @@ func DeviceAttach(rpcEndpoint, objectEndpoint, messagingEndpoint string, logLeve
 // MatchRequestID; contentType only for MatchContentType; a non-zero delayMs
 // wraps the behaviour in a delay.
 func (d *Device) Expect(kind MatchKind, contentType ContentType, requestID []byte, behaviour Behaviour, delayMs uint64) {
+	defer runtime.KeepAlive(d)
 	buf, length := cbytes(requestID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_device_expect(
@@ -141,6 +144,7 @@ type InterceptedFuture struct {
 // Intercept diverts the message carrying requestID and returns the handle it
 // arrives on.
 func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
+	defer runtime.KeepAlive(d)
 	buf, length := cbytes(requestID)
 	defer free(unsafe.Pointer(buf))
 
@@ -156,7 +160,10 @@ func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
 func (f *InterceptedFuture) Wait(timeoutMs uint64) (*Intercepted, error) {
 	var msg *C.zktf_sim_intercepted
 
-	code := C.zktf_sim_future_intercepted_wait(f.ptr, C.uint64_t(timeoutMs), &msg)
+	ptr := f.ptr
+	f.ptr = nil
+
+	code := C.zktf_sim_future_intercepted_wait(ptr, C.uint64_t(timeoutMs), &msg)
 	if code == C.ZKTF_SIM_TIMEOUT {
 		return nil, nil
 	}
@@ -194,12 +201,15 @@ func (f *InterceptedFuture) Wait(timeoutMs uint64) (*Intercepted, error) {
 
 // Cancel discards the handle without taking a message.
 func (f *InterceptedFuture) Cancel() {
-	C.zktf_sim_future_intercepted_cancel(f.ptr)
+	ptr := f.ptr
+	f.ptr = nil
+	C.zktf_sim_future_intercepted_cancel(ptr)
 }
 
 // Send delivers content, a borrowed zktf_message_content handle owned by the
 // SDK side, to the 33-byte address to.
 func (d *Device) Send(to []byte, content unsafe.Pointer) error {
+	defer runtime.KeepAlive(d)
 	toBuf, toLen := cbytes(to)
 	defer free(unsafe.Pointer(toBuf))
 
@@ -208,6 +218,7 @@ func (d *Device) Send(to []byte, content unsafe.Pointer) error {
 
 // Scan consumes an anonymous message, such as a discovery QR.
 func (d *Device) Scan(anonymousMessage []byte) error {
+	defer runtime.KeepAlive(d)
 	buf, length := cbytes(anonymousMessage)
 	defer free(unsafe.Pointer(buf))
 
@@ -217,6 +228,7 @@ func (d *Device) Scan(anonymousMessage []byte) error {
 // SigningKeyCreate mints a signing keypair the device retains and returns its
 // address, so a credential can name it as issuer before it exists as an identity.
 func (d *Device) SigningKeyCreate() ([]byte, error) {
+	defer runtime.KeepAlive(d)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_device_signing_key_create(d.ptr, buf, signingKeyBytesLen)
 	})
@@ -226,6 +238,7 @@ func (d *Device) SigningKeyCreate() ([]byte, error) {
 // and signs credential as that identity, in one liveness-authorized batch.
 // credential is JSON; the signed credential is returned as JSON.
 func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, error) {
+	defer runtime.KeepAlive(d)
 	idBuf, idLen := cbytes(identifier)
 	defer free(unsafe.Pointer(idBuf))
 	credBuf, credLen := cbytes(credential)
@@ -242,12 +255,14 @@ func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, 
 }
 
 func (d *Device) Address() ([]byte, error) {
+	defer runtime.KeepAlive(d)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_device_address(d.ptr, buf, signingKeyBytesLen)
 	})
 }
 
 func (d *Device) Inbox() ([]byte, error) {
+	defer runtime.KeepAlive(d)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_device_inbox(d.ptr, buf, signingKeyBytesLen)
 	})
@@ -256,6 +271,7 @@ func (d *Device) Inbox() ([]byte, error) {
 // Register drives the registration workflow against counterparty (33-byte
 // address). Blocks until the workflow completes, fails, or times out.
 func (d *Device) Register(counterparty []byte) error {
+	defer runtime.KeepAlive(d)
 	buf, length := cbytes(counterparty)
 	defer free(unsafe.Pointer(buf))
 	return status(C.zktf_sim_device_register(d.ptr, buf, length))
@@ -264,6 +280,7 @@ func (d *Device) Register(counterparty []byte) error {
 // Connect drives the pairwise connect workflow against counterparty (33-byte
 // public key). Blocks until the workflow completes, fails, or times out.
 func (d *Device) Connect(counterparty []byte) error {
+	defer runtime.KeepAlive(d)
 	buf, length := cbytes(counterparty)
 	defer free(unsafe.Pointer(buf))
 	return status(C.zktf_sim_device_connect(d.ptr, buf, length))

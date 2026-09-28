@@ -27,16 +27,19 @@ func newDevicePairingAction(ptr *C.zktf_message_content_device_pairing_action) *
 
 // Address returns the signing address to pair.
 func (a *DevicePairingAction) Address() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
 	return newSigningPublicKey(C.zktf_message_content_device_pairing_action_address(a.ptr))
 }
 
 // Roles returns the requested role bitmask for the paired key.
 func (a *DevicePairingAction) Roles() uint64 {
+	defer runtime.KeepAlive(a)
 	return uint64(C.zktf_message_content_device_pairing_action_roles(a.ptr))
 }
 
 // AsAction wraps this device-pairing action into a generic Action.
 func (a *DevicePairingAction) AsAction() *Action {
+	defer runtime.KeepAlive(a)
 	return newAction(C.zktf_message_content_action_pairing(a.ptr))
 }
 
@@ -49,6 +52,7 @@ type DevicePairingActionBuilder struct {
 func NewDevicePairingActionBuilder() *DevicePairingActionBuilder {
 	ptr := C.zktf_message_content_device_pairing_action_builder_init()
 	b := &DevicePairingActionBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_device_pairing_action_builder) {
 		C.zktf_message_content_device_pairing_action_builder_destroy(ptr)
 	}, b.ptr)
@@ -57,18 +61,22 @@ func NewDevicePairingActionBuilder() *DevicePairingActionBuilder {
 
 // Address sets the signing address to pair.
 func (b *DevicePairingActionBuilder) Address(address *SigningPublicKey) *DevicePairingActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(address)
 	C.zktf_message_content_device_pairing_action_builder_address(b.ptr, address.ptr)
 	return b
 }
 
 // Roles sets the requested role bitmask.
 func (b *DevicePairingActionBuilder) Roles(roles uint64) *DevicePairingActionBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_message_content_device_pairing_action_builder_roles(b.ptr, C.uint64_t(roles))
 	return b
 }
 
 // Finish finalizes the action.
 func (b *DevicePairingActionBuilder) Finish() (*DevicePairingAction, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_device_pairing_action
 	if err := status(C.zktf_message_content_device_pairing_action_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -94,26 +102,31 @@ func newDevicePairingResult(ptr *C.zktf_message_content_device_pairing_result) *
 
 // DocumentAddress returns the document address the result is for.
 func (r *DevicePairingResult) DocumentAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(r)
 	return newSigningPublicKey(C.zktf_message_content_device_pairing_result_document_address(r.ptr))
 }
 
 // Operation returns the signed operation that paired the device.
 func (r *DevicePairingResult) Operation() *IdentityOperation {
+	defer runtime.KeepAlive(r)
 	return newIdentityOperation(C.zktf_message_content_device_pairing_result_operation(r.ptr))
 }
 
 // Presentations returns the presentations attached to the result.
 func (r *DevicePairingResult) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(r)
 	return verifiablePresentationsFrom(C.zktf_message_content_device_pairing_result_presentations(r.ptr))
 }
 
 // Assets returns the assets attached to the result.
 func (r *DevicePairingResult) Assets() []*Object {
+	defer runtime.KeepAlive(r)
 	return objectsFrom(C.zktf_message_content_device_pairing_result_assets(r.ptr))
 }
 
 // Tokens returns the tokens issued to the paired device.
 func (r *DevicePairingResult) Tokens() ([]*Token, error) {
+	defer runtime.KeepAlive(r)
 	var c *C.zktf_collection_token
 	if err := status(C.zktf_message_content_device_pairing_result_tokens(r.ptr, &c)); err != nil {
 		return nil, err
@@ -130,6 +143,7 @@ type DevicePairingResultBuilder struct {
 func NewDevicePairingResultBuilder() *DevicePairingResultBuilder {
 	ptr := C.zktf_message_content_device_pairing_result_builder_init()
 	b := &DevicePairingResultBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_device_pairing_result_builder) {
 		C.zktf_message_content_device_pairing_result_builder_destroy(ptr)
 	}, b.ptr)
@@ -138,24 +152,32 @@ func NewDevicePairingResultBuilder() *DevicePairingResultBuilder {
 
 // DocumentAddress sets the document address the result is for.
 func (b *DevicePairingResultBuilder) DocumentAddress(address *SigningPublicKey) *DevicePairingResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(address)
 	C.zktf_message_content_device_pairing_result_builder_document_address(b.ptr, address.ptr)
 	return b
 }
 
 // Operation sets the signed operation.
 func (b *DevicePairingResultBuilder) Operation(operation *IdentityOperation) *DevicePairingResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(operation)
 	C.zktf_message_content_device_pairing_result_builder_operation(b.ptr, operation.ptr)
 	return b
 }
 
 // Presentation adds a presentation to the result.
 func (b *DevicePairingResultBuilder) Presentation(p *VerifiablePresentation) *DevicePairingResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_device_pairing_result_builder_presentation(b.ptr, p.ptr)
 	return b
 }
 
 // Asset attaches a supporting object asset.
 func (b *DevicePairingResultBuilder) Asset(o *Object) *DevicePairingResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(o)
 	C.zktf_message_content_device_pairing_result_builder_asset(b.ptr, o.ptr)
 	return b
 }
@@ -163,12 +185,15 @@ func (b *DevicePairingResultBuilder) Asset(o *Object) *DevicePairingResultBuilde
 // Token attaches a token for the paired device, such as the identity token it
 // authenticates its grant publish with.
 func (b *DevicePairingResultBuilder) Token(t *Token) *DevicePairingResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(t)
 	C.zktf_message_content_device_pairing_result_builder_token(b.ptr, t.ptr)
 	return b
 }
 
 // Finish finalizes the result.
 func (b *DevicePairingResultBuilder) Finish() (*DevicePairingResult, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_device_pairing_result
 	if err := status(C.zktf_message_content_device_pairing_result_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

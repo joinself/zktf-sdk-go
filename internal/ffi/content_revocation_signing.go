@@ -27,11 +27,13 @@ func newRevocationSigningAction(ptr *C.zktf_message_content_revocation_signing_a
 
 // Statement returns the revocation statement this device is asked to co-sign.
 func (a *RevocationSigningAction) Statement() *RevocationStatement {
+	defer runtime.KeepAlive(a)
 	return newRevocationStatement(C.zktf_message_content_revocation_signing_action_statement(a.ptr))
 }
 
 // AsAction wraps this revocation-signing action into a generic Action.
 func (a *RevocationSigningAction) AsAction() *Action {
+	defer runtime.KeepAlive(a)
 	return newAction(C.zktf_message_content_action_revocation_signing(a.ptr))
 }
 
@@ -44,6 +46,7 @@ type RevocationSigningActionBuilder struct {
 func NewRevocationSigningActionBuilder() *RevocationSigningActionBuilder {
 	ptr := C.zktf_message_content_revocation_signing_action_builder_init()
 	b := &RevocationSigningActionBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_revocation_signing_action_builder) {
 		C.zktf_message_content_revocation_signing_action_builder_destroy(ptr)
 	}, b.ptr)
@@ -52,12 +55,15 @@ func NewRevocationSigningActionBuilder() *RevocationSigningActionBuilder {
 
 // Statement sets the revocation statement to be co-signed.
 func (b *RevocationSigningActionBuilder) Statement(statement *RevocationStatement) *RevocationSigningActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(statement)
 	C.zktf_message_content_revocation_signing_action_builder_statement(b.ptr, statement.ptr)
 	return b
 }
 
 // Finish finalizes the action.
 func (b *RevocationSigningActionBuilder) Finish() (*RevocationSigningAction, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_revocation_signing_action
 	if err := status(C.zktf_message_content_revocation_signing_action_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -83,6 +89,7 @@ func newRevocationSigningResult(ptr *C.zktf_message_content_revocation_signing_r
 
 // Statement returns the co-signed revocation statement.
 func (r *RevocationSigningResult) Statement() *RevocationStatement {
+	defer runtime.KeepAlive(r)
 	return newRevocationStatement(C.zktf_message_content_revocation_signing_result_statement(r.ptr))
 }
 
@@ -95,6 +102,7 @@ type RevocationSigningResultBuilder struct {
 func NewRevocationSigningResultBuilder() *RevocationSigningResultBuilder {
 	ptr := C.zktf_message_content_revocation_signing_result_builder_init()
 	b := &RevocationSigningResultBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_revocation_signing_result_builder) {
 		C.zktf_message_content_revocation_signing_result_builder_destroy(ptr)
 	}, b.ptr)
@@ -103,12 +111,15 @@ func NewRevocationSigningResultBuilder() *RevocationSigningResultBuilder {
 
 // Statement sets the co-signed revocation statement.
 func (b *RevocationSigningResultBuilder) Statement(statement *RevocationStatement) *RevocationSigningResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(statement)
 	C.zktf_message_content_revocation_signing_result_builder_statement(b.ptr, statement.ptr)
 	return b
 }
 
 // Finish finalizes the result.
 func (b *RevocationSigningResultBuilder) Finish() (*RevocationSigningResult, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_revocation_signing_result
 	if err := status(C.zktf_message_content_revocation_signing_result_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

@@ -30,6 +30,7 @@ func newVerificationAction(ptr *C.zktf_message_content_credential_verification_a
 
 // CredentialTypes returns the requested credential types.
 func (a *VerificationAction) CredentialTypes() []string {
+	defer runtime.KeepAlive(a)
 	return stringsFromBufferCollection(
 		C.zktf_message_content_credential_verification_action_credential_type(a.ptr),
 	)
@@ -37,6 +38,7 @@ func (a *VerificationAction) CredentialTypes() []string {
 
 // Proof returns the verifiable presentations attached as proof.
 func (a *VerificationAction) Proof() []*VerifiablePresentation {
+	defer runtime.KeepAlive(a)
 	return verifiablePresentationsFrom(
 		C.zktf_message_content_credential_verification_action_proof(a.ptr),
 	)
@@ -44,6 +46,7 @@ func (a *VerificationAction) Proof() []*VerifiablePresentation {
 
 // Evidence returns the objects attached to the action as evidence.
 func (a *VerificationAction) Evidence() []*VerificationEvidence {
+	defer runtime.KeepAlive(a)
 	return verificationEvidenceFrom(
 		C.zktf_message_content_credential_verification_action_evidence(a.ptr),
 	)
@@ -51,6 +54,7 @@ func (a *VerificationAction) Evidence() []*VerificationEvidence {
 
 // Parameters returns the typed parameters attached to the action.
 func (a *VerificationAction) Parameters() []*VerificationParameter {
+	defer runtime.KeepAlive(a)
 	return verificationParametersFrom(
 		C.zktf_message_content_credential_verification_action_parameters(a.ptr),
 	)
@@ -58,6 +62,7 @@ func (a *VerificationAction) Parameters() []*VerificationParameter {
 
 // AsAction wraps this verification action into a generic Action (consuming it).
 func (a *VerificationAction) AsAction() *Action {
+	defer runtime.KeepAlive(a)
 	return newAction(C.zktf_message_content_action_verification(a.ptr))
 }
 
@@ -80,11 +85,13 @@ func newVerificationEvidence(ptr *C.zktf_credential_verification_evidence) *Veri
 
 // EvidenceType returns the evidence type tag.
 func (e *VerificationEvidence) EvidenceType() string {
+	defer runtime.KeepAlive(e)
 	return C.GoString(C.zktf_credential_verification_evidence_evidence_type(e.ptr))
 }
 
 // Object returns the object forming the evidence.
 func (e *VerificationEvidence) Object() *Object {
+	defer runtime.KeepAlive(e)
 	return newObject(C.zktf_credential_verification_evidence_object(e.ptr))
 }
 
@@ -107,12 +114,14 @@ func newVerificationParameter(ptr *C.zktf_credential_verification_parameter) *Ve
 
 // Key returns the parameter key.
 func (p *VerificationParameter) Key() string {
+	defer runtime.KeepAlive(p)
 	return C.GoString(C.zktf_credential_verification_parameter_parameter_key(p.ptr))
 }
 
 // Value decodes the parameter value into a native Go type. See
 // ParameterValue.Value for the supported types.
 func (p *VerificationParameter) Value() any {
+	defer runtime.KeepAlive(p)
 	pv := newParameterValue(C.zktf_credential_verification_parameter_value(p.ptr))
 	if pv == nil {
 		return nil
@@ -129,6 +138,7 @@ type VerificationActionBuilder struct {
 func NewVerificationActionBuilder() *VerificationActionBuilder {
 	ptr := C.zktf_message_content_credential_verification_action_builder_init()
 	b := &VerificationActionBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_credential_verification_action_builder) {
 		C.zktf_message_content_credential_verification_action_builder_destroy(ptr)
 	}, b.ptr)
@@ -137,18 +147,24 @@ func NewVerificationActionBuilder() *VerificationActionBuilder {
 
 // CredentialType sets the requested credential types.
 func (b *VerificationActionBuilder) CredentialType(types *TypeCollection) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(types)
 	C.zktf_message_content_credential_verification_action_builder_credential_type(b.ptr, types.ptr)
 	return b
 }
 
 // Proof attaches a verifiable presentation as proof.
 func (b *VerificationActionBuilder) Proof(p *VerifiablePresentation) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_credential_verification_action_builder_proof(b.ptr, p.ptr)
 	return b
 }
 
 // Evidence attaches an object as supporting evidence under a named type.
 func (b *VerificationActionBuilder) Evidence(evidenceType string, object *Object) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(object)
 	ct := cstring(evidenceType)
 	C.zktf_message_content_credential_verification_action_builder_evidence(b.ptr, ct, object.ptr)
 	free(unsafe.Pointer(ct))
@@ -157,6 +173,8 @@ func (b *VerificationActionBuilder) Evidence(evidenceType string, object *Object
 
 // Parameter attaches a typed key/value parameter.
 func (b *VerificationActionBuilder) Parameter(key string, value *ParameterValue) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(value)
 	ck := cstring(key)
 	C.zktf_message_content_credential_verification_action_builder_parameter(b.ptr, ck, value.ptr)
 	free(unsafe.Pointer(ck))
@@ -165,6 +183,7 @@ func (b *VerificationActionBuilder) Parameter(key string, value *ParameterValue)
 
 // Finish finalizes the verification action.
 func (b *VerificationActionBuilder) Finish() (*VerificationAction, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_credential_verification_action
 	if err := status(C.zktf_message_content_credential_verification_action_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -190,6 +209,7 @@ func newVerificationResult(ptr *C.zktf_message_content_credential_verification_r
 
 // Credentials returns the verifiable credentials carried in the result.
 func (r *VerificationResult) Credentials() []*VerifiableCredential {
+	defer runtime.KeepAlive(r)
 	return verifiableCredentialsFrom(
 		C.zktf_message_content_credential_verification_result_credentials(r.ptr),
 	)
@@ -204,6 +224,7 @@ type VerificationResultBuilder struct {
 func NewVerificationResultBuilder() *VerificationResultBuilder {
 	ptr := C.zktf_message_content_credential_verification_result_builder_init()
 	b := &VerificationResultBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_credential_verification_result_builder) {
 		C.zktf_message_content_credential_verification_result_builder_destroy(ptr)
 	}, b.ptr)
@@ -212,12 +233,15 @@ func NewVerificationResultBuilder() *VerificationResultBuilder {
 
 // Credential adds a verifiable credential to the result.
 func (b *VerificationResultBuilder) Credential(c *VerifiableCredential) *VerificationResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(c)
 	C.zktf_message_content_credential_verification_result_builder_credential(b.ptr, c.ptr)
 	return b
 }
 
 // Finish finalizes the verification result.
 func (b *VerificationResultBuilder) Finish() (*VerificationResult, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_credential_verification_result
 	if err := status(C.zktf_message_content_credential_verification_result_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

@@ -29,6 +29,7 @@ func newReceipt(ptr *C.zktf_message_content_receipt) *Receipt {
 
 // ReceiptFromContent decodes message content as a receipt.
 func ReceiptFromContent(content *Content) (*Receipt, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_receipt
 	if err := status(C.zktf_message_content_as_receipt(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -38,11 +39,13 @@ func ReceiptFromContent(content *Content) (*Receipt, error) {
 
 // Delivered returns the ids of messages marked delivered.
 func (r *Receipt) Delivered() [][]byte {
+	defer runtime.KeepAlive(r)
 	return messageIDsFrom(C.zktf_message_content_receipt_delivered(r.ptr))
 }
 
 // Read returns the ids of messages marked read.
 func (r *Receipt) Read() [][]byte {
+	defer runtime.KeepAlive(r)
 	return messageIDsFrom(C.zktf_message_content_receipt_read(r.ptr))
 }
 
@@ -55,6 +58,7 @@ type ReceiptBuilder struct {
 func NewReceiptBuilder() *ReceiptBuilder {
 	ptr := C.zktf_message_content_receipt_builder_init()
 	b := &ReceiptBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_receipt_builder) {
 		C.zktf_message_content_receipt_builder_destroy(ptr)
 	}, b.ptr)
@@ -63,6 +67,7 @@ func NewReceiptBuilder() *ReceiptBuilder {
 
 // Delivered marks a message id as delivered.
 func (b *ReceiptBuilder) Delivered(messageID []byte) *ReceiptBuilder {
+	defer runtime.KeepAlive(b)
 	buf, _ := cbytes(messageID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_receipt_builder_delivered(b.ptr, buf)
@@ -71,6 +76,7 @@ func (b *ReceiptBuilder) Delivered(messageID []byte) *ReceiptBuilder {
 
 // Read marks a message id as read.
 func (b *ReceiptBuilder) Read(messageID []byte) *ReceiptBuilder {
+	defer runtime.KeepAlive(b)
 	buf, _ := cbytes(messageID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_receipt_builder_read(b.ptr, buf)
@@ -79,6 +85,7 @@ func (b *ReceiptBuilder) Read(messageID []byte) *ReceiptBuilder {
 
 // Finish finalizes the receipt content, ready to send.
 func (b *ReceiptBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_message_content
 	if err := status(C.zktf_message_content_receipt_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err

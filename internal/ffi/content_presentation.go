@@ -32,6 +32,7 @@ func newPresentationAction(ptr *C.zktf_message_content_credential_presentation_a
 
 // PresentationTypes returns the requested presentation types.
 func (a *PresentationAction) PresentationTypes() []string {
+	defer runtime.KeepAlive(a)
 	return stringsFromBufferCollection(
 		C.zktf_message_content_credential_presentation_action_presentation_type(a.ptr),
 	)
@@ -39,6 +40,7 @@ func (a *PresentationAction) PresentationTypes() []string {
 
 // Holder returns the expected holder address, or nil.
 func (a *PresentationAction) Holder() (*DIDAddress, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_did_address
 	if err := status(C.zktf_message_content_credential_presentation_action_holder(a.ptr, &out)); err != nil {
 		return nil, err
@@ -49,6 +51,7 @@ func (a *PresentationAction) Holder() (*DIDAddress, error) {
 // Challenge returns the random challenge bytes the verifier expects to be
 // signed back, or nil.
 func (a *PresentationAction) Challenge() []byte {
+	defer runtime.KeepAlive(a)
 	p := C.zktf_message_content_credential_presentation_action_challenge(a.ptr)
 	if p == nil {
 		return nil
@@ -59,22 +62,26 @@ func (a *PresentationAction) Challenge() []byte {
 // Predicates returns the predicate tree describing the request's credential
 // constraints, or nil.
 func (a *PresentationAction) Predicates() *PredicateTree {
+	defer runtime.KeepAlive(a)
 	return newPredicateTree(C.zktf_message_content_credential_presentation_action_predicates(a.ptr))
 }
 
 // Proof returns the verifiable presentations attached as proof.
 func (a *PresentationAction) Proof() []*VerifiablePresentation {
+	defer runtime.KeepAlive(a)
 	return verifiablePresentationsFrom(C.zktf_message_content_credential_presentation_action_proof(a.ptr))
 }
 
 // Term returns the term the requester would like to access credentials under,
 // or nil.
 func (a *PresentationAction) Term() *CredentialTerm {
+	defer runtime.KeepAlive(a)
 	return newCredentialTerm(C.zktf_message_content_credential_presentation_action_term(a.ptr))
 }
 
 // AsAction wraps this presentation action into a generic Action (consuming it).
 func (a *PresentationAction) AsAction() *Action {
+	defer runtime.KeepAlive(a)
 	return newAction(C.zktf_message_content_action_presentation(a.ptr))
 }
 
@@ -87,6 +94,7 @@ type PresentationActionBuilder struct {
 func NewPresentationActionBuilder() *PresentationActionBuilder {
 	ptr := C.zktf_message_content_credential_presentation_action_builder_init()
 	b := &PresentationActionBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_credential_presentation_action_builder) {
 		C.zktf_message_content_credential_presentation_action_builder_destroy(ptr)
 	}, b.ptr)
@@ -95,18 +103,23 @@ func NewPresentationActionBuilder() *PresentationActionBuilder {
 
 // PresentationType sets the requested presentation types.
 func (b *PresentationActionBuilder) PresentationType(types *TypeCollection) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(types)
 	C.zktf_message_content_credential_presentation_action_builder_presentation_type(b.ptr, types.ptr)
 	return b
 }
 
 // Holder sets the expected holder address.
 func (b *PresentationActionBuilder) Holder(holder *DIDAddress) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(holder)
 	C.zktf_message_content_credential_presentation_action_builder_holder(b.ptr, holder.ptr)
 	return b
 }
 
 // Challenge sets the random challenge the verifier expects to be signed back.
 func (b *PresentationActionBuilder) Challenge(challenge []byte) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
 	buf, _ := cbytes(challenge)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_credential_presentation_action_builder_challenge(b.ptr, buf)
@@ -115,24 +128,31 @@ func (b *PresentationActionBuilder) Challenge(challenge []byte) *PresentationAct
 
 // Predicates sets the predicate tree describing the request's credential constraints.
 func (b *PresentationActionBuilder) Predicates(tree *PredicateTree) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(tree)
 	C.zktf_message_content_credential_presentation_action_builder_predicates(b.ptr, tree.ptr)
 	return b
 }
 
 // Proof attaches a verifiable presentation as proof.
 func (b *PresentationActionBuilder) Proof(p *VerifiablePresentation) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_credential_presentation_action_builder_proof(b.ptr, p.ptr)
 	return b
 }
 
 // Term sets the term the requester would like to access the credentials under.
 func (b *PresentationActionBuilder) Term(term *CredentialTerm) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(term)
 	C.zktf_message_content_credential_presentation_action_builder_term(b.ptr, term.ptr)
 	return b
 }
 
 // Finish finalizes the presentation action.
 func (b *PresentationActionBuilder) Finish() (*PresentationAction, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_credential_presentation_action
 	if err := status(C.zktf_message_content_credential_presentation_action_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -158,6 +178,7 @@ func newPresentationResult(ptr *C.zktf_message_content_credential_presentation_r
 
 // Presentations returns the verifiable presentations contained in the result.
 func (r *PresentationResult) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(r)
 	return verifiablePresentationsFrom(
 		C.zktf_message_content_credential_presentation_result_presentations(r.ptr),
 	)
@@ -172,6 +193,7 @@ type PresentationResultBuilder struct {
 func NewPresentationResultBuilder() *PresentationResultBuilder {
 	ptr := C.zktf_message_content_credential_presentation_result_builder_init()
 	b := &PresentationResultBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_credential_presentation_result_builder) {
 		C.zktf_message_content_credential_presentation_result_builder_destroy(ptr)
 	}, b.ptr)
@@ -180,12 +202,15 @@ func NewPresentationResultBuilder() *PresentationResultBuilder {
 
 // Presentation adds a verifiable presentation to the result.
 func (b *PresentationResultBuilder) Presentation(p *VerifiablePresentation) *PresentationResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_credential_presentation_result_builder_presentation(b.ptr, p.ptr)
 	return b
 }
 
 // Finish finalizes the presentation result.
 func (b *PresentationResultBuilder) Finish() (*PresentationResult, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_credential_presentation_result
 	if err := status(C.zktf_message_content_credential_presentation_result_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

@@ -41,6 +41,7 @@ func NewCredentialTerm(durationSeconds uint64) *CredentialTerm {
 
 // Duration returns the term's duration in seconds.
 func (t *CredentialTerm) Duration() uint64 {
+	defer runtime.KeepAlive(t)
 	return uint64(C.zktf_credential_term_duration(t.ptr))
 }
 
@@ -53,6 +54,7 @@ type CredentialBuilder struct {
 func NewCredentialBuilder() *CredentialBuilder {
 	ptr := C.zktf_credential_builder_init()
 	b := &CredentialBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_credential_builder) {
 		C.zktf_credential_builder_destroy(ptr)
 	}, b.ptr)
@@ -61,24 +63,31 @@ func NewCredentialBuilder() *CredentialBuilder {
 
 // CredentialType sets the credential's types.
 func (b *CredentialBuilder) CredentialType(types *TypeCollection) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(types)
 	C.zktf_credential_builder_credential_type(b.ptr, types.ptr)
 	return b
 }
 
 // Issuer sets the credential's issuer DID address.
 func (b *CredentialBuilder) Issuer(issuer *DIDAddress) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(issuer)
 	C.zktf_credential_builder_issuer(b.ptr, issuer.ptr)
 	return b
 }
 
 // CredentialSubject sets the credential's subject DID address.
 func (b *CredentialBuilder) CredentialSubject(subject *DIDAddress) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(subject)
 	C.zktf_credential_builder_credential_subject(b.ptr, subject.ptr)
 	return b
 }
 
 // CredentialSubjectClaim adds a string claim about the subject.
 func (b *CredentialBuilder) CredentialSubjectClaim(key, value string) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
 	ckey, cval := cstring(key), cstring(value)
 	defer free(unsafe.Pointer(ckey))
 	defer free(unsafe.Pointer(cval))
@@ -88,18 +97,21 @@ func (b *CredentialBuilder) CredentialSubjectClaim(key, value string) *Credentia
 
 // ValidFrom sets the unix timestamp (seconds) the credential is valid from.
 func (b *CredentialBuilder) ValidFrom(unix int64) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_credential_builder_valid_from(b.ptr, C.int64_t(unix))
 	return b
 }
 
 // ValidUntil sets the unix timestamp (seconds) the credential is valid until.
 func (b *CredentialBuilder) ValidUntil(unix int64) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_credential_builder_valid_until(b.ptr, C.int64_t(unix))
 	return b
 }
 
 // CredentialSubjectJSON sets the subject claims from a raw JSON document.
 func (b *CredentialBuilder) CredentialSubjectJSON(json []byte) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
 	buf, length := cbytes(json)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_credential_builder_credential_subject_json(b.ptr, buf, length)
@@ -108,6 +120,8 @@ func (b *CredentialBuilder) CredentialSubjectJSON(json []byte) *CredentialBuilde
 
 // SignWith records the signing key and issuance time for the credential.
 func (b *CredentialBuilder) SignWith(signer *SigningPublicKey, issuedAtUnix int64) *CredentialBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(signer)
 	C.zktf_credential_builder_sign_with(b.ptr, signer.ptr, C.int64_t(issuedAtUnix))
 	return b
 }
@@ -116,6 +130,7 @@ func (b *CredentialBuilder) SignWith(signer *SigningPublicKey, issuedAtUnix int6
 // This also carries any signers queued via SignWith as pending signers, so the
 // first signature is applied the same way as any other.
 func (b *CredentialBuilder) Finish() (*VerifiableCredential, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_verifiable_credential
 	if err := status(C.zktf_credential_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err
@@ -153,26 +168,31 @@ func VerifiableCredentialDecode(data []byte) (*VerifiableCredential, error) {
 
 // Validate returns an error if the credential is invalid.
 func (c *VerifiableCredential) Validate() error {
+	defer runtime.KeepAlive(c)
 	return status(C.zktf_verifiable_credential_validate(c.ptr))
 }
 
 // TypeOf returns the credential's type strings.
 func (c *VerifiableCredential) TypeOf() *TypeCollection {
+	defer runtime.KeepAlive(c)
 	return newTypeCollection(C.zktf_verifiable_credential_type_of(c.ptr))
 }
 
 // Issuer returns the issuer DID address.
 func (c *VerifiableCredential) Issuer() *DIDAddress {
+	defer runtime.KeepAlive(c)
 	return newDIDAddress(C.zktf_verifiable_credential_issuer(c.ptr))
 }
 
 // Subject returns the subject DID address.
 func (c *VerifiableCredential) Subject() *DIDAddress {
+	defer runtime.KeepAlive(c)
 	return newDIDAddress(C.zktf_verifiable_credential_credential_subject(c.ptr))
 }
 
 // SubjectClaim returns a string claim about the subject, or "" if absent.
 func (c *VerifiableCredential) SubjectClaim(key string) string {
+	defer runtime.KeepAlive(c)
 	ckey := cstring(key)
 	defer free(unsafe.Pointer(ckey))
 
@@ -186,26 +206,31 @@ func (c *VerifiableCredential) SubjectClaim(key string) string {
 
 // SubjectJSON returns the subject claims as a raw JSON document, or nil.
 func (c *VerifiableCredential) SubjectJSON() []byte {
+	defer runtime.KeepAlive(c)
 	return goBytesFromBuffer(C.zktf_verifiable_credential_credential_subject_json(c.ptr))
 }
 
 // ValidFrom returns the unix timestamp (seconds) the credential is valid from.
 func (c *VerifiableCredential) ValidFrom() int64 {
+	defer runtime.KeepAlive(c)
 	return int64(C.zktf_verifiable_credential_valid_from(c.ptr))
 }
 
 // ValidUntil returns the unix timestamp (seconds) the credential is valid until.
 func (c *VerifiableCredential) ValidUntil() int64 {
+	defer runtime.KeepAlive(c)
 	return int64(C.zktf_verifiable_credential_valid_until(c.ptr))
 }
 
 // Created returns the unix timestamp (seconds) the credential was created.
 func (c *VerifiableCredential) Created() int64 {
+	defer runtime.KeepAlive(c)
 	return int64(C.zktf_verifiable_credential_created(c.ptr))
 }
 
 // Signer returns the DID address that signed the credential.
 func (c *VerifiableCredential) Signer() (*DIDAddress, error) {
+	defer runtime.KeepAlive(c)
 	var out *C.zktf_did_address
 	if err := status(C.zktf_verifiable_credential_signer(c.ptr, &out)); err != nil {
 		return nil, err
@@ -215,6 +240,7 @@ func (c *VerifiableCredential) Signer() (*DIDAddress, error) {
 
 // SigningKey returns the signing key that signed the credential.
 func (c *VerifiableCredential) SigningKey() (*SigningPublicKey, error) {
+	defer runtime.KeepAlive(c)
 	var out *C.zktf_signing_public_key
 	if err := status(C.zktf_verifiable_credential_signing_key(c.ptr, &out)); err != nil {
 		return nil, err
@@ -224,6 +250,7 @@ func (c *VerifiableCredential) SigningKey() (*SigningPublicKey, error) {
 
 // RevocationHashes returns the revocation hashes of the credential, one per proof.
 func (c *VerifiableCredential) RevocationHashes() ([][]byte, error) {
+	defer runtime.KeepAlive(c)
 	var out *C.zktf_collection_bytes_buffer
 	if err := status(C.zktf_verifiable_credential_revocation_hashes(c.ptr, &out)); err != nil {
 		return nil, err
@@ -233,6 +260,7 @@ func (c *VerifiableCredential) RevocationHashes() ([][]byte, error) {
 
 // Encode returns the JSON-encoded credential.
 func (c *VerifiableCredential) Encode() ([]byte, error) {
+	defer runtime.KeepAlive(c)
 	var buf *C.zktf_bytes_buffer
 	if err := status(C.zktf_verifiable_credential_encode(c.ptr, &buf)); err != nil {
 		return nil, err

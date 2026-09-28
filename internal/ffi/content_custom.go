@@ -29,6 +29,7 @@ func newCustom(ptr *C.zktf_message_content_custom) *Custom {
 
 // CustomFromContent decodes message content as a custom payload.
 func CustomFromContent(content *Content) (*Custom, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_custom
 	if err := status(C.zktf_message_content_as_custom(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -38,6 +39,7 @@ func CustomFromContent(content *Content) (*Custom, error) {
 
 // Payload returns the custom payload bytes.
 func (c *Custom) Payload() []byte {
+	defer runtime.KeepAlive(c)
 	return goBytesFromBuffer(C.zktf_message_content_custom_payload(c.ptr))
 }
 
@@ -50,6 +52,7 @@ type CustomBuilder struct {
 func NewCustomBuilder() *CustomBuilder {
 	ptr := C.zktf_message_content_custom_builder_init()
 	b := &CustomBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_custom_builder) {
 		C.zktf_message_content_custom_builder_destroy(ptr)
 	}, b.ptr)
@@ -58,6 +61,7 @@ func NewCustomBuilder() *CustomBuilder {
 
 // Payload sets the custom payload bytes.
 func (b *CustomBuilder) Payload(payload []byte) *CustomBuilder {
+	defer runtime.KeepAlive(b)
 	buf, length := cbytes(payload)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_custom_builder_payload(b.ptr, buf, length)
@@ -66,6 +70,7 @@ func (b *CustomBuilder) Payload(payload []byte) *CustomBuilder {
 
 // Finish finalizes the custom content, ready to send.
 func (b *CustomBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_message_content
 	if err := status(C.zktf_message_content_custom_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err

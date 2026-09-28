@@ -70,6 +70,7 @@ func (c *Content) Pointer() unsafe.Pointer { return unsafe.Pointer(c.ptr) }
 
 // Encode encodes message content to its wire form.
 func (c *Content) Encode() ([]byte, error) {
+	defer runtime.KeepAlive(c)
 	var buf *C.zktf_bytes_buffer
 	if err := status(C.zktf_message_content_encode(c.ptr, &buf)); err != nil {
 		return nil, err
@@ -80,11 +81,13 @@ func (c *Content) Encode() ([]byte, error) {
 
 // TypeOf returns the type of content.
 func (c *Content) TypeOf() ContentType {
+	defer runtime.KeepAlive(c)
 	return ContentType(C.zktf_message_content_type_of(c.ptr))
 }
 
 // ID returns the content's id.
 func (c *Content) ID() []byte {
+	defer runtime.KeepAlive(c)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_id(c.ptr)), messageIDLen)
 }
 
@@ -106,37 +109,44 @@ func newMessage(ptr *C.zktf_message) *Message {
 
 // ID returns the message id.
 func (m *Message) ID() []byte {
+	defer runtime.KeepAlive(m)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_id(m.ptr)), messageIDLen)
 }
 
 // FromAddress returns the sender's address.
 func (m *Message) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(m)
 	return newSigningPublicKey(C.zktf_message_from_address(m.ptr))
 }
 
 // ToAddress returns the recipient's address.
 func (m *Message) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(m)
 	return newSigningPublicKey(C.zktf_message_to_address(m.ptr))
 }
 
 // Timestamp returns the unix timestamp (seconds) of the message.
 func (m *Message) Timestamp() int64 {
+	defer runtime.KeepAlive(m)
 	return int64(C.zktf_message_timestamp(m.ptr))
 }
 
 // Sequence returns the per-sender sequence number of the message.
 func (m *Message) Sequence() uint64 {
+	defer runtime.KeepAlive(m)
 	return uint64(C.zktf_message_sequence(m.ptr))
 }
 
 // Content decodes and returns the message content. The caller owns the result.
 func (m *Message) Content() *Content {
+	defer runtime.KeepAlive(m)
 	return newContent(C.zktf_message_message_content(m.ptr))
 }
 
 // ContentHash returns the 32-byte sha3 hash of the message content. This is the
 // leaf value recipients use to validate the merkle proof carried in the metadata.
 func (m *Message) ContentHash() []byte {
+	defer runtime.KeepAlive(m)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_message_content_hash(m.ptr)), messageContentHashLen)
 }
 
@@ -144,6 +154,7 @@ func (m *Message) ContentHash() []byte {
 // The payload is internal to the network and is not interpreted by this SDK; the
 // boolean is false when no metadata is present.
 func (m *Message) Metadata() ([]byte, bool) {
+	defer runtime.KeepAlive(m)
 	b := goBytesFromBuffer(C.zktf_message_message_metadata(m.ptr))
 	return b, b != nil
 }

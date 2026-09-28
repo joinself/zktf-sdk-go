@@ -26,6 +26,7 @@ func newCredentialContent(ptr *C.zktf_message_content_credential) *CredentialCon
 
 // CredentialContentFromContent decodes message content as a credential payload.
 func CredentialContentFromContent(content *Content) (*CredentialContent, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_credential
 	if err := status(C.zktf_message_content_as_credential(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -35,6 +36,7 @@ func CredentialContentFromContent(content *Content) (*CredentialContent, error) 
 
 // VerifiablePresentations returns the presentations carried in the content.
 func (c *CredentialContent) VerifiablePresentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(c)
 	return verifiablePresentationsFrom(
 		C.zktf_message_content_credential_verifiable_presentations(c.ptr),
 	)
@@ -42,6 +44,7 @@ func (c *CredentialContent) VerifiablePresentations() []*VerifiablePresentation 
 
 // VerifiableCredentials returns the credentials carried in the content.
 func (c *CredentialContent) VerifiableCredentials() []*VerifiableCredential {
+	defer runtime.KeepAlive(c)
 	return verifiableCredentialsFrom(
 		C.zktf_message_content_credential_verifiable_credentials(c.ptr),
 	)
@@ -49,6 +52,7 @@ func (c *CredentialContent) VerifiableCredentials() []*VerifiableCredential {
 
 // Assets returns supporting object assets carried in the content.
 func (c *CredentialContent) Assets() []*Object {
+	defer runtime.KeepAlive(c)
 	return objectsFrom(C.zktf_message_content_credential_assets(c.ptr))
 }
 
@@ -61,6 +65,7 @@ type CredentialContentBuilder struct {
 func NewCredentialContentBuilder() *CredentialContentBuilder {
 	ptr := C.zktf_message_content_credential_builder_init()
 	b := &CredentialContentBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_credential_builder) {
 		C.zktf_message_content_credential_builder_destroy(ptr)
 	}, b.ptr)
@@ -69,24 +74,31 @@ func NewCredentialContentBuilder() *CredentialContentBuilder {
 
 // VerifiablePresentation adds a presentation to the credential content.
 func (b *CredentialContentBuilder) VerifiablePresentation(p *VerifiablePresentation) *CredentialContentBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_credential_builder_verifiable_presentation(b.ptr, p.ptr)
 	return b
 }
 
 // VerifiableCredential adds a credential to the credential content.
 func (b *CredentialContentBuilder) VerifiableCredential(c *VerifiableCredential) *CredentialContentBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(c)
 	C.zktf_message_content_credential_builder_verifiable_credential(b.ptr, c.ptr)
 	return b
 }
 
 // Asset attaches a supporting object asset.
 func (b *CredentialContentBuilder) Asset(o *Object) *CredentialContentBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(o)
 	C.zktf_message_content_credential_builder_asset(b.ptr, o.ptr)
 	return b
 }
 
 // Finish finalizes the credential content, ready to send.
 func (b *CredentialContentBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_message_content
 	if err := status(C.zktf_message_content_credential_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err

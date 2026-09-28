@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
@@ -237,7 +238,9 @@ func (d *Device) Connect(counterparty *signing.PublicKey) error {
 // Send delivers content to an address, as the application layer would after
 // deciding how to answer a request the device left alone.
 func (d *Device) Send(to *signing.PublicKey, content *message.Content) error {
-	return d.h.Send(to.Bytes(), ffi.ContentOf(content).Pointer())
+	c := ffi.ContentOf(content)
+	defer runtime.KeepAlive(c)
+	return d.h.Send(to.Bytes(), c.Pointer())
 }
 
 // Scan consumes an anonymous message, such as the discovery QR a portal shows

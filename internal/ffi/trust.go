@@ -59,17 +59,23 @@ func DefaultIssuerEpoch() int64 {
 
 // IssuerAdd adds an issuer to the registry. Returns false if it was already present.
 func (r *TrustedIssuerRegistry) IssuerAdd(issuer *DIDAddress) bool {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	return bool(C.zktf_trusted_issuer_registry_issuer_add(r.ptr, issuer.ptr))
 }
 
 // IssuerRemove removes an issuer. Returns false if it was not present.
 func (r *TrustedIssuerRegistry) IssuerRemove(issuer *DIDAddress) bool {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	return bool(C.zktf_trusted_issuer_registry_issuer_remove(r.ptr, issuer.ptr))
 }
 
 // AuthorityGrant grants the issuer authority over a credential type from a
 // time, optionally bounded by a revocation time (pass 0 for no revocation).
 func (r *TrustedIssuerRegistry) AuthorityGrant(issuer *DIDAddress, credentialType string, grantedUnix int64, revokedUnix int64) error {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	cType := cstring(credentialType)
 	defer free(unsafe.Pointer(cType))
 	var revokedArg *C.int64_t
@@ -85,6 +91,8 @@ func (r *TrustedIssuerRegistry) AuthorityGrant(issuer *DIDAddress, credentialTyp
 // AuthorityRevoke marks the issuer's authority over a credential type revoked
 // from the given time.
 func (r *TrustedIssuerRegistry) AuthorityRevoke(issuer *DIDAddress, credentialType string, revokedUnix int64) error {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	cType := cstring(credentialType)
 	defer free(unsafe.Pointer(cType))
 	return status(C.zktf_trusted_issuer_registry_authority_revoke(
@@ -94,6 +102,8 @@ func (r *TrustedIssuerRegistry) AuthorityRevoke(issuer *DIDAddress, credentialTy
 
 // AuthorityFor returns the credential types the issuer is authorized for.
 func (r *TrustedIssuerRegistry) AuthorityFor(issuer *DIDAddress) ([]string, error) {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	var c *C.zktf_collection_string_buffer
 	if err := status(C.zktf_trusted_issuer_registry_authority_for(r.ptr, issuer.ptr, &c)); err != nil {
 		return nil, err
@@ -114,6 +124,8 @@ func (r *TrustedIssuerRegistry) AuthorityFor(issuer *DIDAddress) ([]string, erro
 // AuthorityAt reports whether the issuer was authorized for the credential
 // type at the given timestamp.
 func (r *TrustedIssuerRegistry) AuthorityAt(issuer *DIDAddress, credentialType string, issuedUnix int64) bool {
+	defer runtime.KeepAlive(r)
+	defer runtime.KeepAlive(issuer)
 	cType := cstring(credentialType)
 	defer free(unsafe.Pointer(cType))
 	return bool(C.zktf_trusted_issuer_registry_authority_at(
@@ -123,6 +135,7 @@ func (r *TrustedIssuerRegistry) AuthorityAt(issuer *DIDAddress, credentialType s
 
 // Issuers returns the DID addresses of all issuers in the registry.
 func (r *TrustedIssuerRegistry) Issuers() []*DIDAddress {
+	defer runtime.KeepAlive(r)
 	return didAddressesFrom(C.zktf_trusted_issuer_registry_issuers(r.ptr))
 }
 
@@ -145,6 +158,8 @@ func newCredentialGraph(ptr *C.zktf_credential_graph) *CredentialGraph {
 
 // ValidCredentialsFor returns the holder's currently-valid credentials.
 func (g *CredentialGraph) ValidCredentialsFor(holder *DIDAddress) ([]*VerifiableCredential, error) {
+	defer runtime.KeepAlive(g)
+	defer runtime.KeepAlive(holder)
 	var c *C.zktf_collection_verifiable_credential
 	if err := status(C.zktf_credential_graph_valid_credentials_for(g.ptr, holder.ptr, &c)); err != nil {
 		return nil, err
@@ -154,6 +169,8 @@ func (g *CredentialGraph) ValidCredentialsFor(holder *DIDAddress) ([]*Verifiable
 
 // RevokedCredentialsFor returns the holder's revoked credentials.
 func (g *CredentialGraph) RevokedCredentialsFor(holder *DIDAddress) ([]*VerifiableCredential, error) {
+	defer runtime.KeepAlive(g)
+	defer runtime.KeepAlive(holder)
 	var c *C.zktf_collection_verifiable_credential
 	if err := status(C.zktf_credential_graph_revoked_credentials_for(g.ptr, holder.ptr, &c)); err != nil {
 		return nil, err
@@ -164,17 +181,22 @@ func (g *CredentialGraph) RevokedCredentialsFor(holder *DIDAddress) ([]*Verifiab
 // ValidDocumentFor reports whether the document at the address is currently
 // valid (no recovery / deactivation effective).
 func (g *CredentialGraph) ValidDocumentFor(document *DIDAddress) bool {
+	defer runtime.KeepAlive(g)
+	defer runtime.KeepAlive(document)
 	return bool(C.zktf_credential_graph_valid_document_for(g.ptr, document.ptr))
 }
 
 // BiometricAnchorHashFor returns the holder's 20-byte biometric anchor hash, or nil.
 func (g *CredentialGraph) BiometricAnchorHashFor(holder *DIDAddress) []byte {
+	defer runtime.KeepAlive(g)
+	defer runtime.KeepAlive(holder)
 	return goBytesFromBuffer(C.zktf_credential_graph_biometric_anchor_hash_for(g.ptr, holder.ptr))
 }
 
 // RevocationProofFor returns the revocation proof for the given hash, or nil
 // if no revocation has been recorded.
 func (g *CredentialGraph) RevocationProofFor(revocationHash []byte) *RevocationProof {
+	defer runtime.KeepAlive(g)
 	buf, length := cbytes(revocationHash)
 	defer free(unsafe.Pointer(buf))
 	return newRevocationProof(C.zktf_credential_graph_revocation_proof_for(g.ptr, buf, C.uintptr_t(length)))
@@ -183,6 +205,8 @@ func (g *CredentialGraph) RevocationProofFor(revocationHash []byte) *RevocationP
 // ValidAuthenticationFor reports whether the given pairwise identity has signed
 // the supplied challenge with currently-valid keys.
 func (g *CredentialGraph) ValidAuthenticationFor(identity *PairwiseIdentity, challenge []byte) bool {
+	defer runtime.KeepAlive(g)
+	defer runtime.KeepAlive(identity)
 	buf, _ := cbytes(challenge)
 	defer free(unsafe.Pointer(buf))
 	return bool(C.zktf_credential_graph_valid_authentication_for(g.ptr, identity.ptr, buf))
@@ -191,6 +215,8 @@ func (g *CredentialGraph) ValidAuthenticationFor(identity *PairwiseIdentity, cha
 // CredentialGraphCreate builds a credential graph for a holder by validating
 // the given presentations against the trusted-issuer registry, via callback.
 func (a *Account) CredentialGraphCreate(registry *TrustedIssuerRegistry, presentations []*VerifiablePresentation, timeout time.Duration) (*CredentialGraph, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(registry)
 	in := verifiablePresentationCollection(presentations)
 	defer C.zktf_collection_verifiable_presentation_destroy(in)
 
@@ -205,6 +231,7 @@ func verifiablePresentationCollection(presentations []*VerifiablePresentation) *
 	c := C.zktf_collection_verifiable_presentation_init()
 	for _, p := range presentations {
 		C.zktf_collection_verifiable_presentation_append(c, p.ptr)
+		runtime.KeepAlive(p)
 	}
 	return c
 }
@@ -228,31 +255,37 @@ func newRevocationProof(ptr *C.zktf_revocation_proof) *RevocationProof {
 
 // Issuer returns the issuer's signing public key.
 func (p *RevocationProof) Issuer() *SigningPublicKey {
+	defer runtime.KeepAlive(p)
 	return newSigningPublicKey(C.zktf_revocation_proof_issuer(p.ptr))
 }
 
 // Sequence returns the originating statement's sequence number.
 func (p *RevocationProof) Sequence() uint64 {
+	defer runtime.KeepAlive(p)
 	return uint64(C.zktf_revocation_proof_sequence(p.ptr))
 }
 
 // Timestamp returns the originating statement's timestamp (unix seconds).
 func (p *RevocationProof) Timestamp() int64 {
+	defer runtime.KeepAlive(p)
 	return int64(C.zktf_revocation_proof_timestamp(p.ptr))
 }
 
 // RevokedAt returns when the revocation took effect (unix seconds).
 func (p *RevocationProof) RevokedAt() int64 {
+	defer runtime.KeepAlive(p)
 	return int64(C.zktf_revocation_proof_revoked(p.ptr))
 }
 
 // RevocationHash returns the 32-byte hash of the revoked entity.
 func (p *RevocationProof) RevocationHash() []byte {
+	defer runtime.KeepAlive(p)
 	return C.GoBytes(unsafe.Pointer(C.zktf_revocation_proof_revocation_hash(p.ptr)), revocationHashLen)
 }
 
 // Signers returns the signer entries of the originating statement.
 func (p *RevocationProof) Signers() []*RevocationSigner {
+	defer runtime.KeepAlive(p)
 	c := C.zktf_revocation_proof_signers(p.ptr)
 	if c == nil {
 		return nil

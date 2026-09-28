@@ -6,11 +6,15 @@ package ffi
 */
 import "C"
 
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 // ValueKeys lists stored value keys, optionally filtered by prefix. An empty
 // prefix lists every key.
 func (a *Account) ValueKeys(prefix string) ([]string, error) {
+	defer runtime.KeepAlive(a)
 	var p *C.char
 	if prefix != "" {
 		p = cstring(prefix)
@@ -28,6 +32,7 @@ func (a *Account) ValueKeys(prefix string) ([]string, error) {
 // ValueLookup returns the value stored under key. The boolean is false when no
 // value is stored for that key.
 func (a *Account) ValueLookup(key string) ([]byte, bool, error) {
+	defer runtime.KeepAlive(a)
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
@@ -46,6 +51,7 @@ func (a *Account) ValueLookup(key string) ([]byte, bool, error) {
 // ValueStore stores a key/value pair. A zero expiresUnix means the value never
 // expires; otherwise it is removed at that absolute unix timestamp (seconds).
 func (a *Account) ValueStore(key string, value []byte, expiresUnix int64) error {
+	defer runtime.KeepAlive(a)
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
@@ -64,6 +70,7 @@ func (a *Account) ValueStore(key string, value []byte, expiresUnix int64) error 
 
 // ValueRemove deletes the value stored under key.
 func (a *Account) ValueRemove(key string) error {
+	defer runtime.KeepAlive(a)
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
