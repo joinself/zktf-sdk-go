@@ -55,31 +55,44 @@ func TokenDecode(data []byte) (*Token, error) {
 }
 
 // Kind returns the token kind.
-func (t *Token) Kind() TokenKind { return TokenKind(C.zktf_token_get_kind(t.ptr)) }
+func (t *Token) Kind() TokenKind {
+	defer runtime.KeepAlive(t)
+	return TokenKind(C.zktf_token_get_kind(t.ptr))
+}
 
 // Issuer returns the address that issued the token, or nil.
 func (t *Token) Issuer() *SigningPublicKey {
+	defer runtime.KeepAlive(t)
 	return newSigningPublicKey(C.zktf_token_issuer(t.ptr))
 }
 
 // Bearer returns the address the token is intended for, or nil.
 func (t *Token) Bearer() *SigningPublicKey {
+	defer runtime.KeepAlive(t)
 	return newSigningPublicKey(C.zktf_token_bearer(t.ptr))
 }
 
 // Application returns the application the token is scoped to, or nil.
 func (t *Token) Application() *SigningPublicKey {
+	defer runtime.KeepAlive(t)
 	return newSigningPublicKey(C.zktf_token_application(t.ptr))
 }
 
 // Issued returns the unix timestamp (seconds) the token was issued.
-func (t *Token) Issued() int64 { return int64(C.zktf_token_issued(t.ptr)) }
+func (t *Token) Issued() int64 {
+	defer runtime.KeepAlive(t)
+	return int64(C.zktf_token_issued(t.ptr))
+}
 
 // Expires returns the unix timestamp (seconds) the token expires.
-func (t *Token) Expires() int64 { return int64(C.zktf_token_expires(t.ptr)) }
+func (t *Token) Expires() int64 {
+	defer runtime.KeepAlive(t)
+	return int64(C.zktf_token_expires(t.ptr))
+}
 
 // Nonce returns the 20-byte random nonce in the token header.
 func (t *Token) Nonce() []byte {
+	defer runtime.KeepAlive(t)
 	buf := C.malloc(tokenNonceLen)
 	defer C.free(buf)
 	n := C.zktf_token_nonce(t.ptr, (*C.uint8_t)(buf), tokenNonceLen)
@@ -88,6 +101,7 @@ func (t *Token) Nonce() []byte {
 
 // Encode returns the encoded token bytes.
 func (t *Token) Encode() ([]byte, error) {
+	defer runtime.KeepAlive(t)
 	var buf *C.zktf_bytes_buffer
 	if err := status(C.zktf_token_encode(t.ptr, &buf)); err != nil {
 		return nil, err

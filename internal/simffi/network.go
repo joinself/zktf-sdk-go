@@ -46,6 +46,7 @@ func NewDefaultNetwork() *Network {
 }
 
 func (n *Network) RPCEndpoint() string {
+	defer runtime.KeepAlive(n)
 	buf := C.malloc(endpointBufLen)
 	defer C.free(buf)
 	if status(C.zktf_sim_network_rpc_endpoint(n.ptr, (*C.uint8_t)(buf), endpointBufLen)) != nil {
@@ -55,6 +56,7 @@ func (n *Network) RPCEndpoint() string {
 }
 
 func (n *Network) ObjectEndpoint() string {
+	defer runtime.KeepAlive(n)
 	buf := C.malloc(endpointBufLen)
 	defer C.free(buf)
 	if status(C.zktf_sim_network_object_endpoint(n.ptr, (*C.uint8_t)(buf), endpointBufLen)) != nil {
@@ -64,6 +66,7 @@ func (n *Network) ObjectEndpoint() string {
 }
 
 func (n *Network) MessagingEndpoint() string {
+	defer runtime.KeepAlive(n)
 	buf := C.malloc(endpointBufLen)
 	defer C.free(buf)
 	if status(C.zktf_sim_network_messaging_endpoint(n.ptr, (*C.uint8_t)(buf), endpointBufLen)) != nil {
@@ -73,36 +76,42 @@ func (n *Network) MessagingEndpoint() string {
 }
 
 func (n *Network) MessageCount(address []byte) int {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	return int(C.zktf_sim_network_message_count(n.ptr, buf, length))
 }
 
 func (n *Network) MessageBlock(address []byte) {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_network_message_block(n.ptr, buf, length)
 }
 
 func (n *Network) MessageUnblock(address []byte) {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_network_message_unblock(n.ptr, buf, length)
 }
 
 func (n *Network) FaultReorder(address []byte, from, until int) {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_network_fault_reorder(n.ptr, buf, length, C.size_t(from), C.size_t(until))
 }
 
 func (n *Network) FaultRedeliver(address []byte, from, until int) {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_network_fault_redeliver(n.ptr, buf, length, C.size_t(from), C.size_t(until))
 }
 
 func (n *Network) FaultDelete(address []byte, from, until int, preserveCommits bool) {
+	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_sim_network_fault_delete(

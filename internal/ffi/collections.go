@@ -95,6 +95,7 @@ func newTypeCollectionFromStrings(types []string) *TypeCollection {
 
 // Strings returns the type strings in the collection.
 func (c *TypeCollection) Strings() []string {
+	defer runtime.KeepAlive(c)
 	n := int(C.zktf_collection_string_buffer_len(c.ptr))
 	out := make([]string, n)
 	for i := 0; i < n; i++ {
@@ -171,6 +172,7 @@ func cryptoKeyPackageCollection(packages []*CryptoKeyPackage) *C.zktf_collection
 	collection := C.zktf_collection_crypto_key_package_init()
 	for _, p := range packages {
 		C.zktf_collection_crypto_key_package_append(collection, p.ptr)
+		runtime.KeepAlive(p)
 	}
 	return collection
 }
@@ -277,6 +279,7 @@ func signingPublicKeyCollection(keys []*SigningPublicKey) *C.zktf_collection_sig
 	collection := C.zktf_collection_signing_public_key_init()
 	for _, k := range keys {
 		C.zktf_collection_signing_public_key_append(collection, k.ptr)
+		runtime.KeepAlive(k)
 	}
 	return collection
 }

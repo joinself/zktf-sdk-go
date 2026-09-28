@@ -101,6 +101,7 @@ func NewParameterValue(v any) *ParameterValue {
 // bool, int64, uint64, float64, [][]byte or []string. Null and object values,
 // for which the ABI exposes no accessor, decode to nil.
 func (v *ParameterValue) Value() any {
+	defer runtime.KeepAlive(v)
 	switch C.zktf_message_content_parameter_value_type_of(v.ptr) {
 	case C.PARAMETER_VALUE_BYTES:
 		return goBytesFromBuffer(C.zktf_message_content_parameter_value_as_bytes(v.ptr))

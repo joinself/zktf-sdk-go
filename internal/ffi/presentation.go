@@ -25,6 +25,7 @@ type PresentationBuilder struct {
 func NewPresentationBuilder() *PresentationBuilder {
 	ptr := C.zktf_presentation_builder_init()
 	b := &PresentationBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_presentation_builder) {
 		C.zktf_presentation_builder_destroy(ptr)
 	}, b.ptr)
@@ -33,24 +34,31 @@ func NewPresentationBuilder() *PresentationBuilder {
 
 // PresentationType sets the presentation's types.
 func (b *PresentationBuilder) PresentationType(types *TypeCollection) *PresentationBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(types)
 	C.zktf_presentation_builder_presentation_type(b.ptr, types.ptr)
 	return b
 }
 
 // CredentialAdd adds a verifiable credential to the presentation.
 func (b *PresentationBuilder) CredentialAdd(credential *VerifiableCredential) *PresentationBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(credential)
 	C.zktf_presentation_builder_credential_add(b.ptr, credential.ptr)
 	return b
 }
 
 // Holder sets the holder/bearer address.
 func (b *PresentationBuilder) Holder(holder *DIDAddress) *PresentationBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(holder)
 	C.zktf_presentation_builder_holder(b.ptr, holder.ptr)
 	return b
 }
 
 // Finish finalizes the presentation, ready to be signed via Account.PresentationSign.
 func (b *PresentationBuilder) Finish() (*VerifiablePresentation, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_verifiable_presentation
 	if err := status(C.zktf_presentation_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err
@@ -88,26 +96,31 @@ func VerifiablePresentationDecode(data []byte) (*VerifiablePresentation, error) 
 
 // Validate returns an error if the presentation is invalid.
 func (p *VerifiablePresentation) Validate() error {
+	defer runtime.KeepAlive(p)
 	return status(C.zktf_verifiable_presentation_validate(p.ptr))
 }
 
 // Types returns the presentation's type strings.
 func (p *VerifiablePresentation) Types() []string {
+	defer runtime.KeepAlive(p)
 	return stringsFromBufferCollection(C.zktf_verifiable_presentation_type_of(p.ptr))
 }
 
 // Holder returns the holder address, or nil.
 func (p *VerifiablePresentation) Holder() *DIDAddress {
+	defer runtime.KeepAlive(p)
 	return newDIDAddress(C.zktf_verifiable_presentation_holder(p.ptr))
 }
 
 // Credentials returns the credentials contained in the presentation.
 func (p *VerifiablePresentation) Credentials() []*VerifiableCredential {
+	defer runtime.KeepAlive(p)
 	return verifiableCredentialsFrom(C.zktf_verifiable_presentation_credentials(p.ptr))
 }
 
 // Encode returns the JSON-encoded presentation.
 func (p *VerifiablePresentation) Encode() ([]byte, error) {
+	defer runtime.KeepAlive(p)
 	var buf *C.zktf_bytes_buffer
 	if err := status(C.zktf_verifiable_presentation_encode(p.ptr, &buf)); err != nil {
 		return nil, err

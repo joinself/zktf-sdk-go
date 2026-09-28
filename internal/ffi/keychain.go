@@ -17,6 +17,7 @@ const signatureLen = 64
 // KeychainSigningCreate generates a new signing key in the keychain and returns
 // its public address.
 func (a *Account) KeychainSigningCreate() (*SigningPublicKey, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_signing_public_key
 
 	if err := status(C.zktf_account_keychain_signing_create(a.ptr, &out)); err != nil {
@@ -29,6 +30,7 @@ func (a *Account) KeychainSigningCreate() (*SigningPublicKey, error) {
 // KeychainExchangeCreate generates a new exchange key in the keychain and
 // returns its public address.
 func (a *Account) KeychainExchangeCreate() (*ExchangePublicKey, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_exchange_public_key
 
 	if err := status(C.zktf_account_keychain_exchange_create(a.ptr, &out)); err != nil {
@@ -40,6 +42,8 @@ func (a *Account) KeychainExchangeCreate() (*ExchangePublicKey, error) {
 
 // KeychainSign signs payload with the keychain key identified by address.
 func (a *Account) KeychainSign(address *SigningPublicKey, payload []byte) ([]byte, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(address)
 	payloadBuf, payloadLen := cbytes(payload)
 	defer free(unsafe.Pointer(payloadBuf))
 
@@ -67,6 +71,7 @@ type KeychainLookup struct {
 func NewKeychainLookup() *KeychainLookup {
 	ptr := C.zktf_keychain_lookup_init()
 	l := &KeychainLookup{ptr: ptr}
+	defer runtime.KeepAlive(l)
 	runtime.AddCleanup(l, func(ptr *C.zktf_keychain_lookup) {
 		C.zktf_keychain_lookup_destroy(ptr)
 	}, l.ptr)
@@ -76,6 +81,8 @@ func NewKeychainLookup() *KeychainLookup {
 
 // ByIdentity restricts the lookup to keys associated with identity.
 func (l *KeychainLookup) ByIdentity(identity *SigningPublicKey) *KeychainLookup {
+	defer runtime.KeepAlive(l)
+	defer runtime.KeepAlive(identity)
 	C.zktf_keychain_lookup_by_identity(l.ptr, identity.ptr)
 	return l
 }
@@ -83,6 +90,7 @@ func (l *KeychainLookup) ByIdentity(identity *SigningPublicKey) *KeychainLookup 
 // WithRoles restricts the lookup to keys carrying every role in roles. Only
 // applies in combination with ByIdentity.
 func (l *KeychainLookup) WithRoles(roles IdentityKeyRole) *KeychainLookup {
+	defer runtime.KeepAlive(l)
 	C.zktf_keychain_lookup_with_roles(l.ptr, C.zktf_identity_key_role(roles))
 	return l
 }
@@ -90,6 +98,8 @@ func (l *KeychainLookup) WithRoles(roles IdentityKeyRole) *KeychainLookup {
 // KeychainLookup resolves the signing keys held in the keychain that satisfy
 // the lookup query.
 func (a *Account) KeychainLookup(lookup *KeychainLookup) ([]*SigningPublicKey, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(lookup)
 	var c *C.zktf_collection_signing_public_key
 
 	if err := status(C.zktf_account_keychain_lookup(a.ptr, lookup.ptr, &c)); err != nil {

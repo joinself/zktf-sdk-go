@@ -30,16 +30,19 @@ func newGroup(ptr *C.zktf_group) *Group {
 
 // Address returns the group address.
 func (g *Group) Address() *SigningPublicKey {
+	defer runtime.KeepAlive(g)
 	return newSigningPublicKey(C.zktf_group_address(g.ptr))
 }
 
 // Members returns the addresses of the group members.
 func (g *Group) Members() []*SigningPublicKey {
+	defer runtime.KeepAlive(g)
 	return signingPublicKeysFrom(C.zktf_group_members(g.ptr))
 }
 
 // MemberAs returns the address this account presents within the group.
 func (g *Group) MemberAs() *SigningPublicKey {
+	defer runtime.KeepAlive(g)
 	return newSigningPublicKey(C.zktf_group_member_as(g.ptr))
 }
 
@@ -47,6 +50,8 @@ func (g *Group) MemberAs() *SigningPublicKey {
 // session with this account out of band (e.g. for inclusion in a discovery
 // request). expiresUnix of 0 means no expiry.
 func (a *Account) GroupNegotiateOutOfBand(as *SigningPublicKey, expiresUnix int64) (*CryptoKeyPackage, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(as)
 	var out *C.zktf_crypto_key_package
 
 	if err := status(C.zktf_account_group_negotiate_out_of_band(a.ptr, as.ptr, C.int64_t(expiresUnix), &out)); err != nil {
@@ -59,6 +64,9 @@ func (a *Account) GroupNegotiateOutOfBand(as *SigningPublicKey, expiresUnix int6
 // GroupEstablish uses a received key package to establish an encrypted group
 // session via callback.
 func (a *Account) GroupEstablish(as *SigningPublicKey, keyPackage *CryptoKeyPackage, timeout time.Duration) (*Group, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(as)
+	defer runtime.KeepAlive(keyPackage)
 	fut := C.zktf_account_group_establish(a.ptr, as.ptr, keyPackage.ptr)
 
 	return AwaitGroup(fut, timeout)
@@ -67,6 +75,9 @@ func (a *Account) GroupEstablish(as *SigningPublicKey, keyPackage *CryptoKeyPack
 // GroupAccept accepts a received welcome to join an encrypted group session
 // via callback.
 func (a *Account) GroupAccept(as *SigningPublicKey, welcome *CryptoWelcome, timeout time.Duration) (*Group, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(as)
+	defer runtime.KeepAlive(welcome)
 	fut := C.zktf_account_group_accept(a.ptr, as.ptr, welcome.ptr)
 
 	return AwaitGroup(fut, timeout)
@@ -81,6 +92,7 @@ type GroupLookup struct {
 func NewGroupLookup() *GroupLookup {
 	ptr := C.zktf_group_lookup_init()
 	l := &GroupLookup{ptr: ptr}
+	defer runtime.KeepAlive(l)
 	runtime.AddCleanup(l, func(ptr *C.zktf_group_lookup) {
 		C.zktf_group_lookup_destroy(ptr)
 	}, l.ptr)
@@ -89,12 +101,16 @@ func NewGroupLookup() *GroupLookup {
 
 // ByAddress restricts the lookup to a group at the given address.
 func (l *GroupLookup) ByAddress(address *SigningPublicKey) *GroupLookup {
+	defer runtime.KeepAlive(l)
+	defer runtime.KeepAlive(address)
 	C.zktf_group_lookup_by_address(l.ptr, address.ptr)
 	return l
 }
 
 // ByMember restricts the lookup to groups including the given member.
 func (l *GroupLookup) ByMember(member *SigningPublicKey) *GroupLookup {
+	defer runtime.KeepAlive(l)
+	defer runtime.KeepAlive(member)
 	C.zktf_group_lookup_by_member(l.ptr, member.ptr)
 	return l
 }
@@ -106,8 +122,10 @@ type GroupUpdateBuilder struct {
 
 // NewGroupUpdateBuilder initializes an update builder for the given group.
 func NewGroupUpdateBuilder(g *Group) *GroupUpdateBuilder {
+	defer runtime.KeepAlive(g)
 	ptr := C.zktf_group_update_builder_init(g.ptr)
 	b := &GroupUpdateBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_group_update_builder) {
 		C.zktf_group_update_builder_destroy(ptr)
 	}, b.ptr)
@@ -116,6 +134,7 @@ func NewGroupUpdateBuilder(g *Group) *GroupUpdateBuilder {
 
 // AddMembers stages every member in `packages` to be added.
 func (b *GroupUpdateBuilder) AddMembers(packages []*CryptoKeyPackage) *GroupUpdateBuilder {
+	defer runtime.KeepAlive(b)
 	c := cryptoKeyPackageCollection(packages)
 	defer destroyCryptoKeyPackages(c)
 	C.zktf_group_update_builder_add_members(b.ptr, c)
@@ -124,6 +143,7 @@ func (b *GroupUpdateBuilder) AddMembers(packages []*CryptoKeyPackage) *GroupUpda
 
 // RemoveMembers stages every member in `members` to be removed.
 func (b *GroupUpdateBuilder) RemoveMembers(members []*SigningPublicKey) *GroupUpdateBuilder {
+	defer runtime.KeepAlive(b)
 	c := signingPublicKeyCollection(members)
 	defer destroySigningKeys(c)
 	C.zktf_group_update_builder_remove_members(b.ptr, c)
@@ -132,17 +152,20 @@ func (b *GroupUpdateBuilder) RemoveMembers(members []*SigningPublicKey) *GroupUp
 
 // AsProposal marks the update to be sent as a proposal (not auto-committed).
 func (b *GroupUpdateBuilder) AsProposal() *GroupUpdateBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_group_update_builder_as_proposal(b.ptr)
 	return b
 }
 
 // Finish validates the staged changes and produces a request.
 func (b *GroupUpdateBuilder) Finish() (*GroupUpdateRequest, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_group_update_request
 	if err := status(C.zktf_group_update_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
 	}
 	r := &GroupUpdateRequest{ptr: out}
+	defer runtime.KeepAlive(r)
 	runtime.AddCleanup(r, func(ptr *C.zktf_group_update_request) {
 		C.zktf_group_update_request_destroy(ptr)
 	}, r.ptr)
@@ -156,6 +179,8 @@ type GroupUpdateRequest struct {
 
 // GroupLookup returns groups matching the lookup query.
 func (a *Account) GroupLookup(l *GroupLookup) ([]*Group, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(l)
 	var c *C.zktf_collection_group
 	if err := status(C.zktf_account_group_lookup(a.ptr, l.ptr, &c)); err != nil {
 		return nil, err
@@ -165,10 +190,14 @@ func (a *Account) GroupLookup(l *GroupLookup) ([]*Group, error) {
 
 // GroupUpdate publishes a built group update.
 func (a *Account) GroupUpdate(r *GroupUpdateRequest) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(r)
 	return status(C.zktf_account_group_update(a.ptr, r.ptr))
 }
 
 // GroupLeave leaves a group.
 func (a *Account) GroupLeave(g *Group) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(g)
 	return status(C.zktf_account_group_leave(a.ptr, g.ptr))
 }

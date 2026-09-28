@@ -30,6 +30,7 @@ func newMessageContentSummary(ptr *C.zktf_message_content_summary) *MessageConte
 
 // SummaryOf builds a summary of a piece of message content.
 func SummaryOf(content *Content) (*MessageContentSummary, error) {
+	defer runtime.KeepAlive(content)
 	var out *C.zktf_message_content_summary
 	if err := status(C.zktf_message_content_summary_of(content.ptr, &out)); err != nil {
 		return nil, err
@@ -39,11 +40,13 @@ func SummaryOf(content *Content) (*MessageContentSummary, error) {
 
 // ID returns the id of the underlying content.
 func (s *MessageContentSummary) ID() []byte {
+	defer runtime.KeepAlive(s)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_summary_id(s.ptr)), messageIDLen)
 }
 
 // TypeOf returns the type of the summarized content.
 func (s *MessageContentSummary) TypeOf() ContentType {
+	defer runtime.KeepAlive(s)
 	return ContentType(C.zktf_message_content_summary_type_of(s.ptr))
 }
 
@@ -65,6 +68,7 @@ const (
 
 // Descriptions returns the structured descriptions that make up the summary.
 func (s *MessageContentSummary) Descriptions() []*SummaryDescription {
+	defer runtime.KeepAlive(s)
 	c := C.zktf_message_content_summary_descriptions(s.ptr)
 	if c == nil {
 		return nil
@@ -96,57 +100,70 @@ func newSummaryDescription(ptr *C.zktf_message_content_summary_description) *Sum
 
 // Kind returns which kind of description this is.
 func (d *SummaryDescription) Kind() SummaryDescriptionKind {
+	defer runtime.KeepAlive(d)
 	return SummaryDescriptionKind(C.zktf_message_content_summary_description_type_of(d.ptr))
 }
 
 // AsChatMessage returns the chat message text (CHAT_MESSAGE descriptions).
 func (d *SummaryDescription) AsChatMessage() string {
+	defer runtime.KeepAlive(d)
 	return goStringFromBuffer(C.zktf_message_content_summary_description_as_chat_message(d.ptr))
 }
 
 // AsChatReference returns the referenced message id (CHAT_REFERENCE descriptions).
 func (d *SummaryDescription) AsChatReference() []byte {
+	defer runtime.KeepAlive(d)
 	return goBytesFromBuffer(C.zktf_message_content_summary_description_as_chat_reference(d.ptr))
 }
 
 // AsChatAttachment returns the attached object (CHAT_ATTACHMENT descriptions).
 func (d *SummaryDescription) AsChatAttachment() *Object {
+	defer runtime.KeepAlive(d)
 	return newObject(C.zktf_message_content_summary_description_as_chat_attachment(d.ptr))
 }
 
 // AsCredential returns the credential types (CREDENTIAL descriptions).
 func (d *SummaryDescription) AsCredential() []string {
+	defer runtime.KeepAlive(d)
 	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_credential(d.ptr))
 }
 
 // AsPresentation returns the presentation types (PRESENTATION descriptions).
 func (d *SummaryDescription) AsPresentation() []string {
+	defer runtime.KeepAlive(d)
 	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_presentation(d.ptr))
 }
 
 // AsAsset returns the asset object (ASSET descriptions).
 func (d *SummaryDescription) AsAsset() *Object {
+	defer runtime.KeepAlive(d)
 	return newObject(C.zktf_message_content_summary_description_as_asset(d.ptr))
 }
 
 // AsSignature returns the signature bytes (SIGNATURE descriptions).
 func (d *SummaryDescription) AsSignature() []byte {
+	defer runtime.KeepAlive(d)
 	return goBytesFromBuffer(C.zktf_message_content_summary_description_as_signature(d.ptr))
 }
 
 // AsVerification returns the verified credential types (VERIFICATION descriptions).
 func (d *SummaryDescription) AsVerification() []string {
+	defer runtime.KeepAlive(d)
 	return stringsFromBufferCollection(C.zktf_message_content_summary_description_as_verification(d.ptr))
 }
 
 // AsPairing returns the pairing roles bitmask (PAIRING descriptions).
 func (d *SummaryDescription) AsPairing() uint64 {
+	defer runtime.KeepAlive(d)
 	return uint64(C.zktf_message_content_summary_description_as_pairing(d.ptr))
 }
 
 // NotificationSend sends a push notification to the given address carrying the
 // content summary, via callback.
 func (a *Account) NotificationSend(to *SigningPublicKey, summary *MessageContentSummary, timeout time.Duration) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(to)
+	defer runtime.KeepAlive(summary)
 	fut := C.zktf_account_notification_send(a.ptr, to.ptr, summary.ptr)
 
 	return AwaitStatus(fut, timeout)

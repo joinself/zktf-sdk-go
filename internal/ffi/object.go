@@ -51,6 +51,7 @@ func ObjectCreate(mime string, data []byte) (*Object, error) {
 // ID returns the hash of the encrypted data, or nil if the object has not yet
 // been uploaded (the id is only available once the encrypted data is hashed).
 func (o *Object) ID() []byte {
+	defer runtime.KeepAlive(o)
 	id := C.zktf_object_id(o.ptr)
 	if id == nil {
 		return nil
@@ -60,6 +61,7 @@ func (o *Object) ID() []byte {
 
 // Hash returns the hash of the unencrypted data, or nil if unavailable.
 func (o *Object) Hash() []byte {
+	defer runtime.KeepAlive(o)
 	h := C.zktf_object_hash(o.ptr)
 	if h == nil {
 		return nil
@@ -69,11 +71,13 @@ func (o *Object) Hash() []byte {
 
 // MimeType returns the object's mime type.
 func (o *Object) MimeType() string {
+	defer runtime.KeepAlive(o)
 	return C.GoString(C.zktf_object_mime(o.ptr))
 }
 
 // Key returns the object's 44-byte encryption key, or nil if not present.
 func (o *Object) Key() []byte {
+	defer runtime.KeepAlive(o)
 	k := C.zktf_object_key(o.ptr)
 	if k == nil {
 		return nil
@@ -83,6 +87,7 @@ func (o *Object) Key() []byte {
 
 // Data returns the object's data buffer.
 func (o *Object) Data() []byte {
+	defer runtime.KeepAlive(o)
 	return C.GoBytes(
 		unsafe.Pointer(C.zktf_object_data_buf(o.ptr)),
 		C.int(C.zktf_object_data_len(o.ptr)),
@@ -98,6 +103,7 @@ type ObjectUploadOptions struct {
 func NewObjectUploadOptions() *ObjectUploadOptions {
 	ptr := C.zktf_object_upload_options_init()
 	o := &ObjectUploadOptions{ptr: ptr}
+	defer runtime.KeepAlive(o)
 	runtime.AddCleanup(o, func(ptr *C.zktf_object_upload_options) {
 		C.zktf_object_upload_options_destroy(ptr)
 	}, o.ptr)
@@ -107,6 +113,7 @@ func NewObjectUploadOptions() *ObjectUploadOptions {
 // PersistLocally controls whether the uploaded object is also written to the
 // local object store.
 func (o *ObjectUploadOptions) PersistLocally(persist bool) *ObjectUploadOptions {
+	defer runtime.KeepAlive(o)
 	C.zktf_object_upload_options_persist_locally(o.ptr, C.bool(persist))
 	return o
 }
@@ -114,6 +121,9 @@ func (o *ObjectUploadOptions) PersistLocally(persist bool) *ObjectUploadOptions 
 // ObjectUpload uploads an object to the object store via callback. Pass nil
 // options for defaults.
 func (a *Account) ObjectUpload(obj *Object, options *ObjectUploadOptions, timeout time.Duration) error {
+	defer runtime.KeepAlive(options)
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(obj)
 	var optsPtr *C.zktf_object_upload_options
 	if options != nil {
 		optsPtr = options.ptr
@@ -127,6 +137,8 @@ func (a *Account) ObjectUpload(obj *Object, options *ObjectUploadOptions, timeou
 // ObjectDownload downloads an object's encrypted bytes and key from the server,
 // via callback.
 func (a *Account) ObjectDownload(obj *Object, timeout time.Duration) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(obj)
 	fut := C.zktf_account_object_download(a.ptr, obj.ptr)
 
 	return AwaitStatus(fut, timeout)

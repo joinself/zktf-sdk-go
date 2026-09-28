@@ -27,22 +27,31 @@ func newKeyPackageEvent(ptr *C.zktf_key_package) *KeyPackageEvent {
 
 // FromAddress returns the sender's address.
 func (e *KeyPackageEvent) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_key_package_from_address(e.ptr))
 }
 
 // ToAddress returns the recipient address.
 func (e *KeyPackageEvent) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_key_package_to_address(e.ptr))
 }
 
 // Sequence returns the event's sequence number.
-func (e *KeyPackageEvent) Sequence() uint64 { return uint64(C.zktf_key_package_sequence(e.ptr)) }
+func (e *KeyPackageEvent) Sequence() uint64 {
+	defer runtime.KeepAlive(e)
+	return uint64(C.zktf_key_package_sequence(e.ptr))
+}
 
 // Timestamp returns the event's unix timestamp.
-func (e *KeyPackageEvent) Timestamp() int64 { return int64(C.zktf_key_package_timestamp(e.ptr)) }
+func (e *KeyPackageEvent) Timestamp() int64 {
+	defer runtime.KeepAlive(e)
+	return int64(C.zktf_key_package_timestamp(e.ptr))
+}
 
 // CryptoKeyPackage extracts the MLS key package suitable for Account.Establish.
 func (e *KeyPackageEvent) CryptoKeyPackage() *CryptoKeyPackage {
+	defer runtime.KeepAlive(e)
 	return newCryptoKeyPackage(C.zktf_key_package_crypto_key_package(e.ptr))
 }
 
@@ -64,22 +73,31 @@ func newWelcomeEvent(ptr *C.zktf_welcome) *WelcomeEvent {
 
 // FromAddress returns the sender's address.
 func (e *WelcomeEvent) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_welcome_from_address(e.ptr))
 }
 
 // ToAddress returns the recipient address.
 func (e *WelcomeEvent) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_welcome_to_address(e.ptr))
 }
 
 // Sequence returns the event's sequence number.
-func (e *WelcomeEvent) Sequence() uint64 { return uint64(C.zktf_welcome_sequence(e.ptr)) }
+func (e *WelcomeEvent) Sequence() uint64 {
+	defer runtime.KeepAlive(e)
+	return uint64(C.zktf_welcome_sequence(e.ptr))
+}
 
 // Timestamp returns the event's unix timestamp.
-func (e *WelcomeEvent) Timestamp() int64 { return int64(C.zktf_welcome_timestamp(e.ptr)) }
+func (e *WelcomeEvent) Timestamp() int64 {
+	defer runtime.KeepAlive(e)
+	return int64(C.zktf_welcome_timestamp(e.ptr))
+}
 
 // CryptoWelcome extracts the MLS welcome suitable for Account.Accept.
 func (e *WelcomeEvent) CryptoWelcome() *CryptoWelcome {
+	defer runtime.KeepAlive(e)
 	return newCryptoWelcome(C.zktf_welcome_crypto_welcome(e.ptr))
 }
 
@@ -101,19 +119,27 @@ func newCommitEvent(ptr *C.zktf_commit) *CommitEvent {
 
 // FromAddress returns the sender's address.
 func (e *CommitEvent) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_commit_from_address(e.ptr))
 }
 
 // ToAddress returns the recipient address.
 func (e *CommitEvent) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_commit_to_address(e.ptr))
 }
 
 // Sequence returns the event's sequence number.
-func (e *CommitEvent) Sequence() uint64 { return uint64(C.zktf_commit_sequence(e.ptr)) }
+func (e *CommitEvent) Sequence() uint64 {
+	defer runtime.KeepAlive(e)
+	return uint64(C.zktf_commit_sequence(e.ptr))
+}
 
 // Timestamp returns the event's unix timestamp.
-func (e *CommitEvent) Timestamp() int64 { return int64(C.zktf_commit_timestamp(e.ptr)) }
+func (e *CommitEvent) Timestamp() int64 {
+	defer runtime.KeepAlive(e)
+	return int64(C.zktf_commit_timestamp(e.ptr))
+}
 
 // ProposalEvent wraps a zktf_proposal wire event.
 type ProposalEvent struct {
@@ -133,19 +159,27 @@ func newProposalEvent(ptr *C.zktf_proposal) *ProposalEvent {
 
 // FromAddress returns the sender's address.
 func (e *ProposalEvent) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_proposal_from_address(e.ptr))
 }
 
 // ToAddress returns the recipient address.
 func (e *ProposalEvent) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_proposal_to_address(e.ptr))
 }
 
 // Sequence returns the event's sequence number.
-func (e *ProposalEvent) Sequence() uint64 { return uint64(C.zktf_proposal_sequence(e.ptr)) }
+func (e *ProposalEvent) Sequence() uint64 {
+	defer runtime.KeepAlive(e)
+	return uint64(C.zktf_proposal_sequence(e.ptr))
+}
 
 // Timestamp returns the event's unix timestamp.
-func (e *ProposalEvent) Timestamp() int64 { return int64(C.zktf_proposal_timestamp(e.ptr)) }
+func (e *ProposalEvent) Timestamp() int64 {
+	defer runtime.KeepAlive(e)
+	return int64(C.zktf_proposal_timestamp(e.ptr))
+}
 
 // DroppedEvent wraps a zktf_dropped_event handle carried by a STATUS_EVENT_DROPPED.
 type DroppedEvent struct {
@@ -165,25 +199,30 @@ func newDroppedEvent(ptr *C.zktf_dropped_event) *DroppedEvent {
 
 // FromAddress returns the sender's address.
 func (e *DroppedEvent) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_dropped_event_from_address(e.ptr))
 }
 
 // ToAddress returns the recipient address.
 func (e *DroppedEvent) ToAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_dropped_event_to_address(e.ptr))
 }
 
 // FromSequence returns the starting sequence number of the dropped range.
 func (e *DroppedEvent) FromSequence() uint64 {
+	defer runtime.KeepAlive(e)
 	return uint64(C.zktf_dropped_event_from_sequence(e.ptr))
 }
 
 // ToSequence returns the ending sequence number of the dropped range.
 func (e *DroppedEvent) ToSequence() uint64 {
+	defer runtime.KeepAlive(e)
 	return uint64(C.zktf_dropped_event_to_sequence(e.ptr))
 }
 
 // Reason returns the reason the messages were dropped.
 func (e *DroppedEvent) Reason() error {
+	defer runtime.KeepAlive(e)
 	return status(C.zktf_dropped_event_reason(e.ptr))
 }

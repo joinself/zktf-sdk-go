@@ -61,6 +61,7 @@ func SigningPublicKeyFromBytes(data []byte) (*SigningPublicKey, error) {
 
 // String returns the hex encoded address.
 func (k *SigningPublicKey) String() string {
+	defer runtime.KeepAlive(k)
 	buf := C.malloc(signingPublicKeyEncodedLen)
 	defer C.free(buf)
 
@@ -74,6 +75,7 @@ func (k *SigningPublicKey) String() string {
 
 // Bytes returns the raw bytes of the public key.
 func (k *SigningPublicKey) Bytes() []byte {
+	defer runtime.KeepAlive(k)
 	buf := C.malloc(signingPublicKeyBytesLen)
 	defer C.free(buf)
 
@@ -88,6 +90,7 @@ func (k *SigningPublicKey) Bytes() []byte {
 // Matches reports whether two public keys are equal.
 // Verify reports whether signature is a valid signature of message by this key.
 func (k *SigningPublicKey) Verify(message, signature []byte) bool {
+	defer runtime.KeepAlive(k)
 	msgBuf, msgLen := cbytes(message)
 	defer free(unsafe.Pointer(msgBuf))
 
@@ -98,6 +101,8 @@ func (k *SigningPublicKey) Verify(message, signature []byte) bool {
 }
 
 func (k *SigningPublicKey) Matches(other *SigningPublicKey) bool {
+	defer runtime.KeepAlive(k)
+	defer runtime.KeepAlive(other)
 	if other == nil {
 		return false
 	}

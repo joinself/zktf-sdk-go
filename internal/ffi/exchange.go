@@ -58,6 +58,7 @@ func ExchangePublicKeyFromBytes(data []byte) (*ExchangePublicKey, error) {
 
 // String returns the hex encoded address.
 func (k *ExchangePublicKey) String() string {
+	defer runtime.KeepAlive(k)
 	buf := C.malloc(exchangePublicKeyEncodedLen)
 	defer C.free(buf)
 	if err := status(C.zktf_exchange_public_key_encode(
@@ -70,6 +71,7 @@ func (k *ExchangePublicKey) String() string {
 
 // Bytes returns the raw bytes of the key.
 func (k *ExchangePublicKey) Bytes() []byte {
+	defer runtime.KeepAlive(k)
 	buf := C.malloc(exchangePublicKeyBytesLen)
 	defer C.free(buf)
 	if err := status(C.zktf_exchange_public_key_as_bytes(
