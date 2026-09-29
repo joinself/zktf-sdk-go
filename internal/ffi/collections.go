@@ -268,7 +268,7 @@ func messageIDsFrom(c *C.zktf_collection_message_id) [][]byte {
 	n := int(C.zktf_collection_message_id_len(c))
 	out := make([][]byte, n)
 	for i := 0; i < n; i++ {
-		out[i] = C.GoBytes(unsafe.Pointer(C.zktf_collection_message_id_at(c, C.size_t(i))), messageIDLen)
+		out[i] = goBytesFromBuffer(C.zktf_collection_message_id_at(c, C.size_t(i)))
 	}
 	return out
 }

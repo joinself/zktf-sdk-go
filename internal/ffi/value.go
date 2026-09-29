@@ -88,7 +88,7 @@ func valueKeysFrom(c *C.zktf_collection_value_key) []string {
 	n := int(C.zktf_collection_value_key_len(c))
 	out := make([]string, n)
 	for i := 0; i < n; i++ {
-		out[i] = C.GoString(C.zktf_collection_value_key_at(c, C.size_t(i)))
+		out[i] = goStringFromBuffer(C.zktf_collection_value_key_at(c, C.size_t(i)))
 	}
 
 	return out
