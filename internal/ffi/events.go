@@ -39,22 +39,26 @@ func newStatusEvent(ptr *C.zktf_status_event) *StatusEvent {
 
 // Kind returns the kind of status event.
 func (e *StatusEvent) Kind() StatusEventType {
+	defer runtime.KeepAlive(e)
 	return StatusEventType(C.zktf_status_event_kind(e.ptr))
 }
 
 // DisconnectReason returns the reason for a disconnect event as an error, or nil.
 func (e *StatusEvent) DisconnectReason() error {
+	defer runtime.KeepAlive(e)
 	return status(C.zktf_status_event_disconnect_reason(e.ptr))
 }
 
 // SendError returns the error for a send-failed event, or nil.
 func (e *StatusEvent) SendError() error {
+	defer runtime.KeepAlive(e)
 	return status(C.zktf_status_event_send_error(e.ptr))
 }
 
 // ReferenceID returns the message id referenced by an acknowledged/send-failed
 // event, or nil.
 func (e *StatusEvent) ReferenceID() []byte {
+	defer runtime.KeepAlive(e)
 	ref := C.zktf_status_event_reference(e.ptr)
 	if ref == nil {
 		return nil
@@ -65,6 +69,7 @@ func (e *StatusEvent) ReferenceID() []byte {
 
 // Dropped returns the dropped-event details for a STATUS_EVENT_DROPPED, or nil.
 func (e *StatusEvent) Dropped() *DroppedEvent {
+	defer runtime.KeepAlive(e)
 	return newDroppedEvent(C.zktf_status_event_dropped(e.ptr))
 }
 
@@ -97,26 +102,31 @@ func newGroupEvent(ptr *C.zktf_group_event) *GroupEvent {
 
 // Kind returns the kind of group event.
 func (e *GroupEvent) Kind() GroupEventKind {
+	defer runtime.KeepAlive(e)
 	return GroupEventKind(C.zktf_group_event_kind(e.ptr))
 }
 
 // Invite extracts the key package wire event (kind == GroupEventInvite).
 func (e *GroupEvent) Invite() *KeyPackageEvent {
+	defer runtime.KeepAlive(e)
 	return newKeyPackageEvent(C.zktf_group_event_invite(e.ptr))
 }
 
 // Welcome extracts the welcome wire event (kind == GroupEventWelcome).
 func (e *GroupEvent) Welcome() *WelcomeEvent {
+	defer runtime.KeepAlive(e)
 	return newWelcomeEvent(C.zktf_group_event_welcome(e.ptr))
 }
 
 // Commit extracts the commit wire event (kind == GroupEventCommit).
 func (e *GroupEvent) Commit() *CommitEvent {
+	defer runtime.KeepAlive(e)
 	return newCommitEvent(C.zktf_group_event_commit(e.ptr))
 }
 
 // Proposal extracts the proposal wire event (kind == GroupEventProposal).
 func (e *GroupEvent) Proposal() *ProposalEvent {
+	defer runtime.KeepAlive(e)
 	return newProposalEvent(C.zktf_group_event_proposal(e.ptr))
 }
 
@@ -146,11 +156,13 @@ func newWorkflowEvent(ptr *C.zktf_workflow_event) *WorkflowEvent {
 
 // Kind returns the kind of workflow event.
 func (e *WorkflowEvent) Kind() WorkflowEventKind {
+	defer runtime.KeepAlive(e)
 	return WorkflowEventKind(C.zktf_workflow_event_kind(e.ptr))
 }
 
 // WorkflowID returns the workflow id bytes.
 func (e *WorkflowEvent) WorkflowID() []byte {
+	defer runtime.KeepAlive(e)
 	n := C.zktf_workflow_event_workflow_id_len(e.ptr)
 	if n == 0 {
 		return nil
@@ -160,6 +172,7 @@ func (e *WorkflowEvent) WorkflowID() []byte {
 
 // TaskID returns the task id bytes (for TaskFailed events), or nil.
 func (e *WorkflowEvent) TaskID() []byte {
+	defer runtime.KeepAlive(e)
 	n := C.zktf_workflow_event_task_id_len(e.ptr)
 	if n == 0 {
 		return nil
@@ -169,6 +182,7 @@ func (e *WorkflowEvent) TaskID() []byte {
 
 // Reason returns a human-readable reason for the event, or "" if unset.
 func (e *WorkflowEvent) Reason() string {
+	defer runtime.KeepAlive(e)
 	n := C.zktf_workflow_event_reason_len(e.ptr)
 	if n == 0 {
 		return ""
@@ -178,10 +192,12 @@ func (e *WorkflowEvent) Reason() string {
 
 // Attempt returns the attempt number (for TaskFailed events).
 func (e *WorkflowEvent) Attempt() uint32 {
+	defer runtime.KeepAlive(e)
 	return uint32(C.zktf_workflow_event_attempt(e.ptr))
 }
 
 // WillRetry reports whether the failed task will be retried.
 func (e *WorkflowEvent) WillRetry() bool {
+	defer runtime.KeepAlive(e)
 	return bool(C.zktf_workflow_event_will_retry(e.ptr))
 }

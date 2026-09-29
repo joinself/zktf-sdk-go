@@ -26,6 +26,7 @@ func newCryptoKeyPackage(ptr *C.zktf_crypto_key_package) *CryptoKeyPackage {
 
 // FromAddress returns the signing address the key package is for.
 func (k *CryptoKeyPackage) FromAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(k)
 	return newSigningPublicKey(C.zktf_crypto_key_package_from_address(k.ptr))
 }
 

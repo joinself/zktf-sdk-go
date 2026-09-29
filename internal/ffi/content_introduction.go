@@ -26,6 +26,7 @@ func newIntroduction(ptr *C.zktf_message_content_introduction) *Introduction {
 
 // IntroductionFromContent decodes message content as an introduction.
 func IntroductionFromContent(content *Content) (*Introduction, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_introduction
 	if err := status(C.zktf_message_content_as_introduction(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -35,16 +36,19 @@ func IntroductionFromContent(content *Content) (*Introduction, error) {
 
 // DocumentAddress returns the sender's document DID address.
 func (i *Introduction) DocumentAddress() *DIDAddress {
+	defer runtime.KeepAlive(i)
 	return newDIDAddress(C.zktf_message_content_introduction_document_address(i.ptr))
 }
 
 // Presentations returns the verified presentations shared by the sender.
 func (i *Introduction) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(i)
 	return verifiablePresentationsFrom(C.zktf_message_content_introduction_presentations(i.ptr))
 }
 
 // Tokens returns the tokens issued by the sender.
 func (i *Introduction) Tokens() ([]*Token, error) {
+	defer runtime.KeepAlive(i)
 	var c *C.zktf_collection_token
 	if err := status(C.zktf_message_content_introduction_tokens(i.ptr, &c)); err != nil {
 		return nil, err
@@ -54,12 +58,14 @@ func (i *Introduction) Tokens() ([]*Token, error) {
 
 // Assets returns supporting object assets attached to the introduction.
 func (i *Introduction) Assets() []*Object {
+	defer runtime.KeepAlive(i)
 	return objectsFrom(C.zktf_message_content_introduction_assets(i.ptr))
 }
 
 // PairwiseIntroduction extracts the pairwise introduction (suitable for
 // validating with Account.PairwiseValidateIntroduction).
 func (i *Introduction) PairwiseIntroduction() (*PairwiseIntroduction, error) {
+	defer runtime.KeepAlive(i)
 	var out *C.zktf_pairwise_introduction
 	if err := status(C.zktf_message_content_introduction_introduction(i.ptr, &out)); err != nil {
 		return nil, err
@@ -76,6 +82,7 @@ type IntroductionBuilder struct {
 func NewIntroductionBuilder() *IntroductionBuilder {
 	ptr := C.zktf_message_content_introduction_builder_init()
 	b := &IntroductionBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_introduction_builder) {
 		C.zktf_message_content_introduction_builder_destroy(ptr)
 	}, b.ptr)
@@ -84,30 +91,39 @@ func NewIntroductionBuilder() *IntroductionBuilder {
 
 // DocumentAddress sets the document address the sender wants to identify as.
 func (b *IntroductionBuilder) DocumentAddress(address *DIDAddress) *IntroductionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(address)
 	C.zktf_message_content_introduction_builder_document_address(b.ptr, address.ptr)
 	return b
 }
 
 // Presentation adds a verifiable presentation to the introduction.
 func (b *IntroductionBuilder) Presentation(p *VerifiablePresentation) *IntroductionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
 	C.zktf_message_content_introduction_builder_presentation(b.ptr, p.ptr)
 	return b
 }
 
 // Token attaches a token (e.g. a delegation/send token) to the introduction.
 func (b *IntroductionBuilder) Token(t *Token) *IntroductionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(t)
 	C.zktf_message_content_introduction_builder_token(b.ptr, t.ptr)
 	return b
 }
 
 // Asset attaches a supporting object asset.
 func (b *IntroductionBuilder) Asset(o *Object) *IntroductionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(o)
 	C.zktf_message_content_introduction_builder_asset(b.ptr, o.ptr)
 	return b
 }
 
 // Finish finalizes the introduction content, ready to send.
 func (b *IntroductionBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content
 	if err := status(C.zktf_message_content_introduction_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

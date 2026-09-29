@@ -44,6 +44,9 @@ type AccountConfig struct {
 	StoragePath     string
 	EncryptionKey   []byte
 	LogLevel        LogLevel
+
+	DisableProcessHardening      bool
+	DisableStorageMemorySecurity bool
 }
 
 // Account wraps a zktf_account handle.
@@ -56,6 +59,7 @@ type Account struct {
 // NewAccount allocates an unconfigured account.
 func NewAccount() *Account {
 	a := &Account{ptr: C.zktf_account_init()}
+	defer runtime.KeepAlive(a)
 
 	a.cleanup = runtime.AddCleanup(a, func(ptr *C.zktf_account) {
 		C.zktf_account_destroy(ptr)
@@ -68,6 +72,7 @@ func NewAccount() *Account {
 // callbacks, stopping the GC cleanup to avoid a double free. No-op if already
 // closed.
 func (a *Account) Close() {
+	defer runtime.KeepAlive(a)
 	if a.ptr == nil {
 		return
 	}
@@ -102,6 +107,8 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		rpc, object, messaging, storage,
 		keyBuf, keyLen,
 		cfg.LogLevel,
+		cfg.DisableProcessHardening,
+		cfg.DisableStorageMemorySecurity,
 	)
 	defer destroyAccountConfig(config)
 

@@ -29,6 +29,7 @@ func newChat(ptr *C.zktf_message_content_chat) *Chat {
 
 // ChatFromContent decodes message content as a chat message.
 func ChatFromContent(content *Content) (*Chat, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_chat
 	if err := status(C.zktf_message_content_as_chat(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -38,11 +39,13 @@ func ChatFromContent(content *Content) (*Chat, error) {
 
 // Message returns the chat message text.
 func (c *Chat) Message() string {
+	defer runtime.KeepAlive(c)
 	return C.GoString(C.zktf_message_content_chat_message(c.ptr))
 }
 
 // Referencing returns the id of the message this chat references, or nil.
 func (c *Chat) Referencing() []byte {
+	defer runtime.KeepAlive(c)
 	ptr := C.zktf_message_content_chat_referencing(c.ptr)
 	if ptr == nil {
 		return nil
@@ -52,6 +55,7 @@ func (c *Chat) Referencing() []byte {
 
 // Attachments returns the objects attached to this chat message.
 func (c *Chat) Attachments() []*Object {
+	defer runtime.KeepAlive(c)
 	return objectsFrom(C.zktf_message_content_chat_attachments(c.ptr))
 }
 
@@ -64,6 +68,7 @@ type ChatBuilder struct {
 func NewChatBuilder() *ChatBuilder {
 	ptr := C.zktf_message_content_chat_builder_init()
 	b := &ChatBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_chat_builder) {
 		C.zktf_message_content_chat_builder_destroy(ptr)
 	}, b.ptr)
@@ -72,6 +77,7 @@ func NewChatBuilder() *ChatBuilder {
 
 // Message sets the chat message text.
 func (b *ChatBuilder) Message(message string) *ChatBuilder {
+	defer runtime.KeepAlive(b)
 	cmsg := cstring(message)
 	defer free(unsafe.Pointer(cmsg))
 	C.zktf_message_content_chat_builder_message(b.ptr, cmsg)
@@ -80,6 +86,7 @@ func (b *ChatBuilder) Message(message string) *ChatBuilder {
 
 // Reference sets the id of a message this chat references.
 func (b *ChatBuilder) Reference(messageID []byte) *ChatBuilder {
+	defer runtime.KeepAlive(b)
 	buf, _ := cbytes(messageID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_chat_builder_reference(b.ptr, buf)
@@ -88,12 +95,15 @@ func (b *ChatBuilder) Reference(messageID []byte) *ChatBuilder {
 
 // Attach attaches an object to the chat message.
 func (b *ChatBuilder) Attach(attachment *Object) *ChatBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(attachment)
 	C.zktf_message_content_chat_builder_attach(b.ptr, attachment.ptr)
 	return b
 }
 
 // Finish finalizes the chat content, ready to send.
 func (b *ChatBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var ptr *C.zktf_message_content
 	if err := status(C.zktf_message_content_chat_builder_finish(b.ptr, &ptr)); err != nil {
 		return nil, err

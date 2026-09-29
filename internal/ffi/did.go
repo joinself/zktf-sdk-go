@@ -29,17 +29,21 @@ func newDIDAddress(ptr *C.zktf_did_address) *DIDAddress {
 
 // DIDAddressKey builds a key-method DID address from a signing key.
 func DIDAddressKey(key *SigningPublicKey) *DIDAddress {
+	defer runtime.KeepAlive(key)
 	return newDIDAddress(C.zktf_did_address_key(key.ptr))
 }
 
 // DIDAddressZktf builds a zktf-method DID address from an identity's address.
 func DIDAddressZktf(address *SigningPublicKey) *DIDAddress {
+	defer runtime.KeepAlive(address)
 	return newDIDAddress(C.zktf_did_address_zktf(address.ptr))
 }
 
 // DIDAddressZktfWithKey builds a zktf-method DID address naming a specific key
 // of the identity.
 func DIDAddressZktfWithKey(address, key *SigningPublicKey) *DIDAddress {
+	defer runtime.KeepAlive(address)
+	defer runtime.KeepAlive(key)
 	return newDIDAddress(C.zktf_did_address_zktf_with_key(address.ptr, key.ptr))
 }
 
@@ -57,11 +61,13 @@ func DIDAddressDecode(did string) (*DIDAddress, error) {
 
 // Address returns the signing public key embedded in the DID address.
 func (a *DIDAddress) Address() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
 	return newSigningPublicKey(C.zktf_did_address_address(a.ptr))
 }
 
 // String returns the encoded DID string.
 func (a *DIDAddress) String() string {
+	defer runtime.KeepAlive(a)
 	buf := C.zktf_did_address_encode(a.ptr)
 	if buf == nil {
 		return ""

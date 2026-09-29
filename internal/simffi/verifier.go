@@ -26,6 +26,7 @@ func newVerifier(ptr *C.zktf_sim_verifier) *Verifier {
 
 // NewVerifier allocates a simulated server verifier connected to the network.
 func NewVerifier(network *Network) (*Verifier, error) {
+	defer runtime.KeepAlive(network)
 	var ptr *C.zktf_sim_verifier
 	if err := status(C.zktf_sim_verifier_new(network.ptr, &ptr)); err != nil {
 		return nil, err
@@ -34,18 +35,21 @@ func NewVerifier(network *Network) (*Verifier, error) {
 }
 
 func (v *Verifier) Identifier() ([]byte, error) {
+	defer runtime.KeepAlive(v)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_verifier_identifier(v.ptr, buf, signingKeyBytesLen)
 	})
 }
 
 func (v *Verifier) Inbox() ([]byte, error) {
+	defer runtime.KeepAlive(v)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_verifier_inbox(v.ptr, buf, signingKeyBytesLen)
 	})
 }
 
 func (v *Verifier) Assertion() ([]byte, error) {
+	defer runtime.KeepAlive(v)
 	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
 		return C.zktf_sim_verifier_assertion(v.ptr, buf, signingKeyBytesLen)
 	})

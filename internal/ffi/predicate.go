@@ -151,11 +151,15 @@ func PredicateNotEmpty(field string) *Predicate {
 
 // PredicateAnd combines two predicates with logical AND.
 func PredicateAnd(a, b *Predicate) *Predicate {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(b)
 	return newPredicate(C.zktf_credential_predicate_and(a.ptr, b.ptr))
 }
 
 // PredicateOr combines two predicates with logical OR.
 func PredicateOr(a, b *Predicate) *Predicate {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(b)
 	return newPredicate(C.zktf_credential_predicate_or(a.ptr, b.ptr))
 }
 
@@ -189,6 +193,7 @@ func newPredicateTree(ptr *C.zktf_credential_predicate_tree) *PredicateTree {
 
 // NewPredicateTree builds a tree rooted at the given predicate.
 func NewPredicateTree(root *Predicate) *PredicateTree {
+	defer runtime.KeepAlive(root)
 	return newPredicateTree(C.zktf_credential_predicate_tree_init(root.ptr))
 }
 
@@ -205,11 +210,13 @@ func PredicateTreeDecode(data []byte) (*PredicateTree, error) {
 
 // Encode returns the encoded bytes of the tree.
 func (t *PredicateTree) Encode() []byte {
+	defer runtime.KeepAlive(t)
 	return goBytesFromBuffer(C.zktf_credential_predicate_tree_encode(t.ptr))
 }
 
 // Graphviz renders the tree in graphviz dot format.
 func (t *PredicateTree) Graphviz() string {
+	defer runtime.KeepAlive(t)
 	buf := C.zktf_credential_predicate_tree_graphviz(t.ptr)
 	if buf == nil {
 		return ""
@@ -221,6 +228,7 @@ func (t *PredicateTree) Graphviz() string {
 // FindOptimalMatch selects the optimal set of credentials matching the tree,
 // or returns nil if no match is possible.
 func (t *PredicateTree) FindOptimalMatch(credentials []*VerifiableCredential) []*VerifiableCredential {
+	defer runtime.KeepAlive(t)
 	in := verifiableCredentialCollection(credentials)
 	defer C.zktf_collection_verifiable_credential_destroy(in)
 
@@ -230,6 +238,7 @@ func (t *PredicateTree) FindOptimalMatch(credentials []*VerifiableCredential) []
 
 // FindMissingPredicates returns a report of predicates the credentials do not satisfy.
 func (t *PredicateTree) FindMissingPredicates(credentials []*VerifiableCredential) *PredicateReport {
+	defer runtime.KeepAlive(t)
 	in := verifiableCredentialCollection(credentials)
 	defer C.zktf_collection_verifiable_credential_destroy(in)
 	return newPredicateReport(C.zktf_credential_predicate_tree_find_missing_predicates(t.ptr, in))
@@ -241,6 +250,7 @@ func verifiableCredentialCollection(credentials []*VerifiableCredential) *C.zktf
 	c := C.zktf_collection_verifiable_credential_init()
 	for _, vc := range credentials {
 		C.zktf_collection_verifiable_credential_append(c, vc.ptr)
+		runtime.KeepAlive(vc)
 	}
 	return c
 }
@@ -263,6 +273,7 @@ func newPredicateReport(ptr *C.zktf_credential_predicate_report) *PredicateRepor
 
 // Requirements returns the per-requirement solutions in the report.
 func (r *PredicateReport) Requirements() []*PredicateSolution {
+	defer runtime.KeepAlive(r)
 	n := int(C.zktf_credential_predicate_report_requirements_len(r.ptr))
 	out := make([]*PredicateSolution, n)
 	for i := 0; i < n; i++ {
@@ -289,6 +300,7 @@ func newPredicateSolution(ptr *C.zktf_credential_predicate_solution) *PredicateS
 
 // Predicators returns the predicators required to satisfy this solution.
 func (s *PredicateSolution) Predicators() []*Predicator {
+	defer runtime.KeepAlive(s)
 	n := int(C.zktf_credential_predicate_solution_len(s.ptr))
 	out := make([]*Predicator, n)
 	for i := 0; i < n; i++ {
@@ -332,11 +344,13 @@ func newPredicator(ptr *C.zktf_credential_predicator) *Predicator {
 
 // Kind returns the predicator's operator.
 func (p *Predicator) Kind() PredicatorKind {
+	defer runtime.KeepAlive(p)
 	return PredicatorKind(C.zktf_credential_predicator_predicator_type(p.ptr))
 }
 
 // Field returns the credential field (JSON pointer) the predicator operates on.
 func (p *Predicator) Field() string {
+	defer runtime.KeepAlive(p)
 	buf := C.zktf_credential_predicator_field(p.ptr)
 	if buf == nil {
 		return ""
@@ -347,6 +361,7 @@ func (p *Predicator) Field() string {
 
 // Values returns the predicator's value(s).
 func (p *Predicator) Values() []string {
+	defer runtime.KeepAlive(p)
 	c := C.zktf_credential_predicator_values(p.ptr)
 	if c == nil {
 		return nil

@@ -52,11 +52,13 @@ func PairwiseIdentityDecode(data []byte) (*PairwiseIdentity, error) {
 
 // DocumentAddress returns the counterparty's document DID address.
 func (i *PairwiseIdentity) DocumentAddress() *DIDAddress {
+	defer runtime.KeepAlive(i)
 	return newDIDAddress(C.zktf_pairwise_identity_document_address(i.ptr))
 }
 
 // BiometricAnchorHash returns the 20-byte biometric anchor hash, or nil.
 func (i *PairwiseIdentity) BiometricAnchorHash() []byte {
+	defer runtime.KeepAlive(i)
 	p := C.zktf_pairwise_identity_biometric_anchor_hash(i.ptr)
 	if p == nil {
 		return nil
@@ -66,6 +68,7 @@ func (i *PairwiseIdentity) BiometricAnchorHash() []byte {
 
 // Encode returns the encoded bytes of the identity.
 func (i *PairwiseIdentity) Encode() []byte {
+	defer runtime.KeepAlive(i)
 	return goBytesFromBuffer(C.zktf_pairwise_identity_encode(i.ptr))
 }
 
@@ -87,16 +90,19 @@ func newPairwiseRelationship(ptr *C.zktf_pairwise_relationship) *PairwiseRelatio
 
 // AsIdentity returns the identity this account presents to the counterparty.
 func (r *PairwiseRelationship) AsIdentity() *PairwiseIdentity {
+	defer runtime.KeepAlive(r)
 	return newPairwiseIdentity(C.zktf_pairwise_relationship_as_identity(r.ptr))
 }
 
 // WithIdentity returns the counterparty's identity.
 func (r *PairwiseRelationship) WithIdentity() *PairwiseIdentity {
+	defer runtime.KeepAlive(r)
 	return newPairwiseIdentity(C.zktf_pairwise_relationship_with_identity(r.ptr))
 }
 
 // Status returns the connection status.
 func (r *PairwiseRelationship) Status() PairwiseStatus {
+	defer runtime.KeepAlive(r)
 	return PairwiseStatus(C.zktf_pairwise_relationship_status(r.ptr))
 }
 
@@ -119,11 +125,13 @@ func newPairwiseIntroduction(ptr *C.zktf_pairwise_introduction) *PairwiseIntrodu
 
 // DocumentAddress returns the introduced party's document DID address.
 func (i *PairwiseIntroduction) DocumentAddress() *DIDAddress {
+	defer runtime.KeepAlive(i)
 	return newDIDAddress(C.zktf_pairwise_introduction_document_address(i.ptr))
 }
 
 // Presentations returns the presentations shared by the sender.
 func (i *PairwiseIntroduction) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(i)
 	return verifiablePresentationsFrom(C.zktf_pairwise_introduction_presentations(i.ptr))
 }
 

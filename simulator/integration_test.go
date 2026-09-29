@@ -8,7 +8,10 @@
 package simulator_test
 
 import (
+	"net"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -140,5 +143,51 @@ func TestSignIdentity(t *testing.T) {
 	}
 	if !decoded.SignedBy(identifier) || !decoded.SignedBy(invocation) {
 		t.Fatal("want the operation signed by the identifier and the granted key")
+	}
+}
+
+func freePort(t *testing.T) uint16 {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer l.Close()
+	return uint16(l.Addr().(*net.TCPAddr).Port)
+}
+
+func TestRegisterSurvivesCollection(t *testing.T) {
+	network := simulator.NewNetwork(freePort(t), freePort(t), freePort(t), freePort(t))
+
+	verifier, err := simulator.NewVerifier(network)
+	if err != nil {
+		t.Fatalf("new verifier: %v", err)
+	}
+
+	identifier, err := verifier.Identifier()
+	if err != nil {
+		t.Fatalf("verifier identifier: %v", err)
+	}
+
+	var stop atomic.Bool
+	collected := make(chan struct{})
+	go func() {
+		defer close(collected)
+		for !stop.Load() {
+			runtime.GC()
+		}
+	}()
+	defer func() {
+		stop.Store(true)
+		<-collected
+	}()
+
+	for i := range 5 {
+		device := simulator.NewDevice(network)
+		device.Expect(simulator.MatchAny(), simulator.Accept())
+
+		if err := device.Register(identifier); err != nil {
+			t.Fatalf("register %d: %v", i, err)
+		}
 	}
 }

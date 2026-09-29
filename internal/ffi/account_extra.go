@@ -14,6 +14,7 @@ import (
 // SetupPairingCode sets the account up for pairing with an application identity
 // and returns the pairing code. It fails if the account has already been paired.
 func (a *Account) SetupPairingCode() (string, error) {
+	defer runtime.KeepAlive(a)
 	var buf *C.zktf_string_buffer
 
 	if err := status(C.zktf_account_setup_pairing_code(a.ptr, &buf)); err != nil {
@@ -25,17 +26,23 @@ func (a *Account) SetupPairingCode() (string, error) {
 
 // PresentationSign signs a presentation with any available keys it requires.
 func (a *Account) PresentationSign(vp *VerifiablePresentation) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(vp)
 	return status(C.zktf_account_presentation_sign(a.ptr, vp.ptr))
 }
 
 // PresentationStore stores a presentation on the account for later retrieval.
 func (a *Account) PresentationStore(vp *VerifiablePresentation) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(vp)
 	return status(C.zktf_account_presentation_store(a.ptr, vp.ptr))
 }
 
 // PresentationLookup returns presentations stored on the account that satisfy
 // the predicate tree. A nil tree returns every stored presentation.
 func (a *Account) PresentationLookup(tree *PredicateTree) ([]*VerifiablePresentation, error) {
+	defer runtime.KeepAlive(tree)
+	defer runtime.KeepAlive(a)
 	var treePtr *C.zktf_credential_predicate_tree
 	if tree != nil {
 		treePtr = tree.ptr
@@ -51,11 +58,14 @@ func (a *Account) PresentationLookup(tree *PredicateTree) ([]*VerifiablePresenta
 
 // ObjectStore stores an object in the account's local data store.
 func (a *Account) ObjectStore(obj *Object) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(obj)
 	return status(C.zktf_account_object_store(a.ptr, obj.ptr))
 }
 
 // ObjectRetrieve loads a locally stored object by its id.
 func (a *Account) ObjectRetrieve(objectID []byte) (*Object, error) {
+	defer runtime.KeepAlive(a)
 	idBuf, _ := cbytes(objectID)
 	defer free(unsafe.Pointer(idBuf))
 
@@ -69,6 +79,9 @@ func (a *Account) ObjectRetrieve(objectID []byte) (*Object, error) {
 
 // CredentialExchangeTrack records that a credential was exchanged with an address.
 func (a *Account) CredentialExchangeTrack(with *SigningPublicKey, vc *VerifiableCredential) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(with)
+	defer runtime.KeepAlive(vc)
 	return status(C.zktf_account_credential_exchange_track(a.ptr, with.ptr, vc.ptr))
 }
 
@@ -76,6 +89,9 @@ func (a *Account) CredentialExchangeTrack(with *SigningPublicKey, vc *Verifiable
 // restricted to exchanges with an address and to credentials satisfying a
 // predicate tree. Either filter may be nil.
 func (a *Account) CredentialExchangeLog(with *SigningPublicKey, tree *PredicateTree) ([]*CredentialExchange, error) {
+	defer runtime.KeepAlive(with)
+	defer runtime.KeepAlive(tree)
+	defer runtime.KeepAlive(a)
 	var withPtr *C.zktf_signing_public_key
 	if with != nil {
 		withPtr = with.ptr
@@ -96,6 +112,8 @@ func (a *Account) CredentialExchangeLog(with *SigningPublicKey, tree *PredicateT
 
 // TokenIssue issues a fresh token from a validated request.
 func (a *Account) TokenIssue(req *TokenRequest) (*Token, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(req)
 	var out *C.zktf_token
 
 	if err := status(C.zktf_account_token_issue(a.ptr, req.ptr, &out)); err != nil {
@@ -108,6 +126,8 @@ func (a *Account) TokenIssue(req *TokenRequest) (*Token, error) {
 // TokenStore stores a token. The issuer, bearer and local owner are derived
 // from the token itself.
 func (a *Account) TokenStore(tk *Token) error {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(tk)
 	return status(C.zktf_account_token_store(a.ptr, tk.ptr))
 }
 
@@ -130,16 +150,19 @@ func newCredentialExchange(ptr *C.zktf_credential_exchange) *CredentialExchange 
 
 // WithAddress returns the address the credential was exchanged with.
 func (e *CredentialExchange) WithAddress() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
 	return newSigningPublicKey(C.zktf_credential_exchange_with_address(e.ptr))
 }
 
 // ContentHash returns the hash of the exchanged credential content.
 func (e *CredentialExchange) ContentHash() []byte {
+	defer runtime.KeepAlive(e)
 	return goBytesFromBuffer(C.zktf_credential_exchange_content_hash(e.ptr))
 }
 
 // SharedAt returns the unix timestamp (seconds) the credential was shared.
 func (e *CredentialExchange) SharedAt() int64 {
+	defer runtime.KeepAlive(e)
 	return int64(C.zktf_credential_exchange_shared_at(e.ptr))
 }
 
@@ -186,6 +209,7 @@ type PushTokenBuilder struct {
 func NewPushTokenBuilder() *PushTokenBuilder {
 	ptr := C.zktf_push_token_builder_init()
 	b := &PushTokenBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_push_token_builder) {
 		C.zktf_push_token_builder_destroy(ptr)
 	}, b.ptr)
@@ -195,24 +219,30 @@ func NewPushTokenBuilder() *PushTokenBuilder {
 
 // ForAddress sets the local group address the token authorizes notifications for.
 func (b *PushTokenBuilder) ForAddress(address *SigningPublicKey) *PushTokenBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(address)
 	C.zktf_push_token_builder_for_address(b.ptr, address.ptr)
 	return b
 }
 
 // ProviderAddress sets the exchange public key of the push provider.
 func (b *PushTokenBuilder) ProviderAddress(address *ExchangePublicKey) *PushTokenBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(address)
 	C.zktf_push_token_builder_provider_address(b.ptr, address.ptr)
 	return b
 }
 
 // Delegatable allows the bearer to further delegate the issued token.
 func (b *PushTokenBuilder) Delegatable(delegatable bool) *PushTokenBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_push_token_builder_delegatable(b.ptr, C.bool(delegatable))
 	return b
 }
 
 // Finish validates the configured fields and returns a token request.
 func (b *PushTokenBuilder) Finish() (*TokenRequest, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_token_request
 	if err := status(C.zktf_push_token_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

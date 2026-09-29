@@ -70,17 +70,20 @@ func newAction(ptr *C.zktf_message_content_action) *Action {
 
 // Kind returns the kind of action.
 func (a *Action) Kind() ActionKind {
+	defer runtime.KeepAlive(a)
 	return ActionKind(C.zktf_message_content_action_kind_of(a.ptr))
 }
 
 // ID returns the action's id bytes.
 func (a *Action) ID() []byte {
+	defer runtime.KeepAlive(a)
 	n := C.zktf_message_content_action_id_len(a.ptr)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_action_id(a.ptr)), C.int(n))
 }
 
 // AsPresentation downcasts the action to a credential presentation action.
 func (a *Action) AsPresentation() (*PresentationAction, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_message_content_credential_presentation_action
 	if err := status(C.zktf_message_content_action_as_credential_presentation(a.ptr, &out)); err != nil {
 		return nil, err
@@ -90,6 +93,7 @@ func (a *Action) AsPresentation() (*PresentationAction, error) {
 
 // AsVerification downcasts the action to a credential verification action.
 func (a *Action) AsVerification() (*VerificationAction, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_message_content_credential_verification_action
 	if err := status(C.zktf_message_content_action_as_credential_verification(a.ptr, &out)); err != nil {
 		return nil, err
@@ -99,6 +103,7 @@ func (a *Action) AsVerification() (*VerificationAction, error) {
 
 // AsIdentitySigning downcasts the action to an identity-signing action.
 func (a *Action) AsIdentitySigning() (*IdentitySigningAction, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_message_content_identity_signing_action
 	if err := status(C.zktf_message_content_action_as_identity_signing(a.ptr, &out)); err != nil {
 		return nil, err
@@ -108,6 +113,7 @@ func (a *Action) AsIdentitySigning() (*IdentitySigningAction, error) {
 
 // AsRevocationSigning downcasts the action to a revocation-signing action.
 func (a *Action) AsRevocationSigning() (*RevocationSigningAction, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_message_content_revocation_signing_action
 	if err := status(C.zktf_message_content_action_as_revocation_signing(a.ptr, &out)); err != nil {
 		return nil, err
@@ -117,6 +123,7 @@ func (a *Action) AsRevocationSigning() (*RevocationSigningAction, error) {
 
 // AsDevicePairing downcasts the action to a device-pairing action.
 func (a *Action) AsDevicePairing() (*DevicePairingAction, error) {
+	defer runtime.KeepAlive(a)
 	var out *C.zktf_message_content_device_pairing_action
 	if err := status(C.zktf_message_content_action_as_device_pairing(a.ptr, &out)); err != nil {
 		return nil, err
@@ -143,27 +150,32 @@ func newOutcome(ptr *C.zktf_message_content_outcome) *Outcome {
 
 // Kind returns the kind of outcome.
 func (o *Outcome) Kind() OutcomeKind {
+	defer runtime.KeepAlive(o)
 	return OutcomeKind(C.zktf_message_content_outcome_kind_of(o.ptr))
 }
 
 // ActionID returns the id of the action this outcome refers to.
 func (o *Outcome) ActionID() []byte {
+	defer runtime.KeepAlive(o)
 	n := C.zktf_message_content_outcome_action_id_len(o.ptr)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_outcome_action_id(o.ptr)), C.int(n))
 }
 
 // Status returns the response status carried by the outcome.
 func (o *Outcome) Status() ResponseStatus {
+	defer runtime.KeepAlive(o)
 	return ResponseStatus(C.zktf_message_content_outcome_status(o.ptr))
 }
 
 // ErrorMessage returns the error message carried by the outcome, or "".
 func (o *Outcome) ErrorMessage() string {
+	defer runtime.KeepAlive(o)
 	return C.GoString(C.zktf_message_content_outcome_error_message(o.ptr))
 }
 
 // AsPresentation downcasts the outcome to a credential presentation result.
 func (o *Outcome) AsPresentation() (*PresentationResult, error) {
+	defer runtime.KeepAlive(o)
 	var out *C.zktf_message_content_credential_presentation_result
 	if err := status(C.zktf_message_content_outcome_as_credential_presentation(o.ptr, &out)); err != nil {
 		return nil, err
@@ -173,6 +185,7 @@ func (o *Outcome) AsPresentation() (*PresentationResult, error) {
 
 // AsVerification downcasts the outcome to a credential verification result.
 func (o *Outcome) AsVerification() (*VerificationResult, error) {
+	defer runtime.KeepAlive(o)
 	var out *C.zktf_message_content_credential_verification_result
 	if err := status(C.zktf_message_content_outcome_as_credential_verification(o.ptr, &out)); err != nil {
 		return nil, err
@@ -182,6 +195,7 @@ func (o *Outcome) AsVerification() (*VerificationResult, error) {
 
 // AsIdentitySigning downcasts the outcome to an identity-signing result.
 func (o *Outcome) AsIdentitySigning() (*IdentitySigningResult, error) {
+	defer runtime.KeepAlive(o)
 	var out *C.zktf_message_content_identity_signing_result
 	if err := status(C.zktf_message_content_outcome_as_identity_signing(o.ptr, &out)); err != nil {
 		return nil, err
@@ -191,6 +205,7 @@ func (o *Outcome) AsIdentitySigning() (*IdentitySigningResult, error) {
 
 // AsRevocationSigning downcasts the outcome to a revocation-signing result.
 func (o *Outcome) AsRevocationSigning() (*RevocationSigningResult, error) {
+	defer runtime.KeepAlive(o)
 	var out *C.zktf_message_content_revocation_signing_result
 	if err := status(C.zktf_message_content_outcome_as_revocation_signing(o.ptr, &out)); err != nil {
 		return nil, err
@@ -200,6 +215,7 @@ func (o *Outcome) AsRevocationSigning() (*RevocationSigningResult, error) {
 
 // AsDevicePairing downcasts the outcome to a device-pairing result.
 func (o *Outcome) AsDevicePairing() (*DevicePairingResult, error) {
+	defer runtime.KeepAlive(o)
 	var out *C.zktf_message_content_device_pairing_result
 	if err := status(C.zktf_message_content_outcome_as_device_pairing(o.ptr, &out)); err != nil {
 		return nil, err
@@ -216,6 +232,7 @@ type OutcomeBuilder struct {
 func NewOutcomeBuilder() *OutcomeBuilder {
 	ptr := C.zktf_message_content_outcome_builder_init()
 	b := &OutcomeBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_outcome_builder) {
 		C.zktf_message_content_outcome_builder_destroy(ptr)
 	}, b.ptr)
@@ -224,6 +241,7 @@ func NewOutcomeBuilder() *OutcomeBuilder {
 
 // ActionID sets the id of the action this outcome refers to.
 func (b *OutcomeBuilder) ActionID(id []byte) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
 	buf, length := cbytes(id)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_outcome_builder_action_id(b.ptr, buf, length)
@@ -232,12 +250,14 @@ func (b *OutcomeBuilder) ActionID(id []byte) *OutcomeBuilder {
 
 // Status sets the response status.
 func (b *OutcomeBuilder) Status(s ResponseStatus) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_message_content_outcome_builder_status(b.ptr, C.enum_zktf_message_response_status(s))
 	return b
 }
 
 // ErrorMessage sets a human-readable error message.
 func (b *OutcomeBuilder) ErrorMessage(msg string) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
 	cmsg := cstring(msg)
 	defer free(unsafe.Pointer(cmsg))
 	C.zktf_message_content_outcome_builder_error_message(b.ptr, cmsg)
@@ -246,36 +266,47 @@ func (b *OutcomeBuilder) ErrorMessage(msg string) *OutcomeBuilder {
 
 // ResultPresentation attaches a credential presentation result.
 func (b *OutcomeBuilder) ResultPresentation(r *PresentationResult) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(r)
 	C.zktf_message_content_outcome_builder_result_presentation(b.ptr, r.ptr)
 	return b
 }
 
 // ResultVerification attaches a credential verification result.
 func (b *OutcomeBuilder) ResultVerification(r *VerificationResult) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(r)
 	C.zktf_message_content_outcome_builder_result_verification(b.ptr, r.ptr)
 	return b
 }
 
 // ResultSigning attaches an identity-signing result.
 func (b *OutcomeBuilder) ResultSigning(r *IdentitySigningResult) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(r)
 	C.zktf_message_content_outcome_builder_result_signing(b.ptr, r.ptr)
 	return b
 }
 
 // ResultRevocationSigning attaches a revocation-signing result.
 func (b *OutcomeBuilder) ResultRevocationSigning(r *RevocationSigningResult) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(r)
 	C.zktf_message_content_outcome_builder_result_revocation_signing(b.ptr, r.ptr)
 	return b
 }
 
 // ResultPairing attaches a device-pairing result.
 func (b *OutcomeBuilder) ResultPairing(r *DevicePairingResult) *OutcomeBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(r)
 	C.zktf_message_content_outcome_builder_result_pairing(b.ptr, r.ptr)
 	return b
 }
 
 // Finish finalizes the outcome.
 func (b *OutcomeBuilder) Finish() (*Outcome, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content_outcome
 	if err := status(C.zktf_message_content_outcome_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -301,6 +332,7 @@ func newExchangeRequest(ptr *C.zktf_message_content_exchange_request) *ExchangeR
 
 // ExchangeRequestFromContent decodes message content as an exchange request.
 func ExchangeRequestFromContent(content *Content) (*ExchangeRequest, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_exchange_request
 	if err := status(C.zktf_message_content_as_exchange_request(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -310,26 +342,31 @@ func ExchangeRequestFromContent(content *Content) (*ExchangeRequest, error) {
 
 // ID returns the request id.
 func (r *ExchangeRequest) ID() []byte {
+	defer runtime.KeepAlive(r)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_exchange_request_id(r.ptr)), messageIDLen)
 }
 
 // Purpose returns the request purpose string.
 func (r *ExchangeRequest) Purpose() string {
+	defer runtime.KeepAlive(r)
 	return C.GoString(C.zktf_message_content_exchange_request_purpose(r.ptr))
 }
 
 // Expires returns the unix timestamp (seconds) the request expires.
 func (r *ExchangeRequest) Expires() int64 {
+	defer runtime.KeepAlive(r)
 	return int64(C.zktf_message_content_exchange_request_expires(r.ptr))
 }
 
 // Flags returns the request flags bitfield.
 func (r *ExchangeRequest) Flags() uint64 {
+	defer runtime.KeepAlive(r)
 	return uint64(C.zktf_message_content_exchange_request_flags(r.ptr))
 }
 
 // Actions returns the actions contained in the request.
 func (r *ExchangeRequest) Actions() ([]*Action, error) {
+	defer runtime.KeepAlive(r)
 	var c *C.zktf_collection_message_content_action
 	if err := status(C.zktf_message_content_exchange_request_actions(r.ptr, &c)); err != nil {
 		return nil, err
@@ -352,6 +389,7 @@ type ExchangeRequestBuilder struct {
 func NewExchangeRequestBuilder() *ExchangeRequestBuilder {
 	ptr := C.zktf_message_content_exchange_request_builder_init()
 	b := &ExchangeRequestBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_exchange_request_builder) {
 		C.zktf_message_content_exchange_request_builder_destroy(ptr)
 	}, b.ptr)
@@ -360,6 +398,7 @@ func NewExchangeRequestBuilder() *ExchangeRequestBuilder {
 
 // ID sets the request id.
 func (b *ExchangeRequestBuilder) ID(id []byte) *ExchangeRequestBuilder {
+	defer runtime.KeepAlive(b)
 	buf, length := cbytes(id)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_exchange_request_builder_id(b.ptr, buf, length)
@@ -368,6 +407,7 @@ func (b *ExchangeRequestBuilder) ID(id []byte) *ExchangeRequestBuilder {
 
 // Purpose sets the request purpose string.
 func (b *ExchangeRequestBuilder) Purpose(p string) *ExchangeRequestBuilder {
+	defer runtime.KeepAlive(b)
 	cp := cstring(p)
 	defer free(unsafe.Pointer(cp))
 	C.zktf_message_content_exchange_request_builder_purpose(b.ptr, cp)
@@ -376,24 +416,29 @@ func (b *ExchangeRequestBuilder) Purpose(p string) *ExchangeRequestBuilder {
 
 // Expires sets the request expiry as a unix timestamp (seconds).
 func (b *ExchangeRequestBuilder) Expires(unix int64) *ExchangeRequestBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_message_content_exchange_request_builder_expires(b.ptr, C.int64_t(unix))
 	return b
 }
 
 // Flags sets the request flags bitfield.
 func (b *ExchangeRequestBuilder) Flags(flags uint64) *ExchangeRequestBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_message_content_exchange_request_builder_flags(b.ptr, C.uint64_t(flags))
 	return b
 }
 
 // Action appends an action to the request.
 func (b *ExchangeRequestBuilder) Action(a *Action) *ExchangeRequestBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(a)
 	C.zktf_message_content_exchange_request_builder_action(b.ptr, a.ptr)
 	return b
 }
 
 // Finish finalizes the exchange request, ready to send.
 func (b *ExchangeRequestBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content
 	if err := status(C.zktf_message_content_exchange_request_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err
@@ -419,6 +464,7 @@ func newExchangeResponse(ptr *C.zktf_message_content_exchange_response) *Exchang
 
 // ExchangeResponseFromContent decodes message content as an exchange response.
 func ExchangeResponseFromContent(content *Content) (*ExchangeResponse, error) {
+	defer runtime.KeepAlive(content)
 	var ptr *C.zktf_message_content_exchange_response
 	if err := status(C.zktf_message_content_as_exchange_response(content.ptr, &ptr)); err != nil {
 		return nil, err
@@ -428,26 +474,31 @@ func ExchangeResponseFromContent(content *Content) (*ExchangeResponse, error) {
 
 // ID returns the response id.
 func (r *ExchangeResponse) ID() []byte {
+	defer runtime.KeepAlive(r)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_exchange_response_id(r.ptr)), messageIDLen)
 }
 
 // ResponseTo returns the id of the request being responded to.
 func (r *ExchangeResponse) ResponseTo() []byte {
+	defer runtime.KeepAlive(r)
 	return C.GoBytes(unsafe.Pointer(C.zktf_message_content_exchange_response_response_to(r.ptr)), messageIDLen)
 }
 
 // Status returns the overall response status.
 func (r *ExchangeResponse) Status() ResponseStatus {
+	defer runtime.KeepAlive(r)
 	return ResponseStatus(C.zktf_message_content_exchange_response_status(r.ptr))
 }
 
 // ErrorMessage returns the response error message, or "".
 func (r *ExchangeResponse) ErrorMessage() string {
+	defer runtime.KeepAlive(r)
 	return C.GoString(C.zktf_message_content_exchange_response_error_message(r.ptr))
 }
 
 // Outcomes returns the per-action outcomes contained in the response.
 func (r *ExchangeResponse) Outcomes() ([]*Outcome, error) {
+	defer runtime.KeepAlive(r)
 	var c *C.zktf_collection_message_content_outcome
 	if err := status(C.zktf_message_content_exchange_response_outcomes(r.ptr, &c)); err != nil {
 		return nil, err
@@ -470,6 +521,7 @@ type ExchangeResponseBuilder struct {
 func NewExchangeResponseBuilder() *ExchangeResponseBuilder {
 	ptr := C.zktf_message_content_exchange_response_builder_init()
 	b := &ExchangeResponseBuilder{ptr: ptr}
+	defer runtime.KeepAlive(b)
 	runtime.AddCleanup(b, func(ptr *C.zktf_message_content_exchange_response_builder) {
 		C.zktf_message_content_exchange_response_builder_destroy(ptr)
 	}, b.ptr)
@@ -478,6 +530,7 @@ func NewExchangeResponseBuilder() *ExchangeResponseBuilder {
 
 // ID sets the response id.
 func (b *ExchangeResponseBuilder) ID(id []byte) *ExchangeResponseBuilder {
+	defer runtime.KeepAlive(b)
 	buf, length := cbytes(id)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_exchange_response_builder_id(b.ptr, buf, length)
@@ -486,6 +539,7 @@ func (b *ExchangeResponseBuilder) ID(id []byte) *ExchangeResponseBuilder {
 
 // ResponseTo sets the id of the request being responded to.
 func (b *ExchangeResponseBuilder) ResponseTo(requestID []byte) *ExchangeResponseBuilder {
+	defer runtime.KeepAlive(b)
 	buf, _ := cbytes(requestID)
 	defer free(unsafe.Pointer(buf))
 	C.zktf_message_content_exchange_response_builder_response_to(b.ptr, buf)
@@ -494,12 +548,14 @@ func (b *ExchangeResponseBuilder) ResponseTo(requestID []byte) *ExchangeResponse
 
 // Status sets the overall response status.
 func (b *ExchangeResponseBuilder) Status(s ResponseStatus) *ExchangeResponseBuilder {
+	defer runtime.KeepAlive(b)
 	C.zktf_message_content_exchange_response_builder_status(b.ptr, C.enum_zktf_message_response_status(s))
 	return b
 }
 
 // ErrorMessage sets the response error message.
 func (b *ExchangeResponseBuilder) ErrorMessage(msg string) *ExchangeResponseBuilder {
+	defer runtime.KeepAlive(b)
 	cmsg := cstring(msg)
 	defer free(unsafe.Pointer(cmsg))
 	C.zktf_message_content_exchange_response_builder_error_message(b.ptr, cmsg)
@@ -508,12 +564,15 @@ func (b *ExchangeResponseBuilder) ErrorMessage(msg string) *ExchangeResponseBuil
 
 // Outcome appends an outcome to the response.
 func (b *ExchangeResponseBuilder) Outcome(o *Outcome) *ExchangeResponseBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(o)
 	C.zktf_message_content_exchange_response_builder_outcome(b.ptr, o.ptr)
 	return b
 }
 
 // Finish finalizes the exchange response, ready to send.
 func (b *ExchangeResponseBuilder) Finish() (*Content, error) {
+	defer runtime.KeepAlive(b)
 	var out *C.zktf_message_content
 	if err := status(C.zktf_message_content_exchange_response_builder_finish(b.ptr, &out)); err != nil {
 		return nil, err

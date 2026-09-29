@@ -54,6 +54,7 @@ func newIdentityDocument(ptr *C.zktf_identity_document) *IdentityDocument {
 
 // Commitment returns the document's commitment hash, or nil if none is set.
 func (d *IdentityDocument) Commitment() []byte {
+	defer runtime.KeepAlive(d)
 	p := C.zktf_identity_document_commitment(d.ptr)
 	if p == nil {
 		return nil
@@ -63,24 +64,28 @@ func (d *IdentityDocument) Commitment() []byte {
 
 // Create returns an operation builder seeded from the current document state.
 func (d *IdentityDocument) Create() *IdentityOperationBuilder {
+	defer runtime.KeepAlive(d)
 	return newIdentityOperationBuilder(C.zktf_identity_document_create(d.ptr))
 }
 
 // SigningKeys returns the signing keys in the document. Pass nil for lookup to
 // list every signing key in the latest snapshot.
 func (d *IdentityDocument) SigningKeys(lookup *IdentityKeyLookup) []*SigningPublicKey {
+	defer runtime.KeepAlive(d)
 	return signingPublicKeysFrom(C.zktf_identity_document_signing_keys(d.ptr, lookupPtr(lookup)))
 }
 
 // ExchangeKeys returns the exchange keys in the document. Pass nil for lookup
 // to list every exchange key in the latest snapshot.
 func (d *IdentityDocument) ExchangeKeys(lookup *IdentityKeyLookup) []*ExchangePublicKey {
+	defer runtime.KeepAlive(d)
 	return exchangePublicKeysFrom(C.zktf_identity_document_exchange_keys(d.ptr, lookupPtr(lookup)))
 }
 
 // Descriptions returns the key descriptions in the document. Pass nil for
 // lookup to list every description in the latest snapshot.
 func (d *IdentityDocument) Descriptions(lookup *IdentityKeyLookup) []*IdentityOperationDescription {
+	defer runtime.KeepAlive(d)
 	c := C.zktf_identity_document_descriptions(d.ptr, lookupPtr(lookup))
 	if c == nil {
 		return nil
@@ -97,30 +102,39 @@ func (d *IdentityDocument) Descriptions(lookup *IdentityKeyLookup) []*IdentityOp
 // SigningKeyHasRoles reports whether the signing key holds every role in roles.
 // Pass nil for lookup to evaluate against the latest snapshot.
 func (d *IdentityDocument) SigningKeyHasRoles(key *SigningPublicKey, roles IdentityKeyRole, lookup *IdentityKeyLookup) bool {
+	defer runtime.KeepAlive(d)
+	defer runtime.KeepAlive(key)
 	return bool(C.zktf_identity_document_signing_key_has_roles(d.ptr, key.ptr, C.zktf_identity_key_role(roles), lookupPtr(lookup)))
 }
 
 // ExchangeKeyHasRoles reports whether the exchange key holds every role in
 // roles. Pass nil for lookup to evaluate against the latest snapshot.
 func (d *IdentityDocument) ExchangeKeyHasRoles(key *ExchangePublicKey, roles IdentityKeyRole, lookup *IdentityKeyLookup) bool {
+	defer runtime.KeepAlive(d)
+	defer runtime.KeepAlive(key)
 	return bool(C.zktf_identity_document_exchange_key_has_roles(d.ptr, key.ptr, C.zktf_identity_key_role(roles), lookupPtr(lookup)))
 }
 
 // SigningKeyValid reports whether the signing key is valid in the document.
 // Pass nil for lookup to evaluate against the latest snapshot.
 func (d *IdentityDocument) SigningKeyValid(key *SigningPublicKey, lookup *IdentityKeyLookup) bool {
+	defer runtime.KeepAlive(d)
+	defer runtime.KeepAlive(key)
 	return bool(C.zktf_identity_document_signing_key_valid(d.ptr, key.ptr, lookupPtr(lookup)))
 }
 
 // ExchangeKeyValid reports whether the exchange key is valid in the document.
 // Pass nil for lookup to evaluate against the latest snapshot.
 func (d *IdentityDocument) ExchangeKeyValid(key *ExchangePublicKey, lookup *IdentityKeyLookup) bool {
+	defer runtime.KeepAlive(d)
+	defer runtime.KeepAlive(key)
 	return bool(C.zktf_identity_document_exchange_key_valid(d.ptr, key.ptr, lookupPtr(lookup)))
 }
 
 // ThresholdMet reports whether signers collectively satisfy role's threshold.
 // Pass nil for lookup to evaluate against the latest snapshot.
 func (d *IdentityDocument) ThresholdMet(role IdentityKeyRole, signers []*SigningPublicKey, lookup *IdentityKeyLookup) bool {
+	defer runtime.KeepAlive(d)
 	c := signingPublicKeyCollection(signers)
 	defer destroySigningKeys(c)
 	return bool(C.zktf_identity_document_threshold_met(d.ptr, C.zktf_identity_key_role(role), c, lookupPtr(lookup)))
@@ -137,6 +151,7 @@ type IdentityKeyLookup struct {
 func NewIdentityKeyLookup() *IdentityKeyLookup {
 	ptr := C.zktf_identity_key_lookup_init()
 	l := &IdentityKeyLookup{ptr: ptr}
+	defer runtime.KeepAlive(l)
 	runtime.AddCleanup(l, func(ptr *C.zktf_identity_key_lookup) {
 		C.zktf_identity_key_lookup_destroy(ptr)
 	}, l.ptr)
@@ -146,11 +161,13 @@ func NewIdentityKeyLookup() *IdentityKeyLookup {
 // AtTime evaluates the query against the document as it existed at the given
 // unix timestamp (seconds).
 func (l *IdentityKeyLookup) AtTime(unix int64) {
+	defer runtime.KeepAlive(l)
 	C.zktf_identity_key_lookup_at_time(l.ptr, C.int64_t(unix))
 }
 
 // WithRoles restricts the result to keys holding every role in roles.
 func (l *IdentityKeyLookup) WithRoles(roles IdentityKeyRole) {
+	defer runtime.KeepAlive(l)
 	C.zktf_identity_key_lookup_with_roles(l.ptr, C.zktf_identity_key_role(roles))
 }
 
@@ -165,6 +182,8 @@ func lookupPtr(l *IdentityKeyLookup) *C.zktf_identity_key_lookup {
 // IdentityResolve resolves the identity document for an address via callback,
 // returning once the result has been delivered.
 func (a *Account) IdentityResolve(address *DIDAddress, timeout time.Duration) (*IdentityDocument, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(address)
 	fut := C.zktf_account_identity_resolve(a.ptr, address.ptr)
 
 	return AwaitIdentityDocument(fut, timeout)

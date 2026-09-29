@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"fmt"
+	"runtime"
 	"time"
 
 	"unsafe"
@@ -241,7 +242,9 @@ func (d *Device) Connect(counterparty *signing.PublicKey) error {
 // Send delivers content to an address, as the application layer would after
 // deciding how to answer a request the device left alone.
 func (d *Device) Send(to *signing.PublicKey, content *message.Content) error {
-	return d.h.Send(to.Bytes(), ffi.ContentOf(content).Pointer())
+	c := ffi.ContentOf(content)
+	defer runtime.KeepAlive(c)
+	return d.h.Send(to.Bytes(), c.Pointer())
 }
 
 // Scan consumes an anonymous message, such as the discovery QR a portal shows
@@ -332,11 +335,16 @@ func (d *Device) ControllerAnchor(document *signing.PublicKey, timeout time.Dura
 }
 
 func (d *Device) SignIdentity(operation *identity.Operation, details *credential.VerifiableCredential) ([]byte, []byte, error) {
+	op := ffi.IdentityOperationOf(operation)
+	defer runtime.KeepAlive(op)
+
 	var detailsHandle unsafe.Pointer
 	if details != nil {
-		detailsHandle = ffi.VerifiableCredentialOf(details).Pointer()
+		vc := ffi.VerifiableCredentialOf(details)
+		defer runtime.KeepAlive(vc)
+		detailsHandle = vc.Pointer()
 	}
-	return d.h.SignIdentity(ffi.IdentityOperationOf(operation).Pointer(), detailsHandle)
+	return d.h.SignIdentity(op.Pointer(), detailsHandle)
 }
 
 // Close destroys the device's native account
