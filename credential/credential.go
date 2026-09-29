@@ -189,7 +189,11 @@ func (v *VerifiableCredential) Issuer() *identity.Address {
 
 // Subject returns the subject address.
 func (v *VerifiableCredential) Subject() *identity.Address {
-	return ffi.ToDIDAddress(v.h.Subject()).(*identity.Address)
+	subject := v.h.Subject()
+	if subject == nil {
+		return nil
+	}
+	return ffi.ToDIDAddress(subject).(*identity.Address)
 }
 
 // Claim returns a string claim about the subject, or "" if absent.
