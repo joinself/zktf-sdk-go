@@ -2,6 +2,7 @@ package message_test
 
 import (
 	"bytes"
+	"runtime"
 	"testing"
 
 	"github.com/joinself/zktf-sdk-go/message"
@@ -64,5 +65,49 @@ func TestContentDecodeRejectsMalformedBytes(t *testing.T) {
 func TestContentDecodeRejectsEmptyBytes(t *testing.T) {
 	if _, err := message.ContentDecode(message.ContentChat, nil); err == nil {
 		t.Fatal("ContentDecode: want error, got nil")
+	}
+}
+
+func TestReceiptRoundTripsManyIDsUnderGC(t *testing.T) {
+	ids := make([][]byte, 16)
+	builder := message.NewReceipt()
+	for i := range ids {
+		ids[i] = bytes.Repeat([]byte{byte(i + 1)}, 20)
+		builder = builder.Delivered(ids[i])
+	}
+
+	content, err := builder.Finish()
+	if err != nil {
+		t.Fatalf("Finish: %v", err)
+	}
+
+	stop := make(chan struct{})
+	defer close(stop)
+	go func() {
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				runtime.GC()
+			}
+		}
+	}()
+
+	for range 200 {
+		r, err := message.ReceiptDecode(content)
+		if err != nil {
+			t.Fatalf("ReceiptDecode: %v", err)
+		}
+
+		delivered := r.Delivered()
+		if len(delivered) != len(ids) {
+			t.Fatalf("Delivered has %d ids, want %d", len(delivered), len(ids))
+		}
+		for i := range ids {
+			if !bytes.Equal(delivered[i], ids[i]) {
+				t.Fatalf("Delivered[%d] = %x, want %x", i, delivered[i], ids[i])
+			}
+		}
 	}
 }
