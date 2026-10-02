@@ -59,6 +59,22 @@ func (m *AnonymousMessage) EncodeAsString() (string, error) {
 	return goStringFromBuffer(buf), nil
 }
 
+type QREncoding int
+
+const (
+	QRSVG     QREncoding = C.QR_SVG
+	QRUnicode QREncoding = C.QR_UNICODE
+)
+
+func (m *AnonymousMessage) EncodeAsQR(encoding QREncoding) ([]byte, error) {
+	defer runtime.KeepAlive(m)
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_anonymous_message_encode_as_qr(m.ptr, &buf, C.enum_zktf_qr_code_encoding(encoding))); err != nil {
+		return nil, err
+	}
+	return goBytesFromBuffer(buf), nil
+}
+
 // ID returns the id of the message.
 func (m *AnonymousMessage) ID() []byte {
 	defer runtime.KeepAlive(m)
