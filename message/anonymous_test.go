@@ -39,3 +39,28 @@ func TestAnonymousMessageRoundTrips(t *testing.T) {
 		t.Fatalf("from address did not round trip")
 	}
 }
+
+func TestAnonymousMessageEncodesAsQR(t *testing.T) {
+	content, err := message.NewDiscoveryRequest().
+		FromAddress(address(t, 0x02)).
+		Finish()
+	if err != nil {
+		t.Fatalf("Finish: %v", err)
+	}
+
+	svg, err := message.NewAnonymousMessage(content).EncodeAsQR(message.QRSVG)
+	if err != nil {
+		t.Fatalf("EncodeAsQR: %v", err)
+	}
+	if !bytes.Contains(svg, []byte("<svg")) {
+		t.Fatalf("expected an svg document, got %q", svg[:min(len(svg), 64)])
+	}
+
+	unicode, err := message.NewAnonymousMessage(content).EncodeAsQR(message.QRUnicode)
+	if err != nil {
+		t.Fatalf("EncodeAsQR unicode: %v", err)
+	}
+	if len(unicode) == 0 {
+		t.Fatal("expected a non-empty unicode qr")
+	}
+}

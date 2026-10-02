@@ -34,3 +34,14 @@ func (m *AnonymousMessage) Content() *Content { return &Content{h: m.h.Content()
 // EncodeAsString encodes the message as a base64 URL encoded string, suitable
 // for embedding in a QR code.
 func (m *AnonymousMessage) EncodeAsString() (string, error) { return m.h.EncodeAsString() }
+
+type QREncoding = ffi.QREncoding
+
+const (
+	QRSVG     = ffi.QRSVG
+	QRUnicode = ffi.QRUnicode
+)
+
+func (m *AnonymousMessage) EncodeAsQR(encoding QREncoding) ([]byte, error) {
+	return m.h.EncodeAsQR(encoding)
+}
