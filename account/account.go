@@ -690,16 +690,6 @@ func (a *Account) ValueRemove(key string) error {
 	return a.h.ValueRemove(key)
 }
 
-// TokenIssue issues a fresh token from a validated request.
-func (a *Account) TokenIssue(req *token.Request) (*token.Token, error) {
-	tk, err := a.h.TokenIssue(ffi.TokenRequestOf(req))
-	if err != nil {
-		return nil, err
-	}
-
-	return ffi.ToToken(tk).(*token.Token), nil
-}
-
 // TokenStore stores a token. Its issuer, bearer and local owner are derived
 // from the token itself.
 func (a *Account) TokenStore(tk *token.Token) error {
