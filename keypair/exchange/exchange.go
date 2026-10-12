@@ -43,3 +43,7 @@ func (p *PublicKey) String() string { return p.h.String() }
 
 // Bytes returns the raw bytes of the key.
 func (p *PublicKey) Bytes() []byte { return p.h.Bytes() }
+
+func (p *PublicKey) SealAnonymous(plaintext []byte) ([]byte, error) {
+	return p.h.SealAnonymous(plaintext)
+}

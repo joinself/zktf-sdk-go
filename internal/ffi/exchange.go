@@ -81,3 +81,18 @@ func (k *ExchangePublicKey) Bytes() []byte {
 	}
 	return C.GoBytes(buf, exchangePublicKeyBytesLen)
 }
+
+func (k *ExchangePublicKey) SealAnonymous(plaintext []byte) ([]byte, error) {
+	defer runtime.KeepAlive(k)
+	in := C.CBytes(plaintext)
+	defer C.free(in)
+	n := C.size_t(len(plaintext) + sealedBoxExtra)
+	out := C.malloc(n)
+	defer C.free(out)
+	if err := status(C.zktf_exchange_public_key_seal_anonymous(
+		k.ptr, (*C.uint8_t)(in), C.size_t(len(plaintext)), (*C.uint8_t)(out), n,
+	)); err != nil {
+		return nil, err
+	}
+	return C.GoBytes(out, C.int(n)), nil
+}
