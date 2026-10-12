@@ -93,6 +93,8 @@ var (
 	ToToken                 func(*Token) any
 	TokenRequestOf          func(any) *TokenRequest
 	ToTokenRequest          func(*TokenRequest) any
+	PlatformPushOf          func(any) *PlatformPush
+	ToPlatformPush          func(*PlatformPush) any
 	ObjectOf                func(any) *Object
 	ToObject                func(*Object) any
 	TrustedIssuerRegistryOf func(any) *TrustedIssuerRegistry

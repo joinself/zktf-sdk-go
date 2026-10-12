@@ -75,3 +75,13 @@ func (a *DIDAddress) String() string {
 	defer C.zktf_string_buffer_destroy(buf)
 	return C.GoString(C.zktf_string_buffer_ptr(buf))
 }
+
+func (a *DIDAddress) Method() AddressMethod {
+	defer runtime.KeepAlive(a)
+	return AddressMethod(C.zktf_did_address_method(a.ptr))
+}
+
+func (a *DIDAddress) SigningKey() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
+	return newSigningPublicKey(C.zktf_did_address_signing_key(a.ptr))
+}

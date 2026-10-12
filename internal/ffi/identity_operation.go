@@ -313,6 +313,64 @@ func (o *IdentityOperation) Actions() []*OperationAction {
 	return out
 }
 
+type OperationThreshold struct {
+	Role  IdentityKeyRole
+	Value uint64
+}
+
+type OperationWeight struct {
+	Key   *SigningPublicKey
+	Role  IdentityKeyRole
+	Value uint64
+}
+
+func (o *IdentityOperation) Thresholds() []OperationThreshold {
+	defer runtime.KeepAlive(o)
+	c := C.zktf_identity_operation_thresholds(o.ptr)
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_identity_operation_threshold_destroy(c)
+	n := int(C.zktf_collection_identity_operation_threshold_len(c))
+	out := make([]OperationThreshold, 0, n)
+	for i := 0; i < n; i++ {
+		t := C.zktf_collection_identity_operation_threshold_at(c, C.size_t(i))
+		if t == nil {
+			continue
+		}
+		out = append(out, OperationThreshold{
+			Role:  IdentityKeyRole(C.zktf_identity_operation_threshold_role(t)),
+			Value: uint64(C.zktf_identity_operation_threshold_value(t)),
+		})
+		C.zktf_identity_operation_threshold_destroy(t)
+	}
+	return out
+}
+
+func (o *IdentityOperation) Weights() []OperationWeight {
+	defer runtime.KeepAlive(o)
+	c := C.zktf_identity_operation_weights(o.ptr)
+	if c == nil {
+		return nil
+	}
+	defer C.zktf_collection_identity_operation_weight_destroy(c)
+	n := int(C.zktf_collection_identity_operation_weight_len(c))
+	out := make([]OperationWeight, 0, n)
+	for i := 0; i < n; i++ {
+		w := C.zktf_collection_identity_operation_weight_at(c, C.size_t(i))
+		if w == nil {
+			continue
+		}
+		out = append(out, OperationWeight{
+			Key:   newSigningPublicKey(C.zktf_identity_operation_weight_id(w)),
+			Role:  IdentityKeyRole(C.zktf_identity_operation_weight_role(w)),
+			Value: uint64(C.zktf_identity_operation_weight_value(w)),
+		})
+		C.zktf_identity_operation_weight_destroy(w)
+	}
+	return out
+}
+
 // OperationAction is one of the actions inside an identity operation.
 type OperationAction struct {
 	ptr *C.zktf_identity_operation_action

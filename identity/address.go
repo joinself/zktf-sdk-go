@@ -50,3 +50,14 @@ func (a *Address) Key() *signing.PublicKey {
 
 // String returns the encoded DID string.
 func (a *Address) String() string { return a.h.String() }
+
+func (a *Address) Method() AddressMethod { return AddressMethod(a.h.Method()) }
+
+func (a *Address) SigningKey() *signing.PublicKey {
+	k := a.h.SigningKey()
+	if k == nil {
+		return nil
+	}
+
+	return ffi.ToSigningPublicKey(k).(*signing.PublicKey)
+}

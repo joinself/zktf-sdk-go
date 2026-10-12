@@ -45,3 +45,27 @@ const (
 func (m *AnonymousMessage) EncodeAsQR(encoding QREncoding) ([]byte, error) {
 	return m.h.EncodeAsQR(encoding)
 }
+
+type MessageFlag = ffi.MessageFlag
+
+const (
+	FlagNone          = ffi.MessageFlagNone
+	FlagTargetSandbox = ffi.MessageFlagTargetSandbox
+)
+
+func AnonymousMessageDecodeBytes(data []byte) (*AnonymousMessage, error) {
+	m, err := ffi.AnonymousMessageDecode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AnonymousMessage{h: m}, nil
+}
+
+func (m *AnonymousMessage) Encode() ([]byte, error) { return m.h.Encode() }
+
+func (m *AnonymousMessage) Flags() MessageFlag { return m.h.Flags() }
+
+func (m *AnonymousMessage) SetFlags(flags MessageFlag) { m.h.SetFlags(flags) }
+
+func (m *AnonymousMessage) HasFlags(flags MessageFlag) bool { return m.h.HasFlags(flags) }

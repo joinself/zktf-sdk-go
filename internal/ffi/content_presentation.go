@@ -126,6 +126,18 @@ func (b *PresentationActionBuilder) Challenge(challenge []byte) *PresentationAct
 	return b
 }
 
+func (b *PresentationActionBuilder) Authenticate(identity *PairwiseIdentity, challenge []byte) *PresentationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(identity)
+	var c *C.uint8_t
+	if len(challenge) > 0 {
+		c = fixedBytes(challenge, presentationChallengeLen)
+		defer free(unsafe.Pointer(c))
+	}
+	C.zktf_message_content_credential_presentation_action_builder_authenticate(b.ptr, identity.ptr, c)
+	return b
+}
+
 // Predicates sets the predicate tree describing the request's credential constraints.
 func (b *PresentationActionBuilder) Predicates(tree *PredicateTree) *PresentationActionBuilder {
 	defer runtime.KeepAlive(b)

@@ -1,8 +1,11 @@
 package message
 
 import (
+	"time"
+
 	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
+	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/object"
 )
 
@@ -109,8 +112,8 @@ func (b *VerificationRequestBuilder) Evidence(evidenceType string, obj *object.O
 
 // Parameter attaches a typed parameter. value must be one of []byte, string,
 // bool, an integer type (int, int8, int16, int32, int64), an unsigned type
-// (uint, uint8, uint16, uint32, uint64), float32, float64, [][]byte or
-// []string; values of any other type are ignored.
+// (uint, uint8, uint16, uint32, uint64), float32, float64, [][]byte,
+// []string, nil, []any or map[string]any; values of any other type are ignored.
 func (b *VerificationRequestBuilder) Parameter(key string, value any) *VerificationRequestBuilder {
 	pv := ffi.NewParameterValue(value)
 	if pv == nil {
@@ -155,7 +158,8 @@ type VerificationParameter struct {
 func (p *VerificationParameter) Key() string { return p.h.Key() }
 
 // Value returns the parameter value decoded to a native Go type ([]byte,
-// string, bool, int64, uint64, float64, [][]byte or []string).
+// string, bool, int64, uint64, float64, [][]byte, []string, []any,
+// map[string]any or nil).
 func (p *VerificationParameter) Value() any { return p.h.Value() }
 
 // Credentials returns the verifiable credentials in the response.
@@ -189,4 +193,65 @@ func (b *VerificationResponseBuilder) Finish() (*VerificationResponse, error) {
 	}
 
 	return &VerificationResponse{h: r}, nil
+}
+
+func (r *VerificationRequest) Issuer() *signing.PublicKey { return optionalSigningKey(r.h.Issuer()) }
+
+func (r *VerificationRequest) SigningKey() *signing.PublicKey {
+	return optionalSigningKey(r.h.SigningKey())
+}
+
+func (r *VerificationRequest) Subject() *signing.PublicKey { return optionalSigningKey(r.h.Subject()) }
+
+func (r *VerificationRequest) ValidUntil() time.Time {
+	unix := r.h.ValidUntil()
+	if unix == 0 {
+		return time.Time{}
+	}
+
+	return time.Unix(unix, 0)
+}
+
+func (b *VerificationRequestBuilder) Issuer(issuer *signing.PublicKey) *VerificationRequestBuilder {
+	b.h.Issuer(ffi.SigningPublicKeyOf(issuer))
+	return b
+}
+
+func (b *VerificationRequestBuilder) SigningKey(key *signing.PublicKey) *VerificationRequestBuilder {
+	b.h.SigningKey(ffi.SigningPublicKeyOf(key))
+	return b
+}
+
+func (b *VerificationRequestBuilder) Subject(subject *signing.PublicKey) *VerificationRequestBuilder {
+	b.h.Subject(ffi.SigningPublicKeyOf(subject))
+	return b
+}
+
+func (b *VerificationRequestBuilder) ValidUntil(t time.Time) *VerificationRequestBuilder {
+	b.h.ValidUntil(t.Unix())
+	return b
+}
+
+func (r *VerificationResponse) Presentations() []*credential.VerifiablePresentation {
+	ps := r.h.Presentations()
+	out := make([]*credential.VerifiablePresentation, len(ps))
+
+	for i, p := range ps {
+		out[i] = ffi.ToVerifiablePresentation(p).(*credential.VerifiablePresentation)
+	}
+
+	return out
+}
+
+func (b *VerificationResponseBuilder) Presentation(p *credential.VerifiablePresentation) *VerificationResponseBuilder {
+	b.h.Presentation(ffi.VerifiablePresentationOf(p))
+	return b
+}
+
+func optionalSigningKey(k *ffi.SigningPublicKey) *signing.PublicKey {
+	if k == nil {
+		return nil
+	}
+
+	return ffi.ToSigningPublicKey(k).(*signing.PublicKey)
 }

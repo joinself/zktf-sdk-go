@@ -5,6 +5,7 @@ import (
 	"github.com/joinself/zktf-sdk-go/credential/predicate"
 	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
+	"github.com/joinself/zktf-sdk-go/pairwise"
 )
 
 // PresentationRequest is a credential-presentation request (verifier → holder).
@@ -116,6 +117,11 @@ func (b *PresentationRequestBuilder) Holder(holder *identity.Address) *Presentat
 // Challenge sets the random challenge.
 func (b *PresentationRequestBuilder) Challenge(challenge []byte) *PresentationRequestBuilder {
 	b.h.Challenge(challenge)
+	return b
+}
+
+func (b *PresentationRequestBuilder) Authenticate(identity *pairwise.Identity, challenge []byte) *PresentationRequestBuilder {
+	b.h.Authenticate(ffi.PairwiseIdentityOf(identity), challenge)
 	return b
 }
 

@@ -32,6 +32,10 @@ func Decode(data []byte) (*Statement, error) {
 // Encode returns the encoded bytes of the statement.
 func (s *Statement) Encode() ([]byte, error) { return s.h.Encode() }
 
+func (s *Statement) MerkleRoot() []byte { return s.h.MerkleRoot() }
+
+func (s *Statement) Merge(other *Statement) error { return s.h.Merge(other.h) }
+
 // Issuer returns the statement's issuer.
 func (s *Statement) Issuer() *signing.PublicKey {
 	return ffi.ToSigningPublicKey(s.h.Issuer()).(*signing.PublicKey)

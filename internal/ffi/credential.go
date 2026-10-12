@@ -273,3 +273,15 @@ func (c *VerifiableCredential) Encode() ([]byte, error) {
 		C.int(C.zktf_bytes_buffer_len(buf)),
 	), nil
 }
+
+const credentialContentHashLen = 32
+
+func (c *VerifiableCredential) ContentHash() ([]byte, error) {
+	defer runtime.KeepAlive(c)
+	buf := C.malloc(credentialContentHashLen)
+	defer C.free(buf)
+	if err := status(C.zktf_verifiable_credential_content_hash(c.ptr, (*C.uint8_t)(buf), credentialContentHashLen)); err != nil {
+		return nil, err
+	}
+	return C.GoBytes(buf, credentialContentHashLen), nil
+}
