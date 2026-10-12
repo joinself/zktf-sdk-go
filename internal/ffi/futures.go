@@ -22,6 +22,7 @@ extern void goFutureSigningPublicKeyComplete(uintptr_t handle, zktf_status reaso
 extern void goFutureIdentityDocumentComplete(uintptr_t handle, zktf_status reason, zktf_identity_document *doc);
 extern void goFutureCredentialGraphComplete(uintptr_t handle, zktf_status reason, zktf_credential_graph *graph);
 extern void goFutureGroupComplete(uintptr_t handle, zktf_status reason, zktf_group *group);
+extern void goFuturePairwiseIdentityComplete(uintptr_t handle, zktf_status reason, zktf_pairwise_identity *identity);
 
 static void c_future_status_done(void *user_data, zktf_status reason) {
 	goFutureStatusComplete((uintptr_t)user_data, reason);
@@ -38,6 +39,9 @@ static void c_future_credential_graph_done(void *user_data, zktf_status reason, 
 static void c_future_group_done(void *user_data, zktf_status reason, zktf_group *group) {
 	goFutureGroupComplete((uintptr_t)user_data, reason, group);
 }
+static void c_future_pairwise_identity_done(void *user_data, zktf_status reason, zktf_pairwise_identity *identity) {
+	goFuturePairwiseIdentityComplete((uintptr_t)user_data, reason, identity);
+}
 
 static void zktf_future_status_await(struct zktf_future_status *fut, uint32_t timeout_ms, uintptr_t ud) {
 	zktf_future_status_on_complete(fut, timeout_ms, c_future_status_done, (void *)ud);
@@ -53,6 +57,9 @@ static void zktf_future_credential_graph_await(struct zktf_future_credential_gra
 }
 static void zktf_future_group_await(struct zktf_future_group *fut, uint32_t timeout_ms, uintptr_t ud) {
 	zktf_future_group_on_complete(fut, timeout_ms, c_future_group_done, (void *)ud);
+}
+static void zktf_future_pairwise_identity_await(struct zktf_future_pairwise_identity *fut, uint32_t timeout_ms, uintptr_t ud) {
+	zktf_future_pairwise_identity_on_complete(fut, timeout_ms, c_future_pairwise_identity_done, (void *)ud);
 }
 */
 import "C"
@@ -226,6 +233,37 @@ func goFutureGroupComplete(h C.uintptr_t, reason C.enum_zktf_status, group *C.zk
 		r.err = err
 	} else {
 		r.group = newGroup(group)
+	}
+
+	ch <- r
+}
+
+type pairwiseIdentityResult struct {
+	identity *PairwiseIdentity
+	err      error
+}
+
+func AwaitPairwiseIdentity(fut *C.zktf_future_pairwise_identity, timeout time.Duration) (*PairwiseIdentity, error) {
+	ch := make(chan pairwiseIdentityResult, 1)
+	h := cgo.NewHandle(ch)
+
+	C.zktf_future_pairwise_identity_await(fut, timeoutMS(timeout), C.uintptr_t(h))
+
+	r := <-ch
+	return r.identity, r.err
+}
+
+//export goFuturePairwiseIdentityComplete
+func goFuturePairwiseIdentityComplete(h C.uintptr_t, reason C.enum_zktf_status, identity *C.zktf_pairwise_identity) {
+	handle := cgo.Handle(uintptr(h))
+	ch := handle.Value().(chan pairwiseIdentityResult)
+	handle.Delete()
+
+	var r pairwiseIdentityResult
+	if err := status(reason); err != nil {
+		r.err = err
+	} else {
+		r.identity = newPairwiseIdentity(identity)
 	}
 
 	ch <- r

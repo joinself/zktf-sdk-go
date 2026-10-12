@@ -224,6 +224,42 @@ func (o *Operation) Actions() []*Action {
 	return out
 }
 
+type Threshold struct {
+	Role  KeyRole
+	Value uint64
+}
+
+type Weight struct {
+	Key   *signing.PublicKey
+	Role  KeyRole
+	Value uint64
+}
+
+func (o *Operation) Thresholds() []Threshold {
+	ts := o.h.Thresholds()
+	out := make([]Threshold, len(ts))
+
+	for i, t := range ts {
+		out[i] = Threshold{Role: KeyRole(t.Role), Value: t.Value}
+	}
+
+	return out
+}
+
+func (o *Operation) Weights() []Weight {
+	ws := o.h.Weights()
+	out := make([]Weight, len(ws))
+
+	for i, w := range ws {
+		out[i] = Weight{Role: KeyRole(w.Role), Value: w.Value}
+		if w.Key != nil {
+			out[i].Key = ffi.ToSigningPublicKey(w.Key).(*signing.PublicKey)
+		}
+	}
+
+	return out
+}
+
 // Action is one of the actions inside an identity operation.
 type Action struct {
 	h *ffi.OperationAction

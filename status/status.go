@@ -21,6 +21,7 @@ const (
 	AccountCallbacksRequired Code = 3
 	AccountConfigRequired    Code = 4
 	AccountNotConfigured     Code = 5
+	DeviceKeyLost            Code = Code(ffi.StatusDeviceKeyLost)
 )
 
 // Of returns the status code carried by an SDK error and whether the error was

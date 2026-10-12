@@ -201,3 +201,12 @@ func (e *WorkflowEvent) WillRetry() bool {
 	defer runtime.KeepAlive(e)
 	return bool(C.zktf_workflow_event_will_retry(e.ptr))
 }
+
+func (e *WorkflowEvent) RootWorkflowID() []byte {
+	defer runtime.KeepAlive(e)
+	n := C.zktf_workflow_event_root_workflow_id_len(e.ptr)
+	if n == 0 {
+		return nil
+	}
+	return C.GoBytes(unsafe.Pointer(C.zktf_workflow_event_root_workflow_id_buf(e.ptr)), C.int(n))
+}

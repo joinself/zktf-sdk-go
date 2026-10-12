@@ -1,6 +1,6 @@
 // Package pairwise provides pairwise identity / relationship / introduction
-// read types. (Pairwise lookup, store, and validation are mobile-only in the
-// native SDK and are not exposed here.)
+// read types. (Pairwise lookup and store are mobile-only in the native SDK and
+// are not exposed here.)
 package pairwise
 
 import (
@@ -47,12 +47,16 @@ func DecodeIdentity(data []byte) (*Identity, error) {
 	return &Identity{h: i}, nil
 }
 
+func NewIdentity(documentAddress *identity.Address, anchorHash []byte) *Identity {
+	return &Identity{h: ffi.NewPairwiseIdentity(ffi.DIDAddressOf(documentAddress), anchorHash)}
+}
+
 // DocumentAddress returns the counterparty's document DID address.
 func (i *Identity) DocumentAddress() *identity.Address {
 	return ffi.ToDIDAddress(i.h.DocumentAddress()).(*identity.Address)
 }
 
-// BiometricAnchorHash returns the 20-byte biometric anchor hash, or nil.
+// BiometricAnchorHash returns the 32-byte biometric anchor hash, or nil.
 func (i *Identity) BiometricAnchorHash() []byte { return i.h.BiometricAnchorHash() }
 
 // Encode returns the encoded bytes of the identity.

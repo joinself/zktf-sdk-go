@@ -22,9 +22,15 @@ func (a *Account) MessageSend(to *SigningPublicKey, content *Content) error {
 }
 
 // InboxOpen opens a new messaging inbox, awaiting its address via callback.
-func (a *Account) InboxOpen(timeout time.Duration) (*SigningPublicKey, error) {
+func (a *Account) InboxOpen(expiresUnix int64, timeout time.Duration) (*SigningPublicKey, error) {
 	defer runtime.KeepAlive(a)
-	fut := C.zktf_account_inbox_open(a.ptr, nil)
+	var options *C.zktf_inbox_open_options
+	if expiresUnix != 0 {
+		options = C.zktf_inbox_open_options_init()
+		C.zktf_inbox_open_options_with_expiry(options, C.int64_t(expiresUnix))
+		defer C.zktf_inbox_open_options_destroy(options)
+	}
+	fut := C.zktf_account_inbox_open(a.ptr, options)
 
 	return AwaitSigningPublicKey(fut, timeout)
 }

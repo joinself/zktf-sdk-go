@@ -32,3 +32,5 @@ func status(code C.enum_zktf_status) error {
 	}
 	return &Status{code: uint32(code)}
 }
+
+const StatusDeviceKeyLost uint32 = C.STATUS_DEVICE_KEY_LOST

@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"runtime"
+	"time"
 	"unsafe"
 )
 
@@ -20,7 +21,7 @@ const (
 	PairwiseStatusEstablished PairwiseStatus = C.CONNECTION_STATUS_ESTABLISHED
 )
 
-const biometricAnchorHashLen = 20
+const biometricAnchorHashLen = 32
 
 // PairwiseIdentity wraps a zktf_pairwise_identity handle.
 type PairwiseIdentity struct {
@@ -56,7 +57,7 @@ func (i *PairwiseIdentity) DocumentAddress() *DIDAddress {
 	return newDIDAddress(C.zktf_pairwise_identity_document_address(i.ptr))
 }
 
-// BiometricAnchorHash returns the 20-byte biometric anchor hash, or nil.
+// BiometricAnchorHash returns the 32-byte biometric anchor hash, or nil.
 func (i *PairwiseIdentity) BiometricAnchorHash() []byte {
 	defer runtime.KeepAlive(i)
 	p := C.zktf_pairwise_identity_biometric_anchor_hash(i.ptr)
@@ -135,7 +136,24 @@ func (i *PairwiseIntroduction) Presentations() []*VerifiablePresentation {
 	return verifiablePresentationsFrom(C.zktf_pairwise_introduction_presentations(i.ptr))
 }
 
-// pairwise_lookup/store/validate_introduction are mobile-only in the native
-// SDK; they are intentionally not wrapped on this server-side build. A server
-// receives an introduction inside a message.Introduction and reads the embedded
-// PairwiseIntroduction's document address + presentations directly.
+// pairwise_lookup and pairwise_store are mobile-only in the native SDK; they
+// are intentionally not wrapped on this server-side build.
+
+func NewPairwiseIdentity(documentAddress *DIDAddress, anchorHash []byte) *PairwiseIdentity {
+	defer runtime.KeepAlive(documentAddress)
+	var anchor *C.uint8_t
+	if len(anchorHash) > 0 {
+		anchor = fixedBytes(anchorHash, biometricAnchorHashLen)
+		defer free(unsafe.Pointer(anchor))
+	}
+	return newPairwiseIdentity(C.zktf_pairwise_identity_new(documentAddress.ptr, anchor))
+}
+
+func (a *Account) PairwiseValidateIntroduction(from *SigningPublicKey, introduction *PairwiseIntroduction, timeout time.Duration) (*PairwiseIdentity, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(from)
+	defer runtime.KeepAlive(introduction)
+	fut := C.zktf_account_pairwise_validate_introduction(a.ptr, from.ptr, introduction.ptr)
+
+	return AwaitPairwiseIdentity(fut, timeout)
+}

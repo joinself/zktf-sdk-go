@@ -17,6 +17,7 @@ import (
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/object"
+	"github.com/joinself/zktf-sdk-go/pairwise"
 	"github.com/joinself/zktf-sdk-go/revocation"
 	"github.com/joinself/zktf-sdk-go/token"
 )
@@ -85,6 +86,7 @@ type LogEntry struct {
 	Message   string
 	Timestamp time.Time
 	Fields    []LogField
+	Args      string
 }
 
 // LogHandler receives structured log entries from the native library.
@@ -118,6 +120,7 @@ func toLogEntry(e ffi.LogEntry) LogEntry {
 		Message:   e.Message,
 		Timestamp: e.Timestamp,
 		Fields:    fields,
+		Args:      e.Args,
 	}
 }
 
@@ -306,12 +309,15 @@ func (a *Account) NotificationSend(to *signing.PublicKey, summary *message.Conte
 func (a *Account) InboxOpen(options ...InboxOpenOption) (*signing.PublicKey, error) {
 	o := collectInboxOpenOpts(options)
 
-	k, err := a.h.InboxOpen(o.timeout)
+	var unix int64
+	if !o.expires.IsZero() {
+		unix = o.expires.Unix()
+	}
+
+	k, err := a.h.InboxOpen(unix, o.timeout)
 	if err != nil {
 		return nil, err
 	}
-
-	_ = o.expires // TODO: thread expires through to the FFI when wired
 
 	return ffi.ToSigningPublicKey(k).(*signing.PublicKey), nil
 }
@@ -596,6 +602,17 @@ func (a *Account) IdentityLookup(options ...identity.LookupOption) ([]*identity.
 	}
 
 	return out, nil
+}
+
+func (a *Account) PairwiseValidateIntroduction(from *signing.PublicKey, introduction *pairwise.Introduction, options ...CallOption) (*pairwise.Identity, error) {
+	o := collectCallOpts(options)
+
+	i, err := a.h.PairwiseValidateIntroduction(ffi.SigningPublicKeyOf(from), ffi.PairwiseIntroductionOf(introduction), o.timeout)
+	if err != nil || i == nil {
+		return nil, err
+	}
+
+	return ffi.ToPairwiseIdentity(i).(*pairwise.Identity), nil
 }
 
 // RevocationSign signs an unsigned revocation statement with this account's keys.

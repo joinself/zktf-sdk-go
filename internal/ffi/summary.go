@@ -64,6 +64,7 @@ const (
 	SummaryDescriptionSignature      SummaryDescriptionKind = C.CONTENT_SUMMARY_DESCRIPTION_SIGNATURE
 	SummaryDescriptionVerification   SummaryDescriptionKind = C.CONTENT_SUMMARY_DESCRIPTION_VERIFICATION
 	SummaryDescriptionPairing        SummaryDescriptionKind = C.CONTENT_SUMMARY_DESCRIPTION_PAIRING
+	SummaryDescriptionRevocation     SummaryDescriptionKind = C.CONTENT_SUMMARY_DESCRIPTION_REVOCATION
 )
 
 // Descriptions returns the structured descriptions that make up the summary.
@@ -156,6 +157,11 @@ func (d *SummaryDescription) AsVerification() []string {
 func (d *SummaryDescription) AsPairing() uint64 {
 	defer runtime.KeepAlive(d)
 	return uint64(C.zktf_message_content_summary_description_as_pairing(d.ptr))
+}
+
+func (d *SummaryDescription) AsRevocation() []byte {
+	defer runtime.KeepAlive(d)
+	return goBytesFromBuffer(C.zktf_message_content_summary_description_as_revocation(d.ptr))
 }
 
 // NotificationSend sends a push notification to the given address carrying the

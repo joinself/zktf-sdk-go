@@ -70,3 +70,9 @@ func cstring(s string) *C.char {
 func free(p unsafe.Pointer) {
 	C.free(p)
 }
+
+func fixedBytes(b []byte, n int) *C.uint8_t {
+	buf := (*C.uint8_t)(C.calloc(C.size_t(n), 1))
+	copy(unsafe.Slice((*byte)(unsafe.Pointer(buf)), n), b)
+	return buf
+}

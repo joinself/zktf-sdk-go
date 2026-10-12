@@ -264,3 +264,14 @@ func (a *Account) RevocationRevoke(statement *RevocationStatement, timeout time.
 
 	return AwaitStatus(fut, timeout)
 }
+
+func (s *RevocationStatement) MerkleRoot() []byte {
+	defer runtime.KeepAlive(s)
+	return goBytesFromBuffer(C.zktf_revocation_statement_merkle_root(s.ptr))
+}
+
+func (s *RevocationStatement) Merge(other *RevocationStatement) error {
+	defer runtime.KeepAlive(s)
+	defer runtime.KeepAlive(other)
+	return status(C.zktf_revocation_statement_merge(s.ptr, other.ptr))
+}

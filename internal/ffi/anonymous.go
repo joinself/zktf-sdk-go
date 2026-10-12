@@ -86,3 +86,45 @@ func (m *AnonymousMessage) Content() *Content {
 	defer runtime.KeepAlive(m)
 	return newContent(C.zktf_anonymous_message_message_content(m.ptr))
 }
+
+type MessageFlag uint64
+
+const (
+	MessageFlagNone          MessageFlag = C.MESSAGE_FLAG_NONE
+	MessageFlagTargetSandbox MessageFlag = C.MESSAGE_FLAG_TARGET_SANDBOX
+)
+
+func AnonymousMessageDecode(data []byte) (*AnonymousMessage, error) {
+	buf, length := cbytes(data)
+	defer free(unsafe.Pointer(buf))
+
+	var ptr *C.zktf_anonymous_message
+	if err := status(C.zktf_anonymous_message_decode(&ptr, buf, length)); err != nil {
+		return nil, err
+	}
+	return newAnonymousMessage(ptr), nil
+}
+
+func (m *AnonymousMessage) Encode() ([]byte, error) {
+	defer runtime.KeepAlive(m)
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_anonymous_message_encode(m.ptr, &buf)); err != nil {
+		return nil, err
+	}
+	return goBytesFromBuffer(buf), nil
+}
+
+func (m *AnonymousMessage) Flags() MessageFlag {
+	defer runtime.KeepAlive(m)
+	return MessageFlag(C.zktf_anonymous_message_flags(m.ptr))
+}
+
+func (m *AnonymousMessage) SetFlags(flags MessageFlag) {
+	defer runtime.KeepAlive(m)
+	C.zktf_anonymous_message_set_flags(m.ptr, C.zktf_message_flag(flags))
+}
+
+func (m *AnonymousMessage) HasFlags(flags MessageFlag) bool {
+	defer runtime.KeepAlive(m)
+	return bool(C.zktf_anonymous_message_has_flags(m.ptr, C.zktf_message_flag(flags)))
+}

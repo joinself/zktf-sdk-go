@@ -248,3 +248,64 @@ func (b *VerificationResultBuilder) Finish() (*VerificationResult, error) {
 	}
 	return newVerificationResult(out), nil
 }
+
+func (a *VerificationAction) Issuer() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
+	return newSigningPublicKey(C.zktf_message_content_credential_verification_action_issuer(a.ptr))
+}
+
+func (a *VerificationAction) SigningKey() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
+	return newSigningPublicKey(C.zktf_message_content_credential_verification_action_signing_key(a.ptr))
+}
+
+func (a *VerificationAction) Subject() *SigningPublicKey {
+	defer runtime.KeepAlive(a)
+	return newSigningPublicKey(C.zktf_message_content_credential_verification_action_subject(a.ptr))
+}
+
+func (a *VerificationAction) ValidUntil() int64 {
+	defer runtime.KeepAlive(a)
+	return int64(C.zktf_message_content_credential_verification_action_valid_until(a.ptr))
+}
+
+func (b *VerificationActionBuilder) Issuer(issuer *SigningPublicKey) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(issuer)
+	C.zktf_message_content_credential_verification_action_builder_issuer(b.ptr, issuer.ptr)
+	return b
+}
+
+func (b *VerificationActionBuilder) SigningKey(key *SigningPublicKey) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(key)
+	C.zktf_message_content_credential_verification_action_builder_signing_key(b.ptr, key.ptr)
+	return b
+}
+
+func (b *VerificationActionBuilder) Subject(subject *SigningPublicKey) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(subject)
+	C.zktf_message_content_credential_verification_action_builder_subject(b.ptr, subject.ptr)
+	return b
+}
+
+func (b *VerificationActionBuilder) ValidUntil(unix int64) *VerificationActionBuilder {
+	defer runtime.KeepAlive(b)
+	C.zktf_message_content_credential_verification_action_builder_valid_until(b.ptr, C.int64_t(unix))
+	return b
+}
+
+func (r *VerificationResult) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(r)
+	return verifiablePresentationsFrom(
+		C.zktf_message_content_credential_verification_result_presentations(r.ptr),
+	)
+}
+
+func (b *VerificationResultBuilder) Presentation(p *VerifiablePresentation) *VerificationResultBuilder {
+	defer runtime.KeepAlive(b)
+	defer runtime.KeepAlive(p)
+	C.zktf_message_content_credential_verification_result_builder_presentation(b.ptr, p.ptr)
+	return b
+}

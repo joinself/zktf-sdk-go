@@ -117,6 +117,7 @@ const (
 	SummarySignature      ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionSignature)
 	SummaryVerification   ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionVerification)
 	SummaryPairing        ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionPairing)
+	SummaryRevocation     ContentSummaryDescriptionKind = ContentSummaryDescriptionKind(ffi.SummaryDescriptionRevocation)
 )
 
 // ContentSummaryDescription is one structured element of a ContentSummary.
@@ -167,6 +168,8 @@ func (d *ContentSummaryDescription) Verification() []string { return d.h.AsVerif
 
 // Pairing returns the pairing roles bitmask (SummaryPairing descriptions).
 func (d *ContentSummaryDescription) Pairing() uint64 { return d.h.AsPairing() }
+
+func (d *ContentSummaryDescription) Revocation() []byte { return d.h.AsRevocation() }
 
 // ID returns the message id.
 func (m *Message) ID() []byte { return m.h.ID() }

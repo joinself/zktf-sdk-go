@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"runtime"
+	"sort"
 	"unsafe"
 )
 
@@ -31,11 +32,51 @@ func newParameterValue(ptr *C.zktf_message_content_parameter_value) *ParameterVa
 // NewParameterValue builds a parameter value from a supported Go type. Accepted
 // types are []byte, string, bool, the signed integer types (int, int8, int16,
 // int32, int64), the unsigned integer types (uint, uint8, uint16, uint32,
-// uint64), float32, float64, [][]byte and []string. Any other type yields nil.
+// uint64), float32, float64, [][]byte, []string, nil, []any and
+// map[string]any. Any other type yields nil.
 func NewParameterValue(v any) *ParameterValue {
 	var ptr *C.zktf_message_content_parameter_value
 
 	switch val := v.(type) {
+	case nil:
+		ptr = C.zktf_message_content_parameter_value_null_create()
+	case []any:
+		ptr = C.zktf_message_content_parameter_value_array_create()
+		for _, e := range val {
+			ev := NewParameterValue(e)
+			if ev == nil {
+				C.zktf_message_content_parameter_value_destroy(ptr)
+				return nil
+			}
+			code := C.zktf_message_content_parameter_value_array_push(ptr, ev.ptr)
+			runtime.KeepAlive(ev)
+			if code != C.STATUS_OK {
+				C.zktf_message_content_parameter_value_destroy(ptr)
+				return nil
+			}
+		}
+	case map[string]any:
+		keys := make([]string, 0, len(val))
+		for k := range val {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		ptr = C.zktf_message_content_parameter_value_object_create()
+		for _, k := range keys {
+			ev := NewParameterValue(val[k])
+			if ev == nil {
+				C.zktf_message_content_parameter_value_destroy(ptr)
+				return nil
+			}
+			ck := cstring(k)
+			code := C.zktf_message_content_parameter_value_object_insert(ptr, ck, ev.ptr)
+			free(unsafe.Pointer(ck))
+			runtime.KeepAlive(ev)
+			if code != C.STATUS_OK {
+				C.zktf_message_content_parameter_value_destroy(ptr)
+				return nil
+			}
+		}
 	case []byte:
 		// from_raw_parts on the Rust side requires a non-null pointer even for a
 		// zero-length slice, so allocate via CBytes rather than the cbytes helper.
@@ -98,8 +139,8 @@ func NewParameterValue(v any) *ParameterValue {
 }
 
 // Value decodes the parameter value into a native Go type: []byte, string,
-// bool, int64, uint64, float64, [][]byte or []string. Null and object values,
-// for which the ABI exposes no accessor, decode to nil.
+// bool, int64, uint64, float64, [][]byte, []string, []any, map[string]any or
+// nil.
 func (v *ParameterValue) Value() any {
 	defer runtime.KeepAlive(v)
 	switch C.zktf_message_content_parameter_value_type_of(v.ptr) {
@@ -124,7 +165,9 @@ func (v *ParameterValue) Value() any {
 		if b := C.zktf_message_content_parameter_value_as_array_bytes(v.ptr); b != nil {
 			return bytesFromBufferCollection(b)
 		}
-		return nil
+		return credentialValueToGo(C.zktf_message_content_parameter_value_as_credential_value(v.ptr))
+	case C.PARAMETER_VALUE_OBJECT:
+		return credentialValueToGo(C.zktf_message_content_parameter_value_as_credential_value(v.ptr))
 	default:
 		return nil
 	}

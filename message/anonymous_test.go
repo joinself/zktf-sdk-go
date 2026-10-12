@@ -64,3 +64,52 @@ func TestAnonymousMessageEncodesAsQR(t *testing.T) {
 		t.Fatal("expected a non-empty unicode qr")
 	}
 }
+
+func TestAnonymousMessageBytesRoundTripWithFlags(t *testing.T) {
+	from := address(t, 0x03)
+
+	content, err := message.NewDiscoveryRequest().
+		FromAddress(from).
+		Finish()
+	if err != nil {
+		t.Fatalf("Finish: %v", err)
+	}
+
+	m := message.NewAnonymousMessage(content)
+	if m.HasFlags(message.FlagTargetSandbox) {
+		t.Fatal("new message unexpectedly has the sandbox flag")
+	}
+
+	m.SetFlags(message.FlagTargetSandbox)
+	if !m.HasFlags(message.FlagTargetSandbox) {
+		t.Fatal("HasFlags = false after SetFlags")
+	}
+	if got := m.Flags(); got != message.FlagTargetSandbox {
+		t.Fatalf("Flags = %d, want %d", got, message.FlagTargetSandbox)
+	}
+
+	encoded, err := m.Encode()
+	if err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
+
+	decoded, err := message.AnonymousMessageDecodeBytes(encoded)
+	if err != nil {
+		t.Fatalf("AnonymousMessageDecodeBytes: %v", err)
+	}
+
+	if !bytes.Equal(decoded.ID(), m.ID()) {
+		t.Fatal("id did not round trip")
+	}
+	if !decoded.HasFlags(message.FlagTargetSandbox) {
+		t.Fatal("flags did not round trip")
+	}
+
+	request, err := message.DiscoveryRequestDecode(decoded.Content())
+	if err != nil {
+		t.Fatalf("DiscoveryRequestDecode: %v", err)
+	}
+	if !bytes.Equal(request.FromAddress().Bytes(), from.Bytes()) {
+		t.Fatal("from address did not round trip")
+	}
+}

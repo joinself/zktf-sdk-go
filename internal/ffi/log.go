@@ -25,6 +25,7 @@ type LogEntry struct {
 	Message   string
 	Timestamp time.Time
 	Fields    []LogField
+	Args      string
 }
 
 // LogHandler receives log entries from the native library.
@@ -61,6 +62,10 @@ func newLogEntry(ptr *C.zktf_log_entry) LogEntry {
 		Target:    C.GoString(C.zktf_log_entry_target(ptr)),
 		Message:   C.GoString(C.zktf_log_entry_message(ptr)),
 		Timestamp: time.UnixMilli(int64(C.zktf_log_entry_timestamp_ms(ptr))),
+	}
+
+	if args := C.zktf_log_entry_args(ptr); args != nil {
+		e.Args = C.GoString(args)
 	}
 
 	if id := C.zktf_log_entry_account_id(ptr); id != nil {

@@ -247,6 +247,8 @@ func (e *Workflow) WorkflowID() []byte { return e.h.WorkflowID() }
 // TaskID returns the failed task id (for TaskFailed events), or nil.
 func (e *Workflow) TaskID() []byte { return e.h.TaskID() }
 
+func (e *Workflow) RootWorkflowID() []byte { return e.h.RootWorkflowID() }
+
 // Reason returns a human-readable reason, or "".
 func (e *Workflow) Reason() string { return e.h.Reason() }
 

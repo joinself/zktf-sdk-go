@@ -199,6 +199,8 @@ func (v *VerifiableCredential) Subject() *identity.Address {
 // Claim returns a string claim about the subject, or "" if absent.
 func (v *VerifiableCredential) Claim(key string) string { return v.h.SubjectClaim(key) }
 
+func (v *VerifiableCredential) ClaimValue(path string) (any, bool) { return v.h.SubjectValue(path) }
+
 // ClaimJSON returns the subject claims as a raw JSON document, or nil.
 func (v *VerifiableCredential) ClaimJSON() []byte { return v.h.SubjectJSON() }
 
@@ -236,3 +238,5 @@ func (v *VerifiableCredential) RevocationHashes() ([][]byte, error) { return v.h
 
 // Encode returns the JSON-encoded credential.
 func (v *VerifiableCredential) Encode() ([]byte, error) { return v.h.Encode() }
+
+func (v *VerifiableCredential) ContentHash() ([]byte, error) { return v.h.ContentHash() }

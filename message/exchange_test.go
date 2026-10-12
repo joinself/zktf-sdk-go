@@ -6,7 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joinself/zktf-sdk-go/credential"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/message"
+	"github.com/joinself/zktf-sdk-go/pairwise"
 )
 
 // TestVerificationRequestRoundTrip exercises the verifier flow: build a
@@ -254,5 +257,51 @@ func TestExchangeResponseRoundTrip(t *testing.T) {
 	}
 	if got := outcomes[0].Kind(); got != message.OutcomeCredentialVerification {
 		t.Fatalf("Kind = %d, want CredentialVerification", got)
+	}
+}
+
+func TestPresentationRequestAuthenticateRoundTrip(t *testing.T) {
+	challenge := bytes.Repeat([]byte{0x5a}, 32)
+	anchor := bytes.Repeat([]byte{0xa5}, 32)
+	holder := identity.AddressKey(address(t, 0x41))
+
+	presReq, err := message.NewPresentationRequest().
+		PresentationType(credential.PresentationTypesDefault()...).
+		Authenticate(pairwise.NewIdentity(holder, anchor), challenge).
+		Finish()
+	if err != nil {
+		t.Fatalf("presentation Finish: %v", err)
+	}
+
+	content, err := message.NewExchangeRequest().
+		Purpose("authenticate").
+		Action(presReq.AsAction()).
+		Finish()
+	if err != nil {
+		t.Fatalf("exchange Finish: %v", err)
+	}
+
+	decoded, err := message.ExchangeRequestDecode(content)
+	if err != nil {
+		t.Fatalf("ExchangeRequestDecode: %v", err)
+	}
+	actions, err := decoded.Actions()
+	if err != nil {
+		t.Fatalf("Actions: %v", err)
+	}
+	p, err := actions[0].AsPresentation()
+	if err != nil {
+		t.Fatalf("AsPresentation: %v", err)
+	}
+
+	if got := p.Challenge(); !bytes.Equal(got, challenge) {
+		t.Fatalf("Challenge = %x, want %x", got, challenge)
+	}
+	h, err := p.Holder()
+	if err != nil {
+		t.Fatalf("Holder: %v", err)
+	}
+	if h.String() != holder.String() {
+		t.Fatalf("Holder = %s, want %s", h, holder)
 	}
 }
