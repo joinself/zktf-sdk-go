@@ -110,19 +110,6 @@ func (a *Account) CredentialExchangeLog(with *SigningPublicKey, tree *PredicateT
 	return credentialExchangesFrom(c), nil
 }
 
-// TokenIssue issues a fresh token from a validated request.
-func (a *Account) TokenIssue(req *TokenRequest) (*Token, error) {
-	defer runtime.KeepAlive(a)
-	defer runtime.KeepAlive(req)
-	var out *C.zktf_token
-
-	if err := status(C.zktf_account_token_issue(a.ptr, req.ptr, &out)); err != nil {
-		return nil, err
-	}
-
-	return newToken(out), nil
-}
-
 // TokenStore stores a token. The issuer, bearer and local owner are derived
 // from the token itself.
 func (a *Account) TokenStore(tk *Token) error {
@@ -181,72 +168,4 @@ func credentialExchangesFrom(c *C.zktf_collection_credential_exchange) []*Creden
 	}
 
 	return out
-}
-
-// TokenRequest is a validated request ready to be issued into a token.
-type TokenRequest struct {
-	ptr *C.zktf_token_request
-}
-
-func newTokenRequest(ptr *C.zktf_token_request) *TokenRequest {
-	if ptr == nil {
-		return nil
-	}
-	r := &TokenRequest{ptr: ptr}
-	runtime.AddCleanup(r, func(ptr *C.zktf_token_request) {
-		C.zktf_token_request_destroy(ptr)
-	}, r.ptr)
-
-	return r
-}
-
-// PushTokenBuilder builds a push token request.
-type PushTokenBuilder struct {
-	ptr *C.zktf_push_token_builder
-}
-
-// NewPushTokenBuilder initializes a push token builder.
-func NewPushTokenBuilder() *PushTokenBuilder {
-	ptr := C.zktf_push_token_builder_init()
-	b := &PushTokenBuilder{ptr: ptr}
-	defer runtime.KeepAlive(b)
-	runtime.AddCleanup(b, func(ptr *C.zktf_push_token_builder) {
-		C.zktf_push_token_builder_destroy(ptr)
-	}, b.ptr)
-
-	return b
-}
-
-// ForAddress sets the local group address the token authorizes notifications for.
-func (b *PushTokenBuilder) ForAddress(address *SigningPublicKey) *PushTokenBuilder {
-	defer runtime.KeepAlive(b)
-	defer runtime.KeepAlive(address)
-	C.zktf_push_token_builder_for_address(b.ptr, address.ptr)
-	return b
-}
-
-// ProviderAddress sets the exchange public key of the push provider.
-func (b *PushTokenBuilder) ProviderAddress(address *ExchangePublicKey) *PushTokenBuilder {
-	defer runtime.KeepAlive(b)
-	defer runtime.KeepAlive(address)
-	C.zktf_push_token_builder_provider_address(b.ptr, address.ptr)
-	return b
-}
-
-// Delegatable allows the bearer to further delegate the issued token.
-func (b *PushTokenBuilder) Delegatable(delegatable bool) *PushTokenBuilder {
-	defer runtime.KeepAlive(b)
-	C.zktf_push_token_builder_delegatable(b.ptr, C.bool(delegatable))
-	return b
-}
-
-// Finish validates the configured fields and returns a token request.
-func (b *PushTokenBuilder) Finish() (*TokenRequest, error) {
-	defer runtime.KeepAlive(b)
-	var out *C.zktf_token_request
-	if err := status(C.zktf_push_token_builder_finish(b.ptr, &out)); err != nil {
-		return nil, err
-	}
-
-	return newTokenRequest(out), nil
 }

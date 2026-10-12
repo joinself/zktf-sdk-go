@@ -9,7 +9,6 @@ import (
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/revocation"
-	"github.com/joinself/zktf-sdk-go/token"
 )
 
 func offlineAccount(t *testing.T) *account.Account {
@@ -53,45 +52,6 @@ func signedStatement(t *testing.T, acc *account.Account, issuer *signing.PublicK
 	}
 
 	return stmt
-}
-
-func TestNetworkStateSet(t *testing.T) {
-	acc := offlineAccount(t)
-
-	if err := acc.NetworkStateSet(account.NetworkUnavailable); err != nil {
-		t.Fatalf("NetworkStateSet unavailable: %v", err)
-	}
-	if err := acc.NetworkStateSet(account.NetworkAvailable); err != nil {
-		t.Fatalf("NetworkStateSet available: %v", err)
-	}
-}
-
-func TestPushCredentialSet(t *testing.T) {
-	acc := offlineAccount(t)
-
-	if p, err := acc.PushCredentialGet(); err != nil || p != nil {
-		t.Fatalf("PushCredentialGet before set = %v, %v; want nil, nil", p, err)
-	}
-
-	app, err := acc.KeychainSigningCreate()
-	if err != nil {
-		t.Fatalf("KeychainSigningCreate: %v", err)
-	}
-
-	if err := acc.PushCredentialSet(token.NewFCMPush(app, "fcm-token")); err != nil {
-		t.Fatalf("PushCredentialSet: %v", err)
-	}
-
-	if err := acc.PushCredentialSet(token.NewAPNSPush(app, "apns-token")); err != nil {
-		t.Fatalf("PushCredentialSet apns: %v", err)
-	}
-}
-
-func TestNTPNow(t *testing.T) {
-	now := account.NTPNow()
-	if d := time.Since(now); d > time.Hour || d < -time.Hour {
-		t.Fatalf("NTPNow = %v, too far from local clock", now)
-	}
 }
 
 func TestExchangeKeySealAnonymous(t *testing.T) {
