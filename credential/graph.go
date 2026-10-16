@@ -15,6 +15,11 @@ type Graph struct {
 	h *ffi.CredentialGraph
 }
 
+type PairwiseIdentity interface {
+	DocumentAddress() *identity.Address
+	BiometricAnchorHash() []byte
+}
+
 // RevocationProof carries the revocation entry and statement metadata that
 // invalidated a credential.
 type RevocationProof struct {
@@ -63,6 +68,10 @@ func (g *Graph) RevokedCredentialsFor(holder *identity.Address) ([]*VerifiableCr
 // valid (no effective recovery / deactivation).
 func (g *Graph) ValidDocumentFor(document *identity.Address) bool {
 	return g.h.ValidDocumentFor(ffi.DIDAddressOf(document))
+}
+
+func (g *Graph) ValidAuthenticationFor(identity PairwiseIdentity, challenge []byte) bool {
+	return g.h.ValidAuthenticationFor(ffi.NewPairwiseIdentity(ffi.DIDAddressOf(identity.DocumentAddress()), identity.BiometricAnchorHash()), challenge)
 }
 
 // BiometricAnchorHashFor returns the holder's 20-byte biometric anchor hash,

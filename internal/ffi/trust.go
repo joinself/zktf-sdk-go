@@ -202,11 +202,16 @@ func (g *CredentialGraph) RevocationProofFor(revocationHash []byte) *RevocationP
 	return newRevocationProof(C.zktf_credential_graph_revocation_proof_for(g.ptr, buf, C.uintptr_t(length)))
 }
 
+const authenticationChallengeLen = 32
+
 // ValidAuthenticationFor reports whether the given pairwise identity has signed
 // the supplied challenge with currently-valid keys.
 func (g *CredentialGraph) ValidAuthenticationFor(identity *PairwiseIdentity, challenge []byte) bool {
 	defer runtime.KeepAlive(g)
 	defer runtime.KeepAlive(identity)
+	if len(challenge) != 0 && len(challenge) != authenticationChallengeLen {
+		return false
+	}
 	buf, _ := cbytes(challenge)
 	defer free(unsafe.Pointer(buf))
 	return bool(C.zktf_credential_graph_valid_authentication_for(g.ptr, identity.ptr, buf))
