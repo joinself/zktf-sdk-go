@@ -37,6 +37,8 @@ func init() {
 	ffi.ToPairwiseIntroduction = func(h *ffi.PairwiseIntroduction) any { return &Introduction{h: h} }
 }
 
+var _ credential.PairwiseIdentity = (*Identity)(nil)
+
 // DecodeIdentity decodes an encoded pairwise identity.
 func DecodeIdentity(data []byte) (*Identity, error) {
 	i, err := ffi.PairwiseIdentityDecode(data)

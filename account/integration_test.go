@@ -16,15 +16,20 @@ package account_test
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/joinself/zktf-sdk-go/account"
+	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/event"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/object"
+	"github.com/joinself/zktf-sdk-go/pairwise"
 )
 
 func envOr(key, def string) string {
@@ -251,5 +256,124 @@ func assertChat(t *testing.T, msg *message.Message, want string, from *signing.P
 	// didn't break ordinary messaging.
 	if _, ok := msg.Metadata(); ok {
 		t.Fatal("unexpected metadata on a normal chat message")
+	}
+}
+
+func TestIntegrationValidAuthenticationFor(t *testing.T) {
+	acc, _ := testAccount(t, "holder")
+
+	keys := make([]*signing.PublicKey, 4)
+	for i := range keys {
+		k, err := acc.KeychainSigningCreate()
+		if err != nil {
+			t.Fatalf("KeychainSigningCreate: %v", err)
+		}
+		keys[i] = k
+	}
+	identifierKey, invocationKey, assertionKey, authenticationKey := keys[0], keys[1], keys[2], keys[3]
+
+	inbox, err := acc.InboxOpen(account.WithTimeout(10 * time.Second))
+	if err != nil {
+		t.Fatalf("InboxOpen: %v", err)
+	}
+
+	anchorHash := make([]byte, 32)
+	anchorNonce := make([]byte, 32)
+	challenge := make([]byte, 32)
+	wrongChallenge := make([]byte, 32)
+	for i := range anchorHash {
+		anchorHash[i] = byte(i + 50)
+		anchorNonce[i] = byte(i + 100)
+		challenge[i] = byte(i)
+		wrongChallenge[i] = byte(i + 1)
+	}
+
+	operation, err := identity.NewOperationBuilder().
+		ID(identifierKey).
+		Sequence(0).
+		Timestamp(time.Now()).
+		Anchor(anchorHash, anchorNonce).
+		GrantSigning(invocationKey, identity.KeyRoleInvocation).
+		GrantSigning(assertionKey, identity.KeyRoleAssertion).
+		GrantSigning(authenticationKey, identity.KeyRoleAuthentication).
+		GrantSigning(inbox, identity.KeyRoleMessaging).
+		SignWith(identifierKey).
+		SignWith(invocationKey).
+		SignWith(assertionKey).
+		SignWith(authenticationKey).
+		SignWith(inbox).
+		Finish()
+	if err != nil {
+		t.Fatalf("build operation: %v", err)
+	}
+
+	if err := acc.IdentityExecute(operation, account.WithTimeout(10*time.Second)); err != nil {
+		t.Fatalf("IdentityExecute: %v", err)
+	}
+
+	holder := identity.AddressZktf(identifierKey)
+	issuedAt := time.Now()
+
+	unsigned, err := credential.NewBuilder().
+		Type(credential.CredentialTypesLivenessAndFacialComparison()...).
+		Subject(holder).
+		ClaimJSON([]byte(fmt.Sprintf(`{"livenessAndFacialComparison":{"challenge":"%s","targetImageHash":"%s"}}`, hex.EncodeToString(challenge), hex.EncodeToString(anchorHash)))).
+		Issuer(holder).
+		SignWith(assertionKey, issuedAt).
+		ValidFrom(issuedAt).
+		Finish()
+	if err != nil {
+		t.Fatalf("build credential: %v", err)
+	}
+
+	signed, err := acc.CredentialIssue(unsigned)
+	if err != nil {
+		t.Fatalf("CredentialIssue: %v", err)
+	}
+
+	presentation, err := credential.NewPresentation().
+		Type(credential.PresentationTypesLivenessAndFacialComparison()...).
+		Holder(holder).
+		Credential(signed).
+		Finish()
+	if err != nil {
+		t.Fatalf("build presentation: %v", err)
+	}
+
+	if err := acc.PresentationSign(presentation); err != nil {
+		t.Fatalf("PresentationSign: %v", err)
+	}
+
+	registry := credential.NewTrustedIssuerRegistry()
+	registry.AddIssuer(holder)
+	if err := registry.GrantAuthority(holder, "LivenessAndFacialComparisonCredential", time.Unix(0, 0), time.Time{}); err != nil {
+		t.Fatalf("GrantAuthority: %v", err)
+	}
+
+	graph, err := acc.CredentialGraphCreate(registry, []*credential.VerifiablePresentation{presentation}, account.WithTimeout(10*time.Second))
+	if err != nil {
+		t.Fatalf("CredentialGraphCreate: %v", err)
+	}
+
+	id := pairwise.NewIdentity(holder, anchorHash)
+
+	if !graph.ValidAuthenticationFor(id, challenge) {
+		t.Fatal("matching challenge should authenticate")
+	}
+
+	if graph.ValidAuthenticationFor(id, wrongChallenge) {
+		t.Fatal("mismatched challenge must not authenticate")
+	}
+
+	if !graph.ValidAuthenticationFor(id, nil) {
+		t.Fatal("any valid LFC credential authenticates when no challenge is required")
+	}
+
+	if graph.ValidAuthenticationFor(id, challenge[:16]) {
+		t.Fatal("a short challenge must not authenticate")
+	}
+
+	if graph.ValidAuthenticationFor(pairwise.NewIdentity(holder, make([]byte, 32)), challenge) {
+		t.Fatal("a credential targeting a different anchor must not authenticate")
 	}
 }
