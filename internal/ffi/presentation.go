@@ -127,3 +127,12 @@ func (p *VerifiablePresentation) Encode() ([]byte, error) {
 	}
 	return goBytesFromBuffer(buf), nil
 }
+
+func (p *VerifiablePresentation) EncodeAs(encoding CredentialEncoding) ([]byte, error) {
+	defer runtime.KeepAlive(p)
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_verifiable_presentation_encode_as(p.ptr, C.enum_zktf_credential_encoding(encoding), &buf)); err != nil {
+		return nil, err
+	}
+	return goBytesFromBuffer(buf), nil
+}
