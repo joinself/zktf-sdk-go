@@ -112,3 +112,7 @@ func (v *VerifiablePresentation) Credentials() []*VerifiableCredential {
 
 // Encode returns the JSON-encoded presentation.
 func (v *VerifiablePresentation) Encode() ([]byte, error) { return v.h.Encode() }
+
+func (v *VerifiablePresentation) EncodeAs(encoding Encoding) ([]byte, error) {
+	return v.h.EncodeAs(encoding)
+}

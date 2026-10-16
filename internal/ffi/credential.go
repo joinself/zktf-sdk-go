@@ -260,6 +260,23 @@ func (c *VerifiableCredential) RevocationHashes() ([][]byte, error) {
 	return bytesFromBufferCollection(out), nil
 }
 
+type CredentialEncoding int
+
+const (
+	CredentialEncodingJSON          CredentialEncoding = C.CREDENTIAL_ENCODING_JSON
+	CredentialEncodingCBORLD        CredentialEncoding = C.CREDENTIAL_ENCODING_CBORLD
+	CredentialEncodingCBORLDCompact CredentialEncoding = C.CREDENTIAL_ENCODING_CBORLD_COMPACT
+)
+
+func (c *VerifiableCredential) EncodeAs(encoding CredentialEncoding) ([]byte, error) {
+	defer runtime.KeepAlive(c)
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_verifiable_credential_encode_as(c.ptr, C.enum_zktf_credential_encoding(encoding), &buf)); err != nil {
+		return nil, err
+	}
+	return goBytesFromBuffer(buf), nil
+}
+
 // Encode returns the JSON-encoded credential.
 func (c *VerifiableCredential) Encode() ([]byte, error) {
 	defer runtime.KeepAlive(c)

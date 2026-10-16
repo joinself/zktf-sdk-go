@@ -239,4 +239,16 @@ func (v *VerifiableCredential) RevocationHashes() ([][]byte, error) { return v.h
 // Encode returns the JSON-encoded credential.
 func (v *VerifiableCredential) Encode() ([]byte, error) { return v.h.Encode() }
 
+type Encoding = ffi.CredentialEncoding
+
+const (
+	EncodingJSON          = ffi.CredentialEncodingJSON
+	EncodingCBORLD        = ffi.CredentialEncodingCBORLD
+	EncodingCBORLDCompact = ffi.CredentialEncodingCBORLDCompact
+)
+
+func (v *VerifiableCredential) EncodeAs(encoding Encoding) ([]byte, error) {
+	return v.h.EncodeAs(encoding)
+}
+
 func (v *VerifiableCredential) ContentHash() ([]byte, error) { return v.h.ContentHash() }
