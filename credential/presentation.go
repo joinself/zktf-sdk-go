@@ -72,9 +72,18 @@ func (b *PresentationBuilder) Finish() (*VerifiablePresentation, error) {
 	return &VerifiablePresentation{h: p}, nil
 }
 
-// DecodePresentation decodes a JSON-encoded verifiable presentation.
+// DecodePresentation decodes a CBOR-LD encoded verifiable presentation.
 func DecodePresentation(data []byte) (*VerifiablePresentation, error) {
 	p, err := ffi.VerifiablePresentationDecode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &VerifiablePresentation{h: p}, nil
+}
+
+func DecodePresentationJSON(data []byte) (*VerifiablePresentation, error) {
+	p, err := ffi.VerifiablePresentationDecodeJSON(data)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +119,7 @@ func (v *VerifiablePresentation) Credentials() []*VerifiableCredential {
 	return out
 }
 
-// Encode returns the JSON-encoded presentation.
+// Encode returns the presentation encoded as compact CBOR-LD.
 func (v *VerifiablePresentation) Encode() ([]byte, error) { return v.h.Encode() }
 
 func (v *VerifiablePresentation) EncodeAs(encoding Encoding) ([]byte, error) {

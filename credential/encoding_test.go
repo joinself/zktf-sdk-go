@@ -71,12 +71,15 @@ func signedFixtures(t *testing.T, issuerAddress func(*signing.PublicKey) *identi
 	return vc, vp
 }
 
-func checkEncodings(t *testing.T, encode func() ([]byte, error), encodeAs func(credential.Encoding) ([]byte, error), roundTrip func([]byte) ([]byte, error)) {
+func checkEncodings(t *testing.T, encode func() ([]byte, error), encodeAs func(credential.Encoding) ([]byte, error), decode func([]byte) ([]byte, error), decodeJSON func([]byte) ([]byte, error)) {
 	t.Helper()
 
-	jsonOut, err := encode()
+	defaultOut, err := encode()
 	if err != nil {
 		t.Fatalf("Encode: %v", err)
+	}
+	if !bytes.HasPrefix(defaultOut, cborldTag) {
+		t.Fatalf("Encode starts with %x, want %x", defaultOut[:min(3, len(defaultOut))], cborldTag)
 	}
 
 	encoded := map[credential.Encoding][]byte{}
@@ -87,25 +90,33 @@ func checkEncodings(t *testing.T, encode func() ([]byte, error), encodeAs func(c
 		}
 		encoded[enc] = out
 
+		roundTrip := decode
+		if enc == credential.EncodingJSON {
+			roundTrip = decodeJSON
+		}
 		back, err := roundTrip(out)
 		if err != nil {
 			t.Fatalf("round trip of encoding %d: %v", enc, err)
 		}
-		if !bytes.Equal(back, jsonOut) {
-			t.Fatalf("encoding %d did not round trip:\n got %s\nwant %s", enc, back, jsonOut)
+		if !bytes.Equal(back, defaultOut) {
+			t.Fatalf("encoding %d did not round trip:\n got %x\nwant %x", enc, back, defaultOut)
 		}
 	}
 
-	if !bytes.Equal(encoded[credential.EncodingJSON], jsonOut) {
-		t.Fatal("EncodeAs(EncodingJSON) differs from Encode()")
+	if !bytes.Equal(encoded[credential.EncodingCBORLDCompact], defaultOut) {
+		t.Fatal("EncodeAs(EncodingCBORLDCompact) differs from Encode()")
 	}
-	for _, enc := range []credential.Encoding{credential.EncodingCBORLD, credential.EncodingCBORLDCompact} {
-		if !bytes.HasPrefix(encoded[enc], cborldTag) {
-			t.Fatalf("encoding %d starts with %x, want %x", enc, encoded[enc][:min(3, len(encoded[enc]))], cborldTag)
-		}
+	if !bytes.HasPrefix(encoded[credential.EncodingCBORLD], cborldTag) {
+		t.Fatalf("CBOR-LD starts with %x, want %x", encoded[credential.EncodingCBORLD][:3], cborldTag)
 	}
-	if len(encoded[credential.EncodingCBORLD]) >= len(jsonOut) {
-		t.Fatalf("CBOR-LD is %d bytes, JSON is %d", len(encoded[credential.EncodingCBORLD]), len(jsonOut))
+	if len(encoded[credential.EncodingCBORLD]) >= len(encoded[credential.EncodingJSON]) {
+		t.Fatalf("CBOR-LD is %d bytes, JSON is %d", len(encoded[credential.EncodingCBORLD]), len(encoded[credential.EncodingJSON]))
+	}
+	if _, err := decode(encoded[credential.EncodingJSON]); err == nil {
+		t.Fatal("Decode accepted JSON")
+	}
+	if _, err := decodeJSON(defaultOut); err == nil {
+		t.Fatal("DecodeJSON accepted CBOR-LD")
 	}
 }
 
@@ -116,8 +127,7 @@ func TestCredentialEncodeAsRoundTrips(t *testing.T) {
 		t.Fatalf("Validate: %v", err)
 	}
 
-	checkEncodings(t, vc.Encode, vc.EncodeAs, func(data []byte) ([]byte, error) {
-		decoded, err := credential.Decode(data)
+	check := func(decoded *credential.VerifiableCredential, err error) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +138,10 @@ func TestCredentialEncodeAsRoundTrips(t *testing.T) {
 			t.Fatalf("Types = %v, want %v", decoded.Types(), vc.Types())
 		}
 		return decoded.Encode()
-	})
+	}
+	checkEncodings(t, vc.Encode, vc.EncodeAs,
+		func(data []byte) ([]byte, error) { return check(credential.Decode(data)) },
+		func(data []byte) ([]byte, error) { return check(credential.DecodeJSON(data)) })
 }
 
 func TestPresentationEncodeAsRoundTrips(t *testing.T) {
@@ -138,8 +151,7 @@ func TestPresentationEncodeAsRoundTrips(t *testing.T) {
 		t.Fatalf("Validate: %v", err)
 	}
 
-	checkEncodings(t, vp.Encode, vp.EncodeAs, func(data []byte) ([]byte, error) {
-		decoded, err := credential.DecodePresentation(data)
+	check := func(decoded *credential.VerifiablePresentation, err error) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +162,10 @@ func TestPresentationEncodeAsRoundTrips(t *testing.T) {
 			t.Fatalf("len(Credentials) = %d, want 1", len(decoded.Credentials()))
 		}
 		return decoded.Encode()
-	})
+	}
+	checkEncodings(t, vp.Encode, vp.EncodeAs,
+		func(data []byte) ([]byte, error) { return check(credential.DecodePresentation(data)) },
+		func(data []byte) ([]byte, error) { return check(credential.DecodePresentationJSON(data)) })
 }
 
 func zktfAddress(key *signing.PublicKey) *identity.Address {

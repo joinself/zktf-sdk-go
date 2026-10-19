@@ -166,9 +166,18 @@ func (b *Builder) Finish() (*VerifiableCredential, error) {
 	return &VerifiableCredential{h: c}, nil
 }
 
-// Decode decodes a JSON-encoded verifiable credential.
+// Decode decodes a CBOR-LD encoded verifiable credential.
 func Decode(data []byte) (*VerifiableCredential, error) {
 	c, err := ffi.VerifiableCredentialDecode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &VerifiableCredential{h: c}, nil
+}
+
+func DecodeJSON(data []byte) (*VerifiableCredential, error) {
+	c, err := ffi.VerifiableCredentialDecodeJSON(data)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +245,7 @@ func (v *VerifiableCredential) SigningKey() (*signing.PublicKey, error) {
 // RevocationHashes returns the credential's revocation hashes, one per proof.
 func (v *VerifiableCredential) RevocationHashes() ([][]byte, error) { return v.h.RevocationHashes() }
 
-// Encode returns the JSON-encoded credential.
+// Encode returns the credential encoded as compact CBOR-LD.
 func (v *VerifiableCredential) Encode() ([]byte, error) { return v.h.Encode() }
 
 type Encoding = ffi.CredentialEncoding

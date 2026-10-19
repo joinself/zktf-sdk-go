@@ -156,13 +156,24 @@ func newVerifiableCredential(ptr *C.zktf_verifiable_credential) *VerifiableCrede
 	return c
 }
 
-// VerifiableCredentialDecode decodes a JSON-encoded verifiable credential.
+// VerifiableCredentialDecode decodes a CBOR-LD encoded verifiable credential.
 func VerifiableCredentialDecode(data []byte) (*VerifiableCredential, error) {
 	buf, length := cbytes(data)
 	defer free(unsafe.Pointer(buf))
 
 	var ptr *C.zktf_verifiable_credential
 	if err := status(C.zktf_verifiable_credential_decode(&ptr, buf, length)); err != nil {
+		return nil, err
+	}
+	return newVerifiableCredential(ptr), nil
+}
+
+func VerifiableCredentialDecodeJSON(data []byte) (*VerifiableCredential, error) {
+	buf, length := cbytes(data)
+	defer free(unsafe.Pointer(buf))
+
+	var ptr *C.zktf_verifiable_credential
+	if err := status(C.zktf_verifiable_credential_decode_json(&ptr, buf, length)); err != nil {
 		return nil, err
 	}
 	return newVerifiableCredential(ptr), nil
@@ -277,7 +288,7 @@ func (c *VerifiableCredential) EncodeAs(encoding CredentialEncoding) ([]byte, er
 	return goBytesFromBuffer(buf), nil
 }
 
-// Encode returns the JSON-encoded credential.
+// Encode returns the credential encoded as compact CBOR-LD.
 func (c *VerifiableCredential) Encode() ([]byte, error) {
 	defer runtime.KeepAlive(c)
 	var buf *C.zktf_bytes_buffer
