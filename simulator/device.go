@@ -325,7 +325,7 @@ func (d *Device) SigningKeyCreate() (*signing.PublicKey, error) {
 
 // MintControllerIdentity mints a free-standing anchored identity for identifier
 // and signs credential as that identity, in one liveness-authorized operation.
-// credential is the unsigned credential as JSON; the signed one is returned.
+// credential is the unsigned credential as CBOR-LD; the signed one is returned.
 func (d *Device) MintControllerIdentity(identifier *signing.PublicKey, credential []byte) ([]byte, error) {
 	return d.h.MintControllerIdentity(identifier.Bytes(), credential)
 }

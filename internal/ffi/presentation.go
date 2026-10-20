@@ -82,13 +82,24 @@ func newVerifiablePresentation(ptr *C.zktf_verifiable_presentation) *VerifiableP
 	return p
 }
 
-// VerifiablePresentationDecode decodes a JSON-encoded verifiable presentation.
+// VerifiablePresentationDecode decodes a CBOR-LD encoded verifiable presentation.
 func VerifiablePresentationDecode(data []byte) (*VerifiablePresentation, error) {
 	buf, length := cbytes(data)
 	defer free(unsafe.Pointer(buf))
 
 	var ptr *C.zktf_verifiable_presentation
 	if err := status(C.zktf_verifiable_presentation_decode(&ptr, buf, length)); err != nil {
+		return nil, err
+	}
+	return newVerifiablePresentation(ptr), nil
+}
+
+func VerifiablePresentationDecodeJSON(data []byte) (*VerifiablePresentation, error) {
+	buf, length := cbytes(data)
+	defer free(unsafe.Pointer(buf))
+
+	var ptr *C.zktf_verifiable_presentation
+	if err := status(C.zktf_verifiable_presentation_decode_json(&ptr, buf, length)); err != nil {
 		return nil, err
 	}
 	return newVerifiablePresentation(ptr), nil
@@ -118,11 +129,20 @@ func (p *VerifiablePresentation) Credentials() []*VerifiableCredential {
 	return verifiableCredentialsFrom(C.zktf_verifiable_presentation_credentials(p.ptr))
 }
 
-// Encode returns the JSON-encoded presentation.
+// Encode returns the presentation encoded as compact CBOR-LD.
 func (p *VerifiablePresentation) Encode() ([]byte, error) {
 	defer runtime.KeepAlive(p)
 	var buf *C.zktf_bytes_buffer
 	if err := status(C.zktf_verifiable_presentation_encode(p.ptr, &buf)); err != nil {
+		return nil, err
+	}
+	return goBytesFromBuffer(buf), nil
+}
+
+func (p *VerifiablePresentation) EncodeAs(encoding CredentialEncoding) ([]byte, error) {
+	defer runtime.KeepAlive(p)
+	var buf *C.zktf_bytes_buffer
+	if err := status(C.zktf_verifiable_presentation_encode_as(p.ptr, C.enum_zktf_credential_encoding(encoding), &buf)); err != nil {
 		return nil, err
 	}
 	return goBytesFromBuffer(buf), nil

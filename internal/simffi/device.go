@@ -236,7 +236,7 @@ func (d *Device) SigningKeyCreate() ([]byte, error) {
 
 // MintControllerIdentity mints a free-standing anchored identity for identifier
 // and signs credential as that identity, in one liveness-authorized batch.
-// credential is JSON; the signed credential is returned as JSON.
+// credential is CBOR-LD; the signed credential is returned as CBOR-LD.
 func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
 	idBuf, idLen := cbytes(identifier)
