@@ -19,6 +19,7 @@ const (
 	StatusEventAcknowledged StatusEventType = C.STATUS_EVENT_ACKNOWLEDGED
 	StatusEventSendFailed   StatusEventType = C.STATUS_EVENT_SEND_FAILED
 	StatusEventDropped      StatusEventType = C.STATUS_EVENT_DROPPED
+	StatusEventPaired       StatusEventType = C.STATUS_EVENT_PAIRED
 )
 
 // StatusEvent wraps a zktf_status_event delivered to the on_status callback.
@@ -71,6 +72,11 @@ func (e *StatusEvent) ReferenceID() []byte {
 func (e *StatusEvent) Dropped() *DroppedEvent {
 	defer runtime.KeepAlive(e)
 	return newDroppedEvent(C.zktf_status_event_dropped(e.ptr))
+}
+
+func (e *StatusEvent) PairedApplication() *SigningPublicKey {
+	defer runtime.KeepAlive(e)
+	return newSigningPublicKey(C.zktf_status_event_paired_application(e.ptr))
 }
 
 // GroupEventKind mirrors zktf_group_event_type.

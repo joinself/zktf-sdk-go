@@ -144,6 +144,9 @@ type Config struct {
 
 	DisableProcessHardening      bool
 	DisableStorageMemorySecurity bool
+
+	PairingRoles identity.KeyRole
+	PairingLabel string
 }
 
 // Account is a configured zktf account.
@@ -190,6 +193,9 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 
 		DisableProcessHardening:      cfg.DisableProcessHardening,
 		DisableStorageMemorySecurity: cfg.DisableStorageMemorySecurity,
+
+		PairingRoles: ffi.IdentityKeyRole(pairingRoles(cfg.PairingRoles)),
+		PairingLabel: cfg.PairingLabel,
 	}, adapter{cb: cb})
 	if err != nil {
 		return nil, err
@@ -289,6 +295,23 @@ func (a *Account) KeychainLookup(options ...KeychainLookupOption) ([]*signing.Pu
 // and returns the pairing code. It fails if the account is already paired.
 func (a *Account) SetupPairingCode() (string, error) {
 	return a.h.SetupPairingCode()
+}
+
+const DefaultPairingRoles = identity.KeyRoleAssertion | identity.KeyRoleAuthentication | identity.KeyRoleMessaging
+
+func pairingRoles(roles identity.KeyRole) identity.KeyRole {
+	if roles == 0 {
+		return DefaultPairingRoles
+	}
+	return roles
+}
+
+func (a *Account) SetupPairingOffer() (string, error) {
+	return a.h.SetupPairingOffer()
+}
+
+func (a *Account) SetupPairingQR(encoding message.QREncoding) ([]byte, error) {
+	return a.h.SetupPairingQR(encoding)
 }
 
 // MessageSend sends content to the given recipient address. Delivery is reported

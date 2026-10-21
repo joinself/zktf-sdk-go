@@ -22,6 +22,11 @@ const (
 	AccountConfigRequired    Code = 4
 	AccountNotConfigured     Code = 5
 	DeviceKeyLost            Code = Code(ffi.StatusDeviceKeyLost)
+
+	PairingCodeInvalid                   Code = Code(ffi.StatusPairingCodeInvalid)
+	PairingGrantInvalid                  Code = Code(ffi.StatusPairingGrantInvalid)
+	PairingOrganisationCredentialMissing Code = Code(ffi.StatusPairingOrganisationCredentialMissing)
+	PairingRolesInvalid                  Code = Code(ffi.StatusPairingRolesInvalid)
 )
 
 // Of returns the status code carried by an SDK error and whether the error was
