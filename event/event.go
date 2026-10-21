@@ -20,6 +20,7 @@ const (
 	EventAcknowledged EventKind = EventKind(ffi.StatusEventAcknowledged)
 	EventSendFailed   EventKind = EventKind(ffi.StatusEventSendFailed)
 	EventDropped      EventKind = EventKind(ffi.StatusEventDropped)
+	EventPaired       EventKind = EventKind(ffi.StatusEventPaired)
 )
 
 // Event is an account-level status event. Dispatch on Kind() and use the
@@ -110,6 +111,15 @@ func (e *Event) Dropped() *Dropped {
 	}
 
 	return &Dropped{h: d}
+}
+
+func (e *Event) PairedApplication() *signing.PublicKey {
+	k := e.h.PairedApplication()
+	if k == nil {
+		return nil
+	}
+
+	return ffi.ToSigningPublicKey(k).(*signing.PublicKey)
 }
 
 // GroupKind identifies the kind of a Group event.

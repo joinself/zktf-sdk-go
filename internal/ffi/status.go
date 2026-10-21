@@ -34,3 +34,10 @@ func status(code C.enum_zktf_status) error {
 }
 
 const StatusDeviceKeyLost uint32 = C.STATUS_DEVICE_KEY_LOST
+
+const (
+	StatusPairingCodeInvalid                   uint32 = C.STATUS_PAIRING_CODE_INVALID
+	StatusPairingGrantInvalid                  uint32 = C.STATUS_PAIRING_GRANT_INVALID
+	StatusPairingOrganisationCredentialMissing uint32 = C.STATUS_PAIRING_ORGANISATION_CREDENTIAL_MISSING
+	StatusPairingRolesInvalid                  uint32 = C.STATUS_PAIRING_ROLES_INVALID
+)

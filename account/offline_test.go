@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/joinself/zktf-sdk-go/account"
+	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
 	"github.com/joinself/zktf-sdk-go/message"
 	"github.com/joinself/zktf-sdk-go/revocation"
+	"github.com/joinself/zktf-sdk-go/status"
 )
 
 func offlineAccount(t *testing.T) *account.Account {
@@ -156,4 +158,26 @@ func TestRevocationSigningRequestSummaryDescribesIssuer(t *testing.T) {
 	}
 
 	t.Fatal("summary has no revocation description")
+}
+
+func TestPairingRolesOutsideThePairableSetAreRejected(t *testing.T) {
+	for _, roles := range []identity.KeyRole{
+		identity.KeyRoleVerification,
+		identity.KeyRoleDelegation,
+		identity.KeyRoleMessaging | identity.KeyRoleInvocation,
+	} {
+		_, err := account.New(account.Config{
+			StoragePath: ":memory:",
+			Target: &account.Target{
+				Network:         account.NetworkPreview,
+				RPCEndpoint:     "http://127.0.0.1:1/",
+				ObjectEndpoint:  "http://127.0.0.1:1/",
+				MessageEndpoint: "ws://127.0.0.1:1/",
+			},
+			PairingRoles: roles,
+		}, account.Callbacks{})
+		if code, ok := status.Of(err); !ok || code != status.PairingRolesInvalid {
+			t.Fatalf("roles %d: want PairingRolesInvalid, got %v", roles, err)
+		}
+	}
 }

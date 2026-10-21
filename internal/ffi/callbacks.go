@@ -51,7 +51,9 @@ static zktf_account_config *zktf_account_config_new(
 	size_t encryption_key_len,
 	enum zktf_log_level log_level,
 	bool disable_process_hardening,
-	bool disable_storage_memory_security
+	bool disable_storage_memory_security,
+	uint64_t pairing_roles,
+	char *pairing_label
 ) {
 	zktf_account_config *c = calloc(1, sizeof(zktf_account_config));
 	c->target = target;
@@ -65,6 +67,8 @@ static zktf_account_config *zktf_account_config_new(
 	c->log_callback = c_on_log;
 	c->disable_process_hardening = disable_process_hardening;
 	c->disable_storage_memory_security = disable_storage_memory_security;
+	c->pairing_roles = pairing_roles;
+	c->pairing_label = pairing_label;
 	return c;
 }
 
@@ -117,6 +121,7 @@ func newAccountConfig(
 	keyBuf *C.uint8_t, keyLen C.size_t,
 	logLevel LogLevel,
 	disableProcessHardening, disableStorageMemorySecurity bool,
+	pairingRoles IdentityKeyRole, pairingLabel *C.char,
 ) *C.zktf_account_config {
 	return C.zktf_account_config_new(
 		C.enum_zktf_account_target(network),
@@ -125,6 +130,8 @@ func newAccountConfig(
 		C.enum_zktf_log_level(logLevel),
 		C.bool(disableProcessHardening),
 		C.bool(disableStorageMemorySecurity),
+		C.uint64_t(pairingRoles),
+		pairingLabel,
 	)
 }
 
