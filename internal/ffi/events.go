@@ -57,13 +57,12 @@ const (
 )
 
 type BatchEvent struct {
-	Kind       EventKind
-	Message    *Message
-	Group      *GroupEvent
-	Reference  *Reference
-	Err        error
-	ErrMessage string
-	Dropped    *DroppedEvent
+	Kind      EventKind
+	Message   *Message
+	Group     *GroupEvent
+	Reference *Reference
+	Err       error
+	Dropped   *DroppedEvent
 }
 
 func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
@@ -89,7 +88,6 @@ func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
 			if failure != nil {
 				ev.Reference = takeReference(C.zktf_failure_reference(failure))
 				ev.Err = status(C.zktf_failure_error(failure))
-				ev.ErrMessage = takeStringBuffer(C.zktf_failure_message(failure))
 				C.zktf_failure_destroy(failure)
 			}
 		case EventDropped:
@@ -271,12 +269,4 @@ func (e *WorkflowEvent) RootWorkflowID() []byte {
 		return nil
 	}
 	return C.GoBytes(unsafe.Pointer(C.zktf_workflow_event_root_workflow_id_buf(e.ptr)), C.int(n))
-}
-
-func takeStringBuffer(buf *C.zktf_string_buffer) string {
-	if buf == nil {
-		return ""
-	}
-	defer C.zktf_string_buffer_destroy(buf)
-	return C.GoString(C.zktf_string_buffer_ptr(buf))
 }

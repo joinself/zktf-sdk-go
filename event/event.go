@@ -181,8 +181,6 @@ func (e *Event) Reference() *Reference {
 
 func (e *Event) Err() error { return e.e.Err }
 
-func (e *Event) ErrMessage() string { return e.e.ErrMessage }
-
 func (e *Event) Dropped() *Dropped {
 	if e.e.Dropped == nil {
 		return nil
