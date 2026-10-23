@@ -38,7 +38,7 @@ func (a *Account) ValueLookup(key string) ([]byte, bool, error) {
 
 	var buf *C.zktf_bytes_buffer
 	code := C.zktf_account_value_lookup(a.ptr, k, &buf)
-	if code == C.STATUS_VALUE_NOT_FOUND {
+	if code == C.ZKTF_STATUS_VALUE_NOT_FOUND {
 		return nil, false, nil
 	}
 	if err := status(code); err != nil {

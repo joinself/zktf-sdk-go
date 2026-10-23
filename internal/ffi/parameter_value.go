@@ -50,7 +50,7 @@ func NewParameterValue(v any) *ParameterValue {
 			}
 			code := C.zktf_message_content_parameter_value_array_push(ptr, ev.ptr)
 			runtime.KeepAlive(ev)
-			if code != C.STATUS_OK {
+			if code != C.ZKTF_STATUS_OK {
 				C.zktf_message_content_parameter_value_destroy(ptr)
 				return nil
 			}
@@ -72,7 +72,7 @@ func NewParameterValue(v any) *ParameterValue {
 			code := C.zktf_message_content_parameter_value_object_insert(ptr, ck, ev.ptr)
 			free(unsafe.Pointer(ck))
 			runtime.KeepAlive(ev)
-			if code != C.STATUS_OK {
+			if code != C.ZKTF_STATUS_OK {
 				C.zktf_message_content_parameter_value_destroy(ptr)
 				return nil
 			}
