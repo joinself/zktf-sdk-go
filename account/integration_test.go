@@ -73,16 +73,21 @@ func testAccount(t *testing.T, name string) (*account.Account, chan *message.Mes
 	acc, err := account.New(account.Config{
 		Target: target,
 	}, account.Callbacks{
-		OnEvent: func(e *event.Event) {
-			if e.Kind() == event.EventConnected {
+		OnStatus: func(s *event.Status) {
+			if s.Kind() == event.StatusConnected {
 				select {
 				case connected <- struct{}{}:
 				default:
 				}
 			}
 		},
-		OnMessage: func(msg *message.Message) {
-			messages <- msg
+		OnEvent: func(b *event.Batch) event.Delivered {
+			for _, e := range b.Events() {
+				if e.Kind() == event.KindMessage {
+					messages <- e.Message()
+				}
+			}
+			return event.Done()
 		},
 	})
 	if err != nil {

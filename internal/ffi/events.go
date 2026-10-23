@@ -16,9 +16,6 @@ type StatusEventType uint32
 const (
 	StatusEventConnected    StatusEventType = C.STATUS_EVENT_CONNECTED
 	StatusEventDisconnected StatusEventType = C.STATUS_EVENT_DISCONNECTED
-	StatusEventAcknowledged StatusEventType = C.STATUS_EVENT_ACKNOWLEDGED
-	StatusEventSendFailed   StatusEventType = C.STATUS_EVENT_SEND_FAILED
-	StatusEventDropped      StatusEventType = C.STATUS_EVENT_DROPPED
 )
 
 // StatusEvent wraps a zktf_status_event delivered to the on_status callback.
@@ -49,28 +46,91 @@ func (e *StatusEvent) DisconnectReason() error {
 	return status(C.zktf_status_event_disconnect_reason(e.ptr))
 }
 
-// SendError returns the error for a send-failed event, or nil.
-func (e *StatusEvent) SendError() error {
-	defer runtime.KeepAlive(e)
-	return status(C.zktf_status_event_send_error(e.ptr))
+type EventKind uint32
+
+const (
+	EventMessage      EventKind = C.EVENT_MESSAGE
+	EventGroup        EventKind = C.EVENT_GROUP
+	EventAcknowledged EventKind = C.EVENT_ACKNOWLEDGED
+	EventFailed       EventKind = C.EVENT_FAILED
+	EventDropped      EventKind = C.EVENT_DROPPED
+)
+
+type BatchEvent struct {
+	Kind      EventKind
+	Message   *Message
+	Group     *GroupEvent
+	Reference *Reference
+	Err       error
+	Dropped   *DroppedEvent
 }
 
-// ReferenceID returns the message id referenced by an acknowledged/send-failed
-// event, or nil.
-func (e *StatusEvent) ReferenceID() []byte {
-	defer runtime.KeepAlive(e)
-	ref := C.zktf_status_event_reference(e.ptr)
+func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
+	if batch == nil {
+		return nil
+	}
+	defer C.zktf_event_batch_destroy(batch)
+
+	n := int(C.zktf_event_batch_len(batch))
+	events := make([]BatchEvent, 0, n)
+	for i := 0; i < n; i++ {
+		idx := C.size_t(i)
+		ev := BatchEvent{Kind: EventKind(C.zktf_event_batch_kind(batch, idx))}
+		switch ev.Kind {
+		case EventMessage:
+			ev.Message = newMessage(C.zktf_event_batch_message(batch, idx))
+		case EventGroup:
+			ev.Group = newGroupEvent(C.zktf_event_batch_group(batch, idx))
+		case EventAcknowledged:
+			ev.Reference = takeReference(C.zktf_event_batch_acknowledged(batch, idx))
+		case EventFailed:
+			failure := C.zktf_event_batch_failed(batch, idx)
+			if failure != nil {
+				ev.Reference = takeReference(C.zktf_failure_reference(failure))
+				ev.Err = status(C.zktf_failure_error(failure))
+				C.zktf_failure_destroy(failure)
+			}
+		case EventDropped:
+			ev.Dropped = newDroppedEvent(C.zktf_event_batch_dropped(batch, idx))
+		}
+		events = append(events, ev)
+	}
+
+	return events
+}
+
+type ReferenceType uint32
+
+const (
+	ReferenceCommit     ReferenceType = C.REFERENCE_COMMIT
+	ReferenceKeyPackage ReferenceType = C.REFERENCE_KEY_PACKAGE
+	ReferenceMessage    ReferenceType = C.REFERENCE_MESSAGE
+	ReferenceProposal   ReferenceType = C.REFERENCE_PROPOSAL
+	ReferenceWelcome    ReferenceType = C.REFERENCE_WELCOME
+)
+
+type Reference struct {
+	ID   []byte
+	Type ReferenceType
+	From *SigningPublicKey
+	To   *SigningPublicKey
+}
+
+func takeReference(ref *C.zktf_reference) *Reference {
 	if ref == nil {
 		return nil
 	}
 	defer C.zktf_reference_destroy(ref)
-	return C.GoBytes(unsafe.Pointer(C.zktf_reference_id(ref)), messageIDLen)
-}
 
-// Dropped returns the dropped-event details for a STATUS_EVENT_DROPPED, or nil.
-func (e *StatusEvent) Dropped() *DroppedEvent {
-	defer runtime.KeepAlive(e)
-	return newDroppedEvent(C.zktf_status_event_dropped(e.ptr))
+	r := &Reference{
+		Type: ReferenceType(C.zktf_reference_type_of(ref)),
+		From: newSigningPublicKey(C.zktf_reference_from_address(ref)),
+		To:   newSigningPublicKey(C.zktf_reference_to_address(ref)),
+	}
+	if id := C.zktf_reference_id(ref); id != nil {
+		r.ID = C.GoBytes(unsafe.Pointer(id), messageIDLen)
+	}
+	return r
 }
 
 // GroupEventKind mirrors zktf_group_event_type.

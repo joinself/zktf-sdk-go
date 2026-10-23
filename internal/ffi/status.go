@@ -34,3 +34,5 @@ func status(code C.enum_zktf_status) error {
 }
 
 const StatusDeviceKeyLost uint32 = C.STATUS_DEVICE_KEY_LOST
+
+const StatusEventPollUnavailable uint32 = C.STATUS_EVENT_POLL_UNAVAILABLE
