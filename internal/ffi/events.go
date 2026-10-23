@@ -57,13 +57,13 @@ const (
 )
 
 type BatchEvent struct {
-	Kind        EventKind
-	Message     *Message
-	Group       *GroupEvent
-	ReferenceID []byte
-	Err         error
-	ErrMessage  string
-	Dropped     *DroppedEvent
+	Kind       EventKind
+	Message    *Message
+	Group      *GroupEvent
+	Reference  *Reference
+	Err        error
+	ErrMessage string
+	Dropped    *DroppedEvent
 }
 
 func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
@@ -83,11 +83,11 @@ func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
 		case EventGroup:
 			ev.Group = newGroupEvent(C.zktf_event_batch_group(batch, idx))
 		case EventAcknowledged:
-			ev.ReferenceID = takeReferenceID(C.zktf_event_batch_acknowledged(batch, idx))
+			ev.Reference = takeReference(C.zktf_event_batch_acknowledged(batch, idx))
 		case EventFailed:
 			failure := C.zktf_event_batch_failed(batch, idx)
 			if failure != nil {
-				ev.ReferenceID = takeReferenceID(C.zktf_failure_reference(failure))
+				ev.Reference = takeReference(C.zktf_failure_reference(failure))
 				ev.Err = status(C.zktf_failure_error(failure))
 				ev.ErrMessage = takeStringBuffer(C.zktf_failure_message(failure))
 				C.zktf_failure_destroy(failure)
@@ -101,16 +101,38 @@ func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
 	return events
 }
 
-func takeReferenceID(ref *C.zktf_reference) []byte {
+type ReferenceType uint32
+
+const (
+	ReferenceCommit     ReferenceType = C.REFERENCE_COMMIT
+	ReferenceKeyPackage ReferenceType = C.REFERENCE_KEY_PACKAGE
+	ReferenceMessage    ReferenceType = C.REFERENCE_MESSAGE
+	ReferenceProposal   ReferenceType = C.REFERENCE_PROPOSAL
+	ReferenceWelcome    ReferenceType = C.REFERENCE_WELCOME
+)
+
+type Reference struct {
+	ID   []byte
+	Type ReferenceType
+	From *SigningPublicKey
+	To   *SigningPublicKey
+}
+
+func takeReference(ref *C.zktf_reference) *Reference {
 	if ref == nil {
 		return nil
 	}
 	defer C.zktf_reference_destroy(ref)
-	id := C.zktf_reference_id(ref)
-	if id == nil {
-		return nil
+
+	r := &Reference{
+		Type: ReferenceType(C.zktf_reference_type_of(ref)),
+		From: newSigningPublicKey(C.zktf_reference_from_address(ref)),
+		To:   newSigningPublicKey(C.zktf_reference_to_address(ref)),
 	}
-	return C.GoBytes(unsafe.Pointer(id), messageIDLen)
+	if id := C.zktf_reference_id(ref); id != nil {
+		r.ID = C.GoBytes(unsafe.Pointer(id), messageIDLen)
+	}
+	return r
 }
 
 // GroupEventKind mirrors zktf_group_event_type.

@@ -150,7 +150,35 @@ func (e *Event) Group() *Group {
 	return &Group{h: e.e.Group}
 }
 
-func (e *Event) ReferenceID() []byte { return e.e.ReferenceID }
+type ReferenceType uint32
+
+const (
+	ReferenceCommit     ReferenceType = ReferenceType(ffi.ReferenceCommit)
+	ReferenceKeyPackage ReferenceType = ReferenceType(ffi.ReferenceKeyPackage)
+	ReferenceMessage    ReferenceType = ReferenceType(ffi.ReferenceMessage)
+	ReferenceProposal   ReferenceType = ReferenceType(ffi.ReferenceProposal)
+	ReferenceWelcome    ReferenceType = ReferenceType(ffi.ReferenceWelcome)
+)
+
+type Reference struct {
+	ID   []byte
+	Type ReferenceType
+	From *signing.PublicKey
+	To   *signing.PublicKey
+}
+
+func (e *Event) Reference() *Reference {
+	r := e.e.Reference
+	if r == nil {
+		return nil
+	}
+	return &Reference{
+		ID:   r.ID,
+		Type: ReferenceType(r.Type),
+		From: ffi.ToSigningPublicKey(r.From).(*signing.PublicKey),
+		To:   ffi.ToSigningPublicKey(r.To).(*signing.PublicKey),
+	}
+}
 
 func (e *Event) Err() error { return e.e.Err }
 
