@@ -5,11 +5,13 @@
 package account
 
 import (
+	"context"
 	"time"
 
 	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/credential/predicate"
 	"github.com/joinself/zktf-sdk-go/crypto"
+	"github.com/joinself/zktf-sdk-go/event"
 	"github.com/joinself/zktf-sdk-go/group"
 	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
@@ -144,7 +146,17 @@ type Config struct {
 
 	DisableProcessHardening      bool
 	DisableStorageMemorySecurity bool
+
+	EventDelivery Delivery
+	EventMaxBatch int
 }
+
+type Delivery uint32
+
+const (
+	DeliveryCallback Delivery = Delivery(ffi.EventDeliveryCallback)
+	DeliveryPoll     Delivery = Delivery(ffi.EventDeliveryPoll)
+)
 
 // Account is a configured zktf account.
 type Account struct {
@@ -190,6 +202,9 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 
 		DisableProcessHardening:      cfg.DisableProcessHardening,
 		DisableStorageMemorySecurity: cfg.DisableStorageMemorySecurity,
+
+		EventDelivery: ffi.EventDelivery(cfg.EventDelivery),
+		EventMaxBatch: uint32(max(cfg.EventMaxBatch, 0)),
 	}, adapter{cb: cb})
 	if err != nil {
 		return nil, err
@@ -292,7 +307,7 @@ func (a *Account) SetupPairingCode() (string, error) {
 }
 
 // MessageSend sends content to the given recipient address. Delivery is reported
-// asynchronously via OnEvent (Acknowledged / SendFailed).
+// asynchronously via OnEvent (KindAcknowledged / KindFailed).
 func (a *Account) MessageSend(to *signing.PublicKey, content *message.Content) error {
 	return a.h.MessageSend(ffi.SigningPublicKeyOf(to), ffi.ContentOf(content))
 }
@@ -694,4 +709,34 @@ func (a *Account) ValueRemove(key string) error {
 // from the token itself.
 func (a *Account) TokenStore(tk *token.Token) error {
 	return a.h.TokenStore(ffi.TokenOf(tk))
+}
+
+const eventPollSlice = time.Second
+
+func (a *Account) EventPoll(ctx context.Context, max int) (*event.Batch, error) {
+	for {
+		wait := eventPollSlice
+		if deadline, ok := ctx.Deadline(); ok {
+			wait = min(wait, time.Until(deadline))
+		}
+		if wait <= 0 {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		}
+
+		events, err := a.h.EventPoll(max, wait)
+		if err != nil {
+			return nil, err
+		}
+		if len(events) > 0 {
+			return event.NewBatch(events), nil
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
+}
+
+func (a *Account) EventCommit() error {
+	return a.h.EventCommit()
 }

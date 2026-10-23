@@ -5,8 +5,7 @@ package ffi
 #include <stdlib.h>
 
 extern void goOnStatus(void *user_data, struct zktf_status_event *event);
-extern void goOnMessage(void *user_data, struct zktf_message *message);
-extern void goOnGroup(void *user_data, struct zktf_group_event *event);
+extern enum zktf_delivered goOnEvent(void *user_data, struct zktf_event_batch *batch, uint64_t *retry_after_ms);
 extern void goOnWorkflow(void *user_data, struct zktf_workflow_event *event);
 extern void goOnLog(struct zktf_log_entry *log_entry);
 
@@ -18,11 +17,8 @@ static void c_on_log(struct zktf_log_entry *log_entry) {
 static void c_on_status(void *user_data, struct zktf_status_event *event) {
 	goOnStatus(user_data, event);
 }
-static void c_on_message(void *user_data, struct zktf_message *message) {
-	goOnMessage(user_data, message);
-}
-static void c_on_group(void *user_data, struct zktf_group_event *event) {
-	goOnGroup(user_data, event);
+static enum zktf_delivered c_on_event(void *user_data, struct zktf_event_batch *batch, uint64_t *retry_after_ms) {
+	return goOnEvent(user_data, batch, retry_after_ms);
 }
 static void c_on_workflow(void *user_data, struct zktf_workflow_event *event) {
 	goOnWorkflow(user_data, event);
@@ -31,8 +27,7 @@ static void c_on_workflow(void *user_data, struct zktf_workflow_event *event) {
 static zktf_account_callbacks *zktf_account_callbacks_new(void) {
 	zktf_account_callbacks *cb = calloc(1, sizeof(zktf_account_callbacks));
 	cb->on_status = c_on_status;
-	cb->on_message = c_on_message;
-	cb->on_group = c_on_group;
+	cb->on_event = c_on_event;
 	cb->on_workflow = c_on_workflow;
 	return cb;
 }
@@ -51,7 +46,9 @@ static zktf_account_config *zktf_account_config_new(
 	size_t encryption_key_len,
 	enum zktf_log_level log_level,
 	bool disable_process_hardening,
-	bool disable_storage_memory_security
+	bool disable_storage_memory_security,
+	enum zktf_event_delivery event_delivery,
+	uint32_t event_max_batch
 ) {
 	zktf_account_config *c = calloc(1, sizeof(zktf_account_config));
 	c->target = target;
@@ -65,6 +62,8 @@ static zktf_account_config *zktf_account_config_new(
 	c->log_callback = c_on_log;
 	c->disable_process_hardening = disable_process_hardening;
 	c->disable_storage_memory_security = disable_storage_memory_security;
+	c->event_delivery = event_delivery;
+	c->event_max_batch = event_max_batch;
 	return c;
 }
 
@@ -89,6 +88,7 @@ import "C"
 
 import (
 	"runtime/cgo"
+	"time"
 	"unsafe"
 )
 
@@ -97,10 +97,21 @@ import (
 // re-wraps the ffi event types into public types.
 type AccountCallbacks interface {
 	OnStatus(*StatusEvent)
-	OnMessage(*Message)
-	OnGroup(*GroupEvent)
+	OnEvent([]BatchEvent) Delivered
 	OnWorkflow(*WorkflowEvent)
 }
+
+type Delivered struct {
+	Retry      bool
+	RetryAfter time.Duration
+}
+
+type EventDelivery uint32
+
+const (
+	EventDeliveryCallback EventDelivery = C.EVENT_DELIVERY_CALLBACK
+	EventDeliveryPoll     EventDelivery = C.EVENT_DELIVERY_POLL
+)
 
 func dispatch(userData unsafe.Pointer) AccountCallbacks {
 	return cgo.Handle(uintptr(userData)).Value().(AccountCallbacks)
@@ -117,6 +128,7 @@ func newAccountConfig(
 	keyBuf *C.uint8_t, keyLen C.size_t,
 	logLevel LogLevel,
 	disableProcessHardening, disableStorageMemorySecurity bool,
+	eventDelivery EventDelivery, eventMaxBatch uint32,
 ) *C.zktf_account_config {
 	return C.zktf_account_config_new(
 		C.enum_zktf_account_target(network),
@@ -125,6 +137,8 @@ func newAccountConfig(
 		C.enum_zktf_log_level(logLevel),
 		C.bool(disableProcessHardening),
 		C.bool(disableStorageMemorySecurity),
+		C.enum_zktf_event_delivery(eventDelivery),
+		C.uint32_t(eventMaxBatch),
 	)
 }
 
@@ -150,14 +164,14 @@ func goOnStatus(userData unsafe.Pointer, event *C.zktf_status_event) {
 	dispatch(userData).OnStatus(newStatusEvent(event))
 }
 
-//export goOnMessage
-func goOnMessage(userData unsafe.Pointer, message *C.zktf_message) {
-	dispatch(userData).OnMessage(newMessage(message))
-}
-
-//export goOnGroup
-func goOnGroup(userData unsafe.Pointer, event *C.zktf_group_event) {
-	dispatch(userData).OnGroup(newGroupEvent(event))
+//export goOnEvent
+func goOnEvent(userData unsafe.Pointer, batch *C.zktf_event_batch, retryAfterMs *C.uint64_t) C.enum_zktf_delivered {
+	delivered := dispatch(userData).OnEvent(takeEventBatch(batch))
+	if delivered.Retry {
+		*retryAfterMs = C.uint64_t(delivered.RetryAfter.Milliseconds())
+		return C.DELIVERED_RETRY
+	}
+	return C.DELIVERED_DONE
 }
 
 //export goOnWorkflow

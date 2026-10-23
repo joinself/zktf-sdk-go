@@ -1,6 +1,6 @@
-// Package event provides events delivered to an account's callbacks: account
-// status events, group events (invite/welcome/commit/proposal), and background
-// workflow events.
+// Package event provides events delivered to an account: connection status
+// events, batches of stored events (messages, group events, acknowledgements,
+// failures and drops), and background workflow events.
 package event
 
 import (
@@ -9,24 +9,48 @@ import (
 	"github.com/joinself/zktf-sdk-go/crypto"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
+	"github.com/joinself/zktf-sdk-go/message"
 )
 
-// EventKind identifies the kind of a status Event.
-type EventKind uint32
+// StatusKind identifies the kind of a Status event.
+type StatusKind uint32
 
 const (
-	EventConnected    EventKind = EventKind(ffi.StatusEventConnected)
-	EventDisconnected EventKind = EventKind(ffi.StatusEventDisconnected)
-	EventAcknowledged EventKind = EventKind(ffi.StatusEventAcknowledged)
-	EventSendFailed   EventKind = EventKind(ffi.StatusEventSendFailed)
-	EventDropped      EventKind = EventKind(ffi.StatusEventDropped)
+	StatusConnected    StatusKind = StatusKind(ffi.StatusEventConnected)
+	StatusDisconnected StatusKind = StatusKind(ffi.StatusEventDisconnected)
 )
 
-// Event is an account-level status event. Dispatch on Kind() and use the
-// matching accessor.
-type Event struct {
+// Status is a connection status event.
+type Status struct {
 	h *ffi.StatusEvent
 }
+
+type Kind uint32
+
+const (
+	KindMessage      Kind = Kind(ffi.EventMessage)
+	KindGroup        Kind = Kind(ffi.EventGroup)
+	KindAcknowledged Kind = Kind(ffi.EventAcknowledged)
+	KindFailed       Kind = Kind(ffi.EventFailed)
+	KindDropped      Kind = Kind(ffi.EventDropped)
+)
+
+type Event struct {
+	e ffi.BatchEvent
+}
+
+type Batch struct {
+	events []*Event
+}
+
+type Delivered struct {
+	retry bool
+	after time.Duration
+}
+
+func Done() Delivered { return Delivered{} }
+
+func Retry(after time.Duration) Delivered { return Delivered{retry: true, after: after} }
 
 // Group is a polymorphic group event. Dispatch on Kind() and call the
 // matching extractor (Invite/Welcome/Commit/Proposal).
@@ -65,8 +89,8 @@ type Dropped struct {
 }
 
 func init() {
-	ffi.StatusEventOf = func(o any) *ffi.StatusEvent { return o.(*Event).h }
-	ffi.ToStatusEvent = func(h *ffi.StatusEvent) any { return &Event{h: h} }
+	ffi.StatusEventOf = func(o any) *ffi.StatusEvent { return o.(*Status).h }
+	ffi.ToStatusEvent = func(h *ffi.StatusEvent) any { return &Status{h: h} }
 
 	ffi.GroupEventOf = func(o any) *ffi.GroupEvent { return o.(*Group).h }
 	ffi.ToGroupEvent = func(h *ffi.GroupEvent) any { return &Group{h: h} }
@@ -90,26 +114,53 @@ func init() {
 	ffi.ToDroppedEvent = func(h *ffi.DroppedEvent) any { return &Dropped{h: h} }
 }
 
-// Kind returns the kind of event.
-func (e *Event) Kind() EventKind { return EventKind(e.h.Kind()) }
+// Kind returns the kind of status event.
+func (s *Status) Kind() StatusKind { return StatusKind(s.h.Kind()) }
 
 // DisconnectReason returns the reason for a disconnected event, or nil.
-func (e *Event) DisconnectReason() error { return e.h.DisconnectReason() }
+func (s *Status) DisconnectReason() error { return s.h.DisconnectReason() }
 
-// SendError returns the error for a send-failed event, or nil.
-func (e *Event) SendError() error { return e.h.SendError() }
+func NewBatch(events []ffi.BatchEvent) *Batch {
+	b := &Batch{events: make([]*Event, len(events))}
+	for i, e := range events {
+		b.events[i] = &Event{e: e}
+	}
+	return b
+}
 
-// ReferenceID returns the message id referenced by acknowledged/send-failed.
-func (e *Event) ReferenceID() []byte { return e.h.ReferenceID() }
+func (b *Batch) Len() int { return len(b.events) }
 
-// Dropped returns the dropped-event details for a dropped event, or nil.
-func (e *Event) Dropped() *Dropped {
-	d := e.h.Dropped()
-	if d == nil {
+func (b *Batch) Events() []*Event { return b.events }
+
+func (d Delivered) IsRetry() (bool, time.Duration) { return d.retry, d.after }
+
+func (e *Event) Kind() Kind { return Kind(e.e.Kind) }
+
+func (e *Event) Message() *message.Message {
+	if e.e.Message == nil {
 		return nil
 	}
+	return ffi.ToMessage(e.e.Message).(*message.Message)
+}
 
-	return &Dropped{h: d}
+func (e *Event) Group() *Group {
+	if e.e.Group == nil {
+		return nil
+	}
+	return &Group{h: e.e.Group}
+}
+
+func (e *Event) ReferenceID() []byte { return e.e.ReferenceID }
+
+func (e *Event) Err() error { return e.e.Err }
+
+func (e *Event) ErrMessage() string { return e.e.ErrMessage }
+
+func (e *Event) Dropped() *Dropped {
+	if e.e.Dropped == nil {
+		return nil
+	}
+	return &Dropped{h: e.e.Dropped}
 }
 
 // GroupKind identifies the kind of a Group event.

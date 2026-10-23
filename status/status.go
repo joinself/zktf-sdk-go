@@ -22,6 +22,7 @@ const (
 	AccountConfigRequired    Code = 4
 	AccountNotConfigured     Code = 5
 	DeviceKeyLost            Code = Code(ffi.StatusDeviceKeyLost)
+	EventPollUnavailable     Code = Code(ffi.StatusEventPollUnavailable)
 )
 
 // Of returns the status code carried by an SDK error and whether the error was

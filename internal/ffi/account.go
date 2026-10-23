@@ -9,6 +9,7 @@ import "C"
 import (
 	"runtime"
 	"runtime/cgo"
+	"time"
 	"unsafe"
 )
 
@@ -47,6 +48,9 @@ type AccountConfig struct {
 
 	DisableProcessHardening      bool
 	DisableStorageMemorySecurity bool
+
+	EventDelivery EventDelivery
+	EventMaxBatch uint32
 }
 
 // Account wraps a zktf_account handle.
@@ -109,6 +113,8 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		cfg.LogLevel,
 		cfg.DisableProcessHardening,
 		cfg.DisableStorageMemorySecurity,
+		cfg.EventDelivery,
+		cfg.EventMaxBatch,
 	)
 	defer destroyAccountConfig(config)
 
@@ -123,4 +129,19 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 	}
 
 	return nil
+}
+
+func (a *Account) EventPoll(max int, timeout time.Duration) ([]BatchEvent, error) {
+	defer runtime.KeepAlive(a)
+	var batch *C.zktf_event_batch
+	err := status(C.zktf_account_event_poll(a.ptr, C.size_t(max), C.uint64_t(timeout.Milliseconds()), &batch))
+	if err != nil {
+		return nil, err
+	}
+	return takeEventBatch(batch), nil
+}
+
+func (a *Account) EventCommit() error {
+	defer runtime.KeepAlive(a)
+	return status(C.zktf_account_event_commit(a.ptr))
 }

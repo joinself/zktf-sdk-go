@@ -3,22 +3,19 @@ package account
 import (
 	"github.com/joinself/zktf-sdk-go/event"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
-	"github.com/joinself/zktf-sdk-go/message"
 )
 
-// Callbacks holds the four event handlers for an account, mirroring the native
-// SDK's callback structure. Any handler may be nil.
+// Callbacks holds the event handlers for an account. Any handler may be nil.
 type Callbacks struct {
-	// OnEvent fires for any account-level status event: connected, disconnected,
-	// acknowledged, send-failed, dropped. Dispatch on Event.Kind().
-	OnEvent func(*event.Event)
+	// OnStatus fires when the account connects or disconnects.
+	OnStatus func(*event.Status)
 
-	// OnMessage fires for incoming messages.
-	OnMessage func(*message.Message)
-
-	// OnGroup fires for incoming group events: invite, welcome, commit,
-	// proposal. Dispatch on event.Group.Kind() and pick the matching extractor.
-	OnGroup func(*event.Group)
+	// OnEvent receives batches of stored events: messages, group events,
+	// acknowledgements, send failures and drops. Returning event.Done()
+	// acknowledges the batch; event.Retry(d) redelivers it after d. When nil,
+	// batches are acknowledged without being delivered. Unused when the account
+	// is configured with DeliveryPoll.
+	OnEvent func(*event.Batch) event.Delivered
 
 	// OnWorkflow fires for background workflow events: task completed / failed.
 	OnWorkflow func(*event.Workflow)
@@ -31,21 +28,17 @@ type adapter struct {
 }
 
 func (a adapter) OnStatus(e *ffi.StatusEvent) {
-	if a.cb.OnEvent != nil {
-		a.cb.OnEvent(ffi.ToStatusEvent(e).(*event.Event))
+	if a.cb.OnStatus != nil {
+		a.cb.OnStatus(ffi.ToStatusEvent(e).(*event.Status))
 	}
 }
 
-func (a adapter) OnMessage(m *ffi.Message) {
-	if a.cb.OnMessage != nil {
-		a.cb.OnMessage(ffi.ToMessage(m).(*message.Message))
+func (a adapter) OnEvent(events []ffi.BatchEvent) ffi.Delivered {
+	if a.cb.OnEvent == nil {
+		return ffi.Delivered{}
 	}
-}
-
-func (a adapter) OnGroup(g *ffi.GroupEvent) {
-	if a.cb.OnGroup != nil {
-		a.cb.OnGroup(ffi.ToGroupEvent(g).(*event.Group))
-	}
+	retry, after := a.cb.OnEvent(event.NewBatch(events)).IsRetry()
+	return ffi.Delivered{Retry: retry, RetryAfter: after}
 }
 
 func (a adapter) OnWorkflow(w *ffi.WorkflowEvent) {
