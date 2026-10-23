@@ -77,7 +77,7 @@ static void zktf_account_config_destroy(zktf_account_config *c) {
 // cgo.Handle as a uintptr_t (its underlying representation) rather than as a
 // raw void* — go vet flags uintptr→unsafe.Pointer→void* conversions but
 // uintptr_t→void* in C is benign.
-static enum zktf_status zktf_account_configure_handle(
+static zktf_status zktf_account_configure_handle(
 	zktf_account *account,
 	const zktf_account_config *config,
 	const zktf_account_callbacks *callbacks,
