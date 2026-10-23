@@ -28,6 +28,7 @@ func TestCodeDomainAndNumber(t *testing.T) {
 		{status.AccountNotConfigured, status.DomainAccount, 2},
 		{status.DeviceKeyLost, status.DomainDevice, 1},
 		{status.EventPollUnavailable, status.DomainEvent, 2},
+		{status.KeyPairNotFound, status.DomainKeyPair, 5},
 	}
 	for _, tc := range cases {
 		if got := tc.code.Domain(); got != tc.domain {

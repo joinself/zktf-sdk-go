@@ -37,6 +37,7 @@ const (
 	DomainAccount uint16 = C.ZKTF_DOMAIN_ACCOUNT
 	DomainDevice  uint16 = C.ZKTF_DOMAIN_DEVICE
 	DomainEvent   uint16 = C.ZKTF_DOMAIN_EVENT
+	DomainKeyPair uint16 = C.ZKTF_DOMAIN_KEY_PAIR
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 	StatusAccountNotConfigured     uint32 = uint32(DomainAccount)<<16 | C.ZKTF_ACCOUNT_NOT_CONFIGURED
 	StatusDeviceKeyLost            uint32 = uint32(DomainDevice)<<16 | C.ZKTF_DEVICE_KEY_LOST
 	StatusEventPollUnavailable     uint32 = uint32(DomainEvent)<<16 | C.ZKTF_EVENT_POLL_UNAVAILABLE
+	StatusKeyPairNotFound          uint32 = uint32(DomainKeyPair)<<16 | C.ZKTF_KEY_PAIR_NOT_FOUND
 )
 
 func StatusDomain(code uint32) uint16 {

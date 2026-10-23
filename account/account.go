@@ -314,6 +314,43 @@ func (a *Account) MessageSend(to *signing.PublicKey, content *message.Content) e
 	return a.h.MessageSend(ffi.SigningPublicKeyOf(to), ffi.ContentOf(content))
 }
 
+type Outgoing struct {
+	To      *signing.PublicKey
+	Content *message.Content
+}
+
+type SendStatus struct {
+	Err error
+}
+
+func (s SendStatus) Queued() bool { return s.Err == nil }
+
+func (a *Account) MessageSendBatch(messages []Outgoing) ([]SendStatus, error) {
+	if len(messages) == 0 {
+		return []SendStatus{}, nil
+	}
+
+	outgoing := make([]ffi.MessageOutgoing, len(messages))
+	for i, m := range messages {
+		outgoing[i] = ffi.MessageOutgoing{
+			To:      ffi.SigningPublicKeyOf(m.To),
+			Content: ffi.ContentOf(m.Content),
+		}
+	}
+
+	errs, err := a.h.MessageSendBatch(outgoing)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]SendStatus, len(errs))
+	for i, e := range errs {
+		out[i] = SendStatus{Err: e}
+	}
+
+	return out, nil
+}
+
 // NotificationSend pushes a notification carrying a content summary to the
 // given address.
 func (a *Account) NotificationSend(to *signing.PublicKey, summary *message.ContentSummary, options ...CallOption) error {
