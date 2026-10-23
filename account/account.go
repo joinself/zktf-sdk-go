@@ -147,8 +147,9 @@ type Config struct {
 	DisableProcessHardening      bool
 	DisableStorageMemorySecurity bool
 
-	EventDelivery Delivery
-	EventMaxBatch int
+	EventDelivery   Delivery
+	EventMaxBatch   int
+	EventRetryDelay time.Duration
 }
 
 type Delivery uint32
@@ -203,8 +204,9 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 		DisableProcessHardening:      cfg.DisableProcessHardening,
 		DisableStorageMemorySecurity: cfg.DisableStorageMemorySecurity,
 
-		EventDelivery: ffi.EventDelivery(cfg.EventDelivery),
-		EventMaxBatch: uint32(max(cfg.EventMaxBatch, 0)),
+		EventDelivery:     ffi.EventDelivery(cfg.EventDelivery),
+		EventMaxBatch:     uint32(max(cfg.EventMaxBatch, 0)),
+		EventRetryDelayMs: uint32(min(max(cfg.EventRetryDelay.Milliseconds(), 0), int64(^uint32(0)))),
 	}, adapter{cb: cb})
 	if err != nil {
 		return nil, err

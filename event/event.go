@@ -45,12 +45,11 @@ type Batch struct {
 
 type Delivered struct {
 	retry bool
-	after time.Duration
 }
 
 func Done() Delivered { return Delivered{} }
 
-func Retry(after time.Duration) Delivered { return Delivered{retry: true, after: after} }
+func Retry() Delivered { return Delivered{retry: true} }
 
 // Group is a polymorphic group event. Dispatch on Kind() and call the
 // matching extractor (Invite/Welcome/Commit/Proposal).
@@ -132,7 +131,7 @@ func (b *Batch) Len() int { return len(b.events) }
 
 func (b *Batch) Events() []*Event { return b.events }
 
-func (d Delivered) IsRetry() (bool, time.Duration) { return d.retry, d.after }
+func (d Delivered) IsRetry() bool { return d.retry }
 
 func (e *Event) Kind() Kind { return Kind(e.e.Kind) }
 

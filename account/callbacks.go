@@ -12,9 +12,9 @@ type Callbacks struct {
 
 	// OnEvent receives batches of stored events: messages, group events,
 	// acknowledgements, send failures and drops. Returning event.Done()
-	// acknowledges the batch; event.Retry(d) redelivers it after d. When nil,
-	// batches are acknowledged without being delivered. Unused when the account
-	// is configured with DeliveryPoll.
+	// acknowledges the batch; event.Retry() redelivers it after the account's
+	// EventRetryDelay. When nil, batches are acknowledged without being
+	// delivered. Unused when the account is configured with DeliveryPoll.
 	OnEvent func(*event.Batch) event.Delivered
 
 	// OnWorkflow fires for background workflow events: task completed / failed.
@@ -37,8 +37,7 @@ func (a adapter) OnEvent(events []ffi.BatchEvent) ffi.Delivered {
 	if a.cb.OnEvent == nil {
 		return ffi.Delivered{}
 	}
-	retry, after := a.cb.OnEvent(event.NewBatch(events)).IsRetry()
-	return ffi.Delivered{Retry: retry, RetryAfter: after}
+	return ffi.Delivered{Retry: a.cb.OnEvent(event.NewBatch(events)).IsRetry()}
 }
 
 func (a adapter) OnWorkflow(w *ffi.WorkflowEvent) {

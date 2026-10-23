@@ -49,8 +49,9 @@ type AccountConfig struct {
 	DisableProcessHardening      bool
 	DisableStorageMemorySecurity bool
 
-	EventDelivery EventDelivery
-	EventMaxBatch uint32
+	EventDelivery     EventDelivery
+	EventMaxBatch     uint32
+	EventRetryDelayMs uint32
 }
 
 // Account wraps a zktf_account handle.
@@ -115,6 +116,7 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		cfg.DisableStorageMemorySecurity,
 		cfg.EventDelivery,
 		cfg.EventMaxBatch,
+		cfg.EventRetryDelayMs,
 	)
 	defer destroyAccountConfig(config)
 
