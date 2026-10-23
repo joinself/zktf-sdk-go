@@ -18,6 +18,7 @@ const (
 	DomainAccount Domain = Domain(ffi.DomainAccount)
 	DomainDevice  Domain = Domain(ffi.DomainDevice)
 	DomainEvent   Domain = Domain(ffi.DomainEvent)
+	DomainKeyPair Domain = Domain(ffi.DomainKeyPair)
 )
 
 // A subset of the status codes. Callers compare these against the value
@@ -31,6 +32,7 @@ const (
 	AccountNotConfigured     Code = Code(ffi.StatusAccountNotConfigured)
 	DeviceKeyLost            Code = Code(ffi.StatusDeviceKeyLost)
 	EventPollUnavailable     Code = Code(ffi.StatusEventPollUnavailable)
+	KeyPairNotFound          Code = Code(ffi.StatusKeyPairNotFound)
 )
 
 func (c Code) Domain() Domain {
