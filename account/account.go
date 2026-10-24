@@ -144,13 +144,21 @@ type Config struct {
 	// callback is process-global, the most recently configured account wins.
 	LogHandler LogHandler
 
-	DisableProcessHardening      bool
-	DisableStorageMemorySecurity bool
+	DisableProcessHardening bool
+	StorageMemorySecurity   StorageMemorySecurity
 
 	EventDelivery   Delivery
 	EventMaxBatch   int
 	EventRetryDelay time.Duration
 }
+
+type StorageMemorySecurity uint32
+
+const (
+	StorageMemorySecurityDefault  StorageMemorySecurity = StorageMemorySecurity(ffi.StorageMemorySecurityDefault)
+	StorageMemorySecurityEnabled  StorageMemorySecurity = StorageMemorySecurity(ffi.StorageMemorySecurityEnabled)
+	StorageMemorySecurityDisabled StorageMemorySecurity = StorageMemorySecurity(ffi.StorageMemorySecurityDisabled)
+)
 
 type Delivery uint32
 
@@ -201,8 +209,8 @@ func New(cfg Config, cb Callbacks) (*Account, error) {
 		EncryptionKey:   key,
 		LogLevel:        ffi.LogLevel(logLevel),
 
-		DisableProcessHardening:      cfg.DisableProcessHardening,
-		DisableStorageMemorySecurity: cfg.DisableStorageMemorySecurity,
+		DisableProcessHardening: cfg.DisableProcessHardening,
+		StorageMemorySecurity:   ffi.StorageMemorySecurity(cfg.StorageMemorySecurity),
 
 		EventDelivery:     ffi.EventDelivery(cfg.EventDelivery),
 		EventMaxBatch:     uint32(max(cfg.EventMaxBatch, 0)),
