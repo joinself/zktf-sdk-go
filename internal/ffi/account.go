@@ -46,8 +46,8 @@ type AccountConfig struct {
 	EncryptionKey   []byte
 	LogLevel        LogLevel
 
-	DisableProcessHardening      bool
-	DisableStorageMemorySecurity bool
+	DisableProcessHardening bool
+	StorageMemorySecurity   StorageMemorySecurity
 
 	EventDelivery     EventDelivery
 	EventMaxBatch     uint32
@@ -113,7 +113,7 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		keyBuf, keyLen,
 		cfg.LogLevel,
 		cfg.DisableProcessHardening,
-		cfg.DisableStorageMemorySecurity,
+		cfg.StorageMemorySecurity,
 		cfg.EventDelivery,
 		cfg.EventMaxBatch,
 		cfg.EventRetryDelayMs,

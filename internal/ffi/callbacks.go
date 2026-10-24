@@ -46,7 +46,7 @@ static zktf_account_config *zktf_account_config_new(
 	size_t encryption_key_len,
 	enum zktf_log_level log_level,
 	bool disable_process_hardening,
-	bool disable_storage_memory_security,
+	enum zktf_storage_memory_security storage_memory_security,
 	enum zktf_event_delivery event_delivery,
 	uint32_t event_max_batch,
 	uint32_t event_retry_delay_ms
@@ -62,7 +62,7 @@ static zktf_account_config *zktf_account_config_new(
 	c->log_level = log_level;
 	c->log_callback = c_on_log;
 	c->disable_process_hardening = disable_process_hardening;
-	c->disable_storage_memory_security = disable_storage_memory_security;
+	c->storage_memory_security = storage_memory_security;
 	c->event_delivery = event_delivery;
 	c->event_max_batch = event_max_batch;
 	c->event_retry_delay_ms = event_retry_delay_ms;
@@ -113,6 +113,14 @@ const (
 	EventDeliveryPoll     EventDelivery = C.EVENT_DELIVERY_POLL
 )
 
+type StorageMemorySecurity uint32
+
+const (
+	StorageMemorySecurityDefault  StorageMemorySecurity = C.STORAGE_MEMORY_SECURITY_DEFAULT
+	StorageMemorySecurityEnabled  StorageMemorySecurity = C.STORAGE_MEMORY_SECURITY_ENABLED
+	StorageMemorySecurityDisabled StorageMemorySecurity = C.STORAGE_MEMORY_SECURITY_DISABLED
+)
+
 func dispatch(userData unsafe.Pointer) AccountCallbacks {
 	return cgo.Handle(uintptr(userData)).Value().(AccountCallbacks)
 }
@@ -127,7 +135,8 @@ func newAccountConfig(
 	rpc, object, messaging, storage *C.char,
 	keyBuf *C.uint8_t, keyLen C.size_t,
 	logLevel LogLevel,
-	disableProcessHardening, disableStorageMemorySecurity bool,
+	disableProcessHardening bool,
+	storageMemorySecurity StorageMemorySecurity,
 	eventDelivery EventDelivery, eventMaxBatch, eventRetryDelayMs uint32,
 ) *C.zktf_account_config {
 	return C.zktf_account_config_new(
@@ -136,7 +145,7 @@ func newAccountConfig(
 		keyBuf, keyLen,
 		C.enum_zktf_log_level(logLevel),
 		C.bool(disableProcessHardening),
-		C.bool(disableStorageMemorySecurity),
+		C.enum_zktf_storage_memory_security(storageMemorySecurity),
 		C.enum_zktf_event_delivery(eventDelivery),
 		C.uint32_t(eventMaxBatch),
 		C.uint32_t(eventRetryDelayMs),

@@ -157,3 +157,25 @@ func TestRevocationSigningRequestSummaryDescribesIssuer(t *testing.T) {
 
 	t.Fatal("summary has no revocation description")
 }
+
+func TestConfigureWithEachStorageMemorySecurity(t *testing.T) {
+	for _, security := range []account.StorageMemorySecurity{
+		account.StorageMemorySecurityDefault,
+		account.StorageMemorySecurityDisabled,
+	} {
+		acc, err := account.New(account.Config{
+			StoragePath:           ":memory:",
+			StorageMemorySecurity: security,
+			Target: &account.Target{
+				Network:         account.NetworkPreview,
+				RPCEndpoint:     "http://127.0.0.1:1/",
+				ObjectEndpoint:  "http://127.0.0.1:1/",
+				MessageEndpoint: "ws://127.0.0.1:1/",
+			},
+		}, account.Callbacks{})
+		if err != nil {
+			t.Fatalf("account.New with storage memory security %d: %v", security, err)
+		}
+		acc.Close()
+	}
+}
