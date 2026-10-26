@@ -75,6 +75,40 @@ func (n *Network) MessagingEndpoint() string {
 	return C.GoString((*C.char)(buf))
 }
 
+func NewEphemeralNetwork() *Network {
+	return newNetwork(C.zktf_sim_network_ephemeral())
+}
+
+func (n *Network) ControlEndpoint() string {
+	defer runtime.KeepAlive(n)
+	buf := C.malloc(endpointBufLen)
+	defer C.free(buf)
+	if status(C.zktf_sim_network_control_endpoint(n.ptr, (*C.uint8_t)(buf), endpointBufLen)) != nil {
+		return ""
+	}
+	return C.GoString((*C.char)(buf))
+}
+
+func (n *Network) ApplicationCreate(organisationName, applicationName string) ([]byte, error) {
+	defer runtime.KeepAlive(n)
+	organisation := C.CString(organisationName)
+	defer C.free(unsafe.Pointer(organisation))
+	application := C.CString(applicationName)
+	defer C.free(unsafe.Pointer(application))
+	return keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
+		return C.zktf_sim_network_application_create(n.ptr, organisation, application, buf, signingKeyBytesLen)
+	})
+}
+
+func (n *Network) ApplicationPair(applicationName, pairingCode string) error {
+	defer runtime.KeepAlive(n)
+	application := C.CString(applicationName)
+	defer C.free(unsafe.Pointer(application))
+	code := C.CString(pairingCode)
+	defer C.free(unsafe.Pointer(code))
+	return status(C.zktf_sim_network_application_pair(n.ptr, application, code))
+}
+
 func (n *Network) MessageCount(address []byte) int {
 	defer runtime.KeepAlive(n)
 	buf, length := cbytes(address)

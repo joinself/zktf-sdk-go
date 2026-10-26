@@ -1,6 +1,9 @@
 package simulator
 
-import "github.com/joinself/zktf-sdk-go/internal/simffi"
+import (
+	"github.com/joinself/zktf-sdk-go/internal/simffi"
+	"github.com/joinself/zktf-sdk-go/keypair/signing"
+)
 
 // Network is an in-process zktf network. Its endpoints are used to configure a
 // real zktf-sdk-go account; its fault-injection methods perturb message
@@ -19,6 +22,24 @@ func NewNetwork(apiPort, objectPort, messagingPort, controlPort uint16) *Network
 // (3000/3500/4000/9000).
 func NewDefaultNetwork() *Network {
 	return &Network{h: simffi.NewDefaultNetwork()}
+}
+
+func NewEphemeralNetwork() *Network {
+	return &Network{h: simffi.NewEphemeralNetwork()}
+}
+
+func (n *Network) ControlEndpoint() string { return n.h.ControlEndpoint() }
+
+func (n *Network) ApplicationCreate(organisationName, applicationName string) (*signing.PublicKey, error) {
+	address, err := n.h.ApplicationCreate(organisationName, applicationName)
+	if err != nil {
+		return nil, err
+	}
+	return signing.FromBytes(address)
+}
+
+func (n *Network) ApplicationPair(applicationName, pairingCode string) error {
+	return n.h.ApplicationPair(applicationName, pairingCode)
 }
 
 // RPCEndpoint returns the rpc endpoint URL.

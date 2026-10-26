@@ -52,6 +52,9 @@ type AccountConfig struct {
 	EventDelivery     EventDelivery
 	EventMaxBatch     uint32
 	EventRetryDelayMs uint32
+
+	PairingRoles IdentityKeyRole
+	PairingLabel string
 }
 
 // Account wraps a zktf_account handle.
@@ -99,7 +102,13 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 	storage := cstring(cfg.StoragePath)
 	keyBuf, keyLen := cbytes(cfg.EncryptionKey)
 
+	var label *C.char
+	if cfg.PairingLabel != "" {
+		label = cstring(cfg.PairingLabel)
+	}
+
 	defer func() {
+		free(unsafe.Pointer(label))
 		free(unsafe.Pointer(rpc))
 		free(unsafe.Pointer(object))
 		free(unsafe.Pointer(messaging))
@@ -117,6 +126,7 @@ func (a *Account) Configure(cfg AccountConfig, cb AccountCallbacks) error {
 		cfg.EventDelivery,
 		cfg.EventMaxBatch,
 		cfg.EventRetryDelayMs,
+		cfg.PairingRoles, label,
 	)
 	defer destroyAccountConfig(config)
 

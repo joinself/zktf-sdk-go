@@ -49,7 +49,9 @@ static zktf_account_config *zktf_account_config_new(
 	enum zktf_storage_memory_security storage_memory_security,
 	enum zktf_event_delivery event_delivery,
 	uint32_t event_max_batch,
-	uint32_t event_retry_delay_ms
+	uint32_t event_retry_delay_ms,
+	uint64_t pairing_roles,
+	char *pairing_label
 ) {
 	zktf_account_config *c = calloc(1, sizeof(zktf_account_config));
 	c->target = target;
@@ -66,6 +68,8 @@ static zktf_account_config *zktf_account_config_new(
 	c->event_delivery = event_delivery;
 	c->event_max_batch = event_max_batch;
 	c->event_retry_delay_ms = event_retry_delay_ms;
+	c->pairing_roles = pairing_roles;
+	c->pairing_label = pairing_label;
 	return c;
 }
 
@@ -138,6 +142,7 @@ func newAccountConfig(
 	disableProcessHardening bool,
 	storageMemorySecurity StorageMemorySecurity,
 	eventDelivery EventDelivery, eventMaxBatch, eventRetryDelayMs uint32,
+	pairingRoles IdentityKeyRole, pairingLabel *C.char,
 ) *C.zktf_account_config {
 	return C.zktf_account_config_new(
 		C.enum_zktf_account_target(network),
@@ -149,6 +154,8 @@ func newAccountConfig(
 		C.enum_zktf_event_delivery(eventDelivery),
 		C.uint32_t(eventMaxBatch),
 		C.uint32_t(eventRetryDelayMs),
+		C.uint64_t(pairingRoles),
+		pairingLabel,
 	)
 }
 

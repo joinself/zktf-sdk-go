@@ -33,6 +33,7 @@ const (
 	KindAcknowledged Kind = Kind(ffi.EventAcknowledged)
 	KindFailed       Kind = Kind(ffi.EventFailed)
 	KindDropped      Kind = Kind(ffi.EventDropped)
+	KindPaired       Kind = Kind(ffi.EventPaired)
 )
 
 type Event struct {
@@ -186,6 +187,13 @@ func (e *Event) Dropped() *Dropped {
 		return nil
 	}
 	return &Dropped{h: e.e.Dropped}
+}
+
+func (e *Event) PairedApplication() *signing.PublicKey {
+	if e.e.Paired == nil {
+		return nil
+	}
+	return ffi.ToSigningPublicKey(e.e.Paired).(*signing.PublicKey)
 }
 
 // GroupKind identifies the kind of a Group event.

@@ -38,6 +38,7 @@ const (
 	DomainDevice  uint16 = C.ZKTF_DOMAIN_DEVICE
 	DomainEvent   uint16 = C.ZKTF_DOMAIN_EVENT
 	DomainKeyPair uint16 = C.ZKTF_DOMAIN_KEY_PAIR
+	DomainPairing uint16 = C.ZKTF_DOMAIN_PAIRING
 )
 
 const (
@@ -50,6 +51,9 @@ const (
 	StatusDeviceKeyLost            uint32 = uint32(DomainDevice)<<16 | C.ZKTF_DEVICE_KEY_LOST
 	StatusEventPollUnavailable     uint32 = uint32(DomainEvent)<<16 | C.ZKTF_EVENT_POLL_UNAVAILABLE
 	StatusKeyPairNotFound          uint32 = uint32(DomainKeyPair)<<16 | C.ZKTF_KEY_PAIR_NOT_FOUND
+	StatusPairingCodeInvalid       uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_CODE_INVALID
+	StatusPairingGrantInvalid      uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_GRANT_INVALID
+	StatusPairingRolesInvalid      uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_ROLES_INVALID
 )
 
 func StatusDomain(code uint32) uint16 {

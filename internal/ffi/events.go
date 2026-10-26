@@ -54,6 +54,7 @@ const (
 	EventAcknowledged EventKind = C.EVENT_ACKNOWLEDGED
 	EventFailed       EventKind = C.EVENT_FAILED
 	EventDropped      EventKind = C.EVENT_DROPPED
+	EventPaired       EventKind = C.EVENT_PAIRED
 )
 
 type BatchEvent struct {
@@ -63,6 +64,7 @@ type BatchEvent struct {
 	Reference *Reference
 	Err       error
 	Dropped   *DroppedEvent
+	Paired    *SigningPublicKey
 }
 
 func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
@@ -92,6 +94,8 @@ func takeEventBatch(batch *C.zktf_event_batch) []BatchEvent {
 			}
 		case EventDropped:
 			ev.Dropped = newDroppedEvent(C.zktf_event_batch_dropped(batch, idx))
+		case EventPaired:
+			ev.Paired = newSigningPublicKey(C.zktf_event_batch_paired(batch, idx))
 		}
 		events = append(events, ev)
 	}

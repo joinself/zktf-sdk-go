@@ -24,6 +24,28 @@ func (a *Account) SetupPairingCode() (string, error) {
 	return goStringFromBuffer(buf), nil
 }
 
+func (a *Account) SetupPairingOffer() (string, error) {
+	defer runtime.KeepAlive(a)
+	var buf *C.zktf_string_buffer
+
+	if err := status(C.zktf_account_setup_pairing_offer(a.ptr, &buf)); err != nil {
+		return "", err
+	}
+
+	return goStringFromBuffer(buf), nil
+}
+
+func (a *Account) SetupPairingQR(encoding QREncoding) ([]byte, error) {
+	defer runtime.KeepAlive(a)
+	var buf *C.zktf_bytes_buffer
+
+	if err := status(C.zktf_account_setup_pairing_qr(a.ptr, C.enum_zktf_qr_code_encoding(encoding), &buf)); err != nil {
+		return nil, err
+	}
+
+	return goBytesFromBuffer(buf), nil
+}
+
 // PresentationSign signs a presentation with any available keys it requires.
 func (a *Account) PresentationSign(vp *VerifiablePresentation) error {
 	defer runtime.KeepAlive(a)
