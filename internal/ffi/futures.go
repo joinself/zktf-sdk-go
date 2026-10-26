@@ -98,7 +98,7 @@ func AwaitStatus(fut *C.zktf_future_status, timeout time.Duration) error {
 }
 
 //export goFutureStatusComplete
-func goFutureStatusComplete(h C.uintptr_t, reason C.enum_zktf_status) {
+func goFutureStatusComplete(h C.uintptr_t, reason C.zktf_status) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan statusResult)
 	handle.Delete()
@@ -124,7 +124,7 @@ func AwaitSigningPublicKey(fut *C.zktf_future_signing_public_key, timeout time.D
 }
 
 //export goFutureSigningPublicKeyComplete
-func goFutureSigningPublicKeyComplete(h C.uintptr_t, reason C.enum_zktf_status, key *C.zktf_signing_public_key) {
+func goFutureSigningPublicKeyComplete(h C.uintptr_t, reason C.zktf_status, key *C.zktf_signing_public_key) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan signingPublicKeyResult)
 	handle.Delete()
@@ -157,7 +157,7 @@ func AwaitIdentityDocument(fut *C.zktf_future_identity_document, timeout time.Du
 }
 
 //export goFutureIdentityDocumentComplete
-func goFutureIdentityDocumentComplete(h C.uintptr_t, reason C.enum_zktf_status, doc *C.zktf_identity_document) {
+func goFutureIdentityDocumentComplete(h C.uintptr_t, reason C.zktf_status, doc *C.zktf_identity_document) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan identityDocumentResult)
 	handle.Delete()
@@ -190,7 +190,7 @@ func AwaitCredentialGraph(fut *C.zktf_future_credential_graph, timeout time.Dura
 }
 
 //export goFutureCredentialGraphComplete
-func goFutureCredentialGraphComplete(h C.uintptr_t, reason C.enum_zktf_status, graph *C.zktf_credential_graph) {
+func goFutureCredentialGraphComplete(h C.uintptr_t, reason C.zktf_status, graph *C.zktf_credential_graph) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan credentialGraphResult)
 	handle.Delete()
@@ -223,7 +223,7 @@ func AwaitGroup(fut *C.zktf_future_group, timeout time.Duration) (*Group, error)
 }
 
 //export goFutureGroupComplete
-func goFutureGroupComplete(h C.uintptr_t, reason C.enum_zktf_status, group *C.zktf_group) {
+func goFutureGroupComplete(h C.uintptr_t, reason C.zktf_status, group *C.zktf_group) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan groupResult)
 	handle.Delete()
@@ -254,7 +254,7 @@ func AwaitPairwiseIdentity(fut *C.zktf_future_pairwise_identity, timeout time.Du
 }
 
 //export goFuturePairwiseIdentityComplete
-func goFuturePairwiseIdentityComplete(h C.uintptr_t, reason C.enum_zktf_status, identity *C.zktf_pairwise_identity) {
+func goFuturePairwiseIdentityComplete(h C.uintptr_t, reason C.zktf_status, identity *C.zktf_pairwise_identity) {
 	handle := cgo.Handle(uintptr(h))
 	ch := handle.Value().(chan pairwiseIdentityResult)
 	handle.Delete()

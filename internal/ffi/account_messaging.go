@@ -21,6 +21,36 @@ func (a *Account) MessageSend(to *SigningPublicKey, content *Content) error {
 	return status(C.zktf_account_message_send(a.ptr, to.ptr, content.ptr))
 }
 
+type MessageOutgoing struct {
+	To      *SigningPublicKey
+	Content *Content
+}
+
+func (a *Account) MessageSendBatch(messages []MessageOutgoing) ([]error, error) {
+	defer runtime.KeepAlive(a)
+	defer runtime.KeepAlive(messages)
+
+	outgoing := C.zktf_collection_message_outgoing_init()
+	defer C.zktf_collection_message_outgoing_destroy(outgoing)
+	for _, m := range messages {
+		C.zktf_collection_message_outgoing_append(outgoing, m.To.ptr, m.Content.ptr)
+	}
+
+	var statuses *C.zktf_collection_message_send_status
+	if err := status(C.zktf_account_message_send_batch(a.ptr, outgoing, &statuses)); err != nil {
+		return nil, err
+	}
+	defer C.zktf_collection_message_send_status_destroy(statuses)
+
+	n := int(C.zktf_collection_message_send_status_len(statuses))
+	out := make([]error, n)
+	for i := range n {
+		out[i] = status(C.zktf_collection_message_send_status_at(statuses, C.size_t(i)))
+	}
+
+	return out, nil
+}
+
 // InboxOpen opens a new messaging inbox, awaiting its address via callback.
 func (a *Account) InboxOpen(expiresUnix int64, timeout time.Duration) (*SigningPublicKey, error) {
 	defer runtime.KeepAlive(a)
