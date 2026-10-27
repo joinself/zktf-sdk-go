@@ -13,6 +13,23 @@ import (
 
 // goBytesFromBuffer copies a zktf_sim_bytes_buffer into a Go slice and destroys
 // the buffer.
+func goBytesFromList(list *C.zktf_sim_bytes_list) [][]byte {
+	if list == nil {
+		return nil
+	}
+	defer C.zktf_sim_bytes_list_destroy(list)
+
+	n := int(C.zktf_sim_bytes_list_len(list))
+	out := make([][]byte, 0, n)
+	for i := 0; i < n; i++ {
+		out = append(out, C.GoBytes(
+			unsafe.Pointer(C.zktf_sim_bytes_list_buf(list, C.size_t(i))),
+			C.int(C.zktf_sim_bytes_list_buf_len(list, C.size_t(i))),
+		))
+	}
+	return out
+}
+
 func goBytesFromBuffer(buf *C.zktf_sim_bytes_buffer) []byte {
 	if buf == nil {
 		return nil
@@ -234,10 +251,13 @@ func (d *Device) SigningKeyCreate() ([]byte, error) {
 	})
 }
 
-// MintControllerIdentity mints a free-standing anchored identity for identifier
-// and signs credential as that identity, in one liveness-authorized batch.
-// credential is CBOR-LD; the signed credential is returned as CBOR-LD.
-func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, error) {
+type Minted struct {
+	Credential []byte
+	Liveness   [][]byte
+	Anchors    [][]byte
+}
+
+func (d *Device) MintControllerIdentity(identifier, credential []byte) (*Minted, error) {
 	defer runtime.KeepAlive(d)
 	idBuf, idLen := cbytes(identifier)
 	defer free(unsafe.Pointer(idBuf))
@@ -245,13 +265,18 @@ func (d *Device) MintControllerIdentity(identifier, credential []byte) ([]byte, 
 	defer free(unsafe.Pointer(credBuf))
 
 	var signed *C.zktf_sim_bytes_buffer
+	var liveness, anchors *C.zktf_sim_bytes_list
 	if err := status(C.zktf_sim_device_mint_controller_identity(
-		d.ptr, idBuf, idLen, credBuf, credLen, &signed,
+		d.ptr, idBuf, idLen, credBuf, credLen, &signed, &liveness, &anchors,
 	)); err != nil {
 		return nil, err
 	}
 
-	return goBytesFromBuffer(signed), nil
+	return &Minted{
+		Credential: goBytesFromBuffer(signed),
+		Liveness:   goBytesFromList(liveness),
+		Anchors:    goBytesFromList(anchors),
+	}, nil
 }
 
 func (d *Device) Address() ([]byte, error) {
@@ -311,14 +336,27 @@ func (d *Device) ControllerAnchor(document []byte, timeoutMs uint64) ([]byte, er
 	return goBytesFromBuffer(anchor), nil
 }
 
-func (d *Device) SignIdentity(operation, credential unsafe.Pointer) ([]byte, []byte, error) {
+type Signed struct {
+	Operation  []byte
+	Credential []byte
+	Liveness   [][]byte
+	Anchors    [][]byte
+}
+
+func (d *Device) SignIdentity(operation, credential unsafe.Pointer) (*Signed, error) {
 	defer runtime.KeepAlive(d)
 	var signedOperation, signedCredential *C.zktf_sim_bytes_buffer
+	var liveness, anchors *C.zktf_sim_bytes_list
 	if err := status(C.zktf_sim_device_sign_identity(
-		d.ptr, operation, credential, &signedOperation, &signedCredential,
+		d.ptr, operation, credential, &signedOperation, &signedCredential, &liveness, &anchors,
 	)); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return goBytesFromBuffer(signedOperation), goBytesFromBuffer(signedCredential), nil
+	return &Signed{
+		Operation:  goBytesFromBuffer(signedOperation),
+		Credential: goBytesFromBuffer(signedCredential),
+		Liveness:   goBytesFromList(liveness),
+		Anchors:    goBytesFromList(anchors),
+	}, nil
 }

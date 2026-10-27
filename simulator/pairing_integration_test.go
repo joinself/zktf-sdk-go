@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/joinself/zktf-sdk-go/account"
+	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/event"
 	"github.com/joinself/zktf-sdk-go/identity"
 	"github.com/joinself/zktf-sdk-go/keypair/signing"
@@ -240,5 +241,166 @@ func TestInterceptFromPairedApplication(t *testing.T) {
 	}
 	if intercepted == nil {
 		t.Fatal("want the chat from the paired application intercepted")
+	}
+}
+
+func applicationUser(t *testing.T) (*account.Account, *simulator.Device) {
+	t.Helper()
+
+	network := simulator.NewEphemeralNetwork()
+	app, err := network.ApplicationCreate("Acme Ltd", "Acme Test")
+	if err != nil {
+		t.Fatalf("application create: %v", err)
+	}
+
+	paired := make(chan *signing.PublicKey, 1)
+	acc := pairingServer(t, network, paired)
+	offer, err := acc.SetupPairingOffer()
+	if err != nil {
+		t.Fatalf("setup pairing offer: %v", err)
+	}
+	if err := network.ApplicationPair("Acme Test", offer); err != nil {
+		t.Fatalf("application pair: %v", err)
+	}
+	select {
+	case <-paired:
+	case <-time.After(30 * time.Second):
+		t.Fatal("server did not report paired")
+	}
+
+	user := simulator.NewDevice(network)
+	t.Cleanup(user.Close)
+	if err := user.Expect(simulator.MatchAny(), simulator.Accept()); err != nil {
+		t.Fatalf("expect: %v", err)
+	}
+	if err := user.Register(app); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	return acc, user
+}
+
+func credentialTypes(t *testing.T, encoded [][]byte) []string {
+	t.Helper()
+
+	var types []string
+	for _, e := range encoded {
+		decoded, err := credential.Decode(e)
+		if err != nil {
+			t.Fatalf("decode credential: %v", err)
+		}
+		types = append(types, decoded.Types()...)
+	}
+	return types
+}
+
+func hasType(types []string, want string) bool {
+	for _, kind := range types {
+		if kind == want {
+			return true
+		}
+	}
+	return false
+}
+
+func mintController(t *testing.T, user *simulator.Device) (*signing.PublicKey, *simulator.MintedIdentity) {
+	t.Helper()
+
+	identifier, err := user.SigningKeyCreate()
+	if err != nil {
+		t.Fatalf("signing key create: %v", err)
+	}
+
+	subject := identity.AddressZktf(identifier)
+	unsigned, err := credential.NewBuilder().
+		Type("VerifiableCredential", "OrganisationCredential").
+		Issuer(subject).
+		Subject(subject).
+		Claim("organisationName", "Example Ltd").
+		ValidFrom(time.Now()).
+		SignWith(identifier, time.Now()).
+		Finish()
+	if err != nil {
+		t.Fatalf("build credential: %v", err)
+	}
+	encoded, err := unsigned.Encode()
+	if err != nil {
+		t.Fatalf("encode credential: %v", err)
+	}
+
+	minted, err := user.MintControllerIdentity(identifier, encoded)
+	if err != nil {
+		t.Fatalf("mint controller identity: %v", err)
+	}
+	return identifier, minted
+}
+
+func TestMintControllerIdentityReturnsLivenessAndAnchor(t *testing.T) {
+	_, user := applicationUser(t)
+	identifier, minted := mintController(t, user)
+
+	if len(minted.Credential) == 0 {
+		t.Fatal("want the signed credential")
+	}
+	if len(minted.Liveness) != 1 || !hasType(credentialTypes(t, minted.Liveness), "LivenessAndFacialComparisonCredential") {
+		t.Fatalf("want one liveness credential, got %v", credentialTypes(t, minted.Liveness))
+	}
+	if len(minted.Anchors) != 1 || !hasType(credentialTypes(t, minted.Anchors), "BiometricAnchorCredential") {
+		t.Fatalf("want one biometric anchor credential, got %v", credentialTypes(t, minted.Anchors))
+	}
+
+	anchor, err := user.ControllerAnchor(identifier, 10*time.Second)
+	if err != nil {
+		t.Fatalf("controller anchor: %v", err)
+	}
+	if !bytes.Equal(anchor, minted.Anchors[0]) {
+		t.Fatal("want the returned anchor to be the controller's anchor")
+	}
+}
+
+func TestSignIdentityReturnsLivenessAndAnchor(t *testing.T) {
+	acc, user := applicationUser(t)
+	controller, _ := mintController(t, user)
+
+	document, err := acc.IdentityResolve(identity.AddressZktf(controller))
+	if err != nil {
+		t.Fatalf("resolve controller: %v", err)
+	}
+	invocation := document.SigningKeys(identity.WithRoles(identity.KeyRoleInvocation))
+	assertion := document.SigningKeys(identity.WithRoles(identity.KeyRoleAssertion))
+	if len(invocation) == 0 || len(assertion) == 0 {
+		t.Fatal("want controller invocation and assertion keys")
+	}
+
+	organisation, err := user.SigningKeyCreate()
+	if err != nil {
+		t.Fatalf("organisation identifier: %v", err)
+	}
+	method := uint16(identity.AddressMethodZktf)
+	operation, err := identity.NewOperationBuilder().
+		ID(organisation).
+		Sequence(0).
+		Timestamp(time.Now()).
+		GrantSigningReferenced(method, controller, invocation[0], document.Commitment(), identity.KeyRoleInvocation).
+		GrantSigningReferenced(method, controller, assertion[0], document.Commitment(), identity.KeyRoleAssertion).
+		Weight(invocation[0], identity.KeyRoleInvocation, 1).
+		Threshold(identity.KeyRoleInvocation, 1).
+		Finish()
+	if err != nil {
+		t.Fatalf("build operation: %v", err)
+	}
+
+	signed, err := user.SignIdentity(operation, nil)
+	if err != nil {
+		t.Fatalf("sign identity: %v", err)
+	}
+	if len(signed.Operation) == 0 {
+		t.Fatal("want the signed operation")
+	}
+	if len(signed.Liveness) != 1 || !hasType(credentialTypes(t, signed.Liveness), "LivenessAndFacialComparisonCredential") {
+		t.Fatalf("want one liveness credential, got %v", credentialTypes(t, signed.Liveness))
+	}
+	if len(signed.Anchors) != 1 || !hasType(credentialTypes(t, signed.Anchors), "BiometricAnchorCredential") {
+		t.Fatalf("want one biometric anchor credential, got %v", credentialTypes(t, signed.Anchors))
 	}
 }

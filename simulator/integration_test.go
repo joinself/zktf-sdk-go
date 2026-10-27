@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/identity"
 	simulator "github.com/joinself/zktf-sdk-go/simulator"
 )
@@ -57,56 +56,6 @@ func registeredDevice(t *testing.T) *simulator.Device {
 	return device
 }
 
-func TestControllerAnchor(t *testing.T) {
-	device := registeredDevice(t)
-
-	identifier, err := device.SigningKeyCreate()
-	if err != nil {
-		t.Fatalf("signing key create: %v", err)
-	}
-
-	subject := identity.AddressZktf(identifier)
-	unsigned, err := credential.NewBuilder().
-		Type("VerifiableCredential", "OrganisationCredential").
-		Issuer(subject).
-		Subject(subject).
-		Claim("organisationName", "Example Ltd").
-		ValidFrom(time.Now()).
-		SignWith(identifier, time.Now()).
-		Finish()
-	if err != nil {
-		t.Fatalf("build credential: %v", err)
-	}
-	encoded, err := unsigned.Encode()
-	if err != nil {
-		t.Fatalf("encode credential: %v", err)
-	}
-
-	if _, err := device.MintControllerIdentity(identifier, encoded); err != nil {
-		t.Fatalf("mint controller identity: %v", err)
-	}
-
-	anchor, err := device.ControllerAnchor(identifier, 10*time.Second)
-	if err != nil {
-		t.Fatalf("controller anchor: %v", err)
-	}
-
-	decoded, err := credential.Decode(anchor)
-	if err != nil {
-		t.Fatalf("decode anchor: %v", err)
-	}
-
-	found := false
-	for _, kind := range decoded.Types() {
-		if kind == "BiometricAnchorCredential" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("want a biometric anchor credential, got %v", decoded.Types())
-	}
-}
-
 func TestSignIdentity(t *testing.T) {
 	device := registeredDevice(t)
 
@@ -129,15 +78,15 @@ func TestSignIdentity(t *testing.T) {
 		t.Fatalf("build operation: %v", err)
 	}
 
-	signed, details, err := device.SignIdentity(operation, nil)
+	signed, err := device.SignIdentity(operation, nil)
 	if err != nil {
 		t.Fatalf("sign identity: %v", err)
 	}
-	if details != nil {
-		t.Fatalf("want no credential without one to sign, got %d bytes", len(details))
+	if signed.Credential != nil {
+		t.Fatalf("want no credential without one to sign, got %d bytes", len(signed.Credential))
 	}
 
-	decoded, err := identity.DecodeOperation(identifier, signed)
+	decoded, err := identity.DecodeOperation(identifier, signed.Operation)
 	if err != nil {
 		t.Fatalf("decode signed operation: %v", err)
 	}
