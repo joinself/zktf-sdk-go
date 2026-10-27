@@ -354,15 +354,23 @@ func (d *Device) SigningKeyCreate() (*signing.PublicKey, error) {
 // MintControllerIdentity mints a free-standing anchored identity for identifier
 // and signs credential as that identity, in one liveness-authorized operation.
 // credential is the unsigned credential as CBOR-LD; the signed one is returned.
-func (d *Device) MintControllerIdentity(identifier *signing.PublicKey, credential []byte) ([]byte, error) {
-	return d.h.MintControllerIdentity(identifier.Bytes(), credential)
+func (d *Device) MintControllerIdentity(identifier *signing.PublicKey, credential []byte) (*MintedIdentity, error) {
+	minted, err := d.h.MintControllerIdentity(identifier.Bytes(), credential)
+	if err != nil {
+		return nil, err
+	}
+	return &MintedIdentity{
+		Credential: minted.Credential,
+		Liveness:   minted.Liveness,
+		Anchors:    minted.Anchors,
+	}, nil
 }
 
 func (d *Device) ControllerAnchor(document *signing.PublicKey, timeout time.Duration) ([]byte, error) {
 	return d.h.ControllerAnchor(document.Bytes(), uint64(timeout.Milliseconds()))
 }
 
-func (d *Device) SignIdentity(operation *identity.Operation, details *credential.VerifiableCredential) ([]byte, []byte, error) {
+func (d *Device) SignIdentity(operation *identity.Operation, details *credential.VerifiableCredential) (*SignedIdentity, error) {
 	op := ffi.IdentityOperationOf(operation)
 	defer runtime.KeepAlive(op)
 
@@ -372,7 +380,30 @@ func (d *Device) SignIdentity(operation *identity.Operation, details *credential
 		defer runtime.KeepAlive(vc)
 		detailsHandle = vc.Pointer()
 	}
-	return d.h.SignIdentity(op.Pointer(), detailsHandle)
+
+	signed, err := d.h.SignIdentity(op.Pointer(), detailsHandle)
+	if err != nil {
+		return nil, err
+	}
+	return &SignedIdentity{
+		Operation:  signed.Operation,
+		Credential: signed.Credential,
+		Liveness:   signed.Liveness,
+		Anchors:    signed.Anchors,
+	}, nil
+}
+
+type MintedIdentity struct {
+	Credential []byte
+	Liveness   [][]byte
+	Anchors    [][]byte
+}
+
+type SignedIdentity struct {
+	Operation  []byte
+	Credential []byte
+	Liveness   [][]byte
+	Anchors    [][]byte
 }
 
 // Close destroys the device's native account
