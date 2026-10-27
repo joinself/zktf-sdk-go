@@ -17,6 +17,10 @@ import (
 )
 
 func pairingServer(t *testing.T, network *simulator.Network, paired chan<- *signing.PublicKey) *account.Account {
+	return messagingServer(t, network, paired, nil)
+}
+
+func messagingServer(t *testing.T, network *simulator.Network, paired chan<- *signing.PublicKey, messages chan<- *message.Message) *account.Account {
 	t.Helper()
 
 	connected := make(chan struct{}, 1)
@@ -42,6 +46,12 @@ func pairingServer(t *testing.T, network *simulator.Network, paired chan<- *sign
 			for _, e := range b.Events() {
 				if e.Kind() == event.KindPaired && paired != nil {
 					paired <- e.PairedApplication()
+				}
+				if e.Kind() == event.KindMessage && messages != nil {
+					select {
+					case messages <- e.Message():
+					default:
+					}
 				}
 			}
 			return event.Done()
@@ -152,5 +162,83 @@ func TestApplicationPair(t *testing.T) {
 		}
 	case <-time.After(30 * time.Second):
 		t.Fatal("server did not report paired")
+	}
+}
+
+func TestInterceptFromPairedApplication(t *testing.T) {
+	network := simulator.NewEphemeralNetwork()
+
+	app, err := network.ApplicationCreate("Acme Ltd", "Acme Test")
+	if err != nil {
+		t.Fatalf("application create: %v", err)
+	}
+
+	paired := make(chan *signing.PublicKey, 1)
+	messages := make(chan *message.Message, 16)
+	acc := messagingServer(t, network, paired, messages)
+
+	offer, err := acc.SetupPairingOffer()
+	if err != nil {
+		t.Fatalf("setup pairing offer: %v", err)
+	}
+	if err := network.ApplicationPair("Acme Test", offer); err != nil {
+		t.Fatalf("application pair: %v", err)
+	}
+	select {
+	case <-paired:
+	case <-time.After(30 * time.Second):
+		t.Fatal("server did not report paired")
+	}
+
+	user := simulator.NewDevice(network)
+	if err := user.Register(app); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	pairwise, err := user.PairwiseAddress(app)
+	if err != nil {
+		t.Fatalf("pairwise address: %v", err)
+	}
+	address, err := user.Address()
+	if err != nil {
+		t.Fatalf("address: %v", err)
+	}
+	if bytes.Equal(pairwise.Bytes(), address.Bytes()) {
+		t.Fatal("want a pairwise address distinct from the device address")
+	}
+	if _, err := user.PairwiseAddress(address); err == nil {
+		t.Fatal("want no pairwise address for an unknown counterparty")
+	}
+
+	var from *signing.PublicKey
+	select {
+	case m := <-messages:
+		from = m.From()
+	case <-time.After(10 * time.Second):
+		t.Fatal("server did not hear from the registered device")
+	}
+
+	pending, err := user.InterceptWhen(simulator.MatchAll(
+		simulator.MatchFromIdentity(app),
+		simulator.MatchContentType(simulator.ContentChat),
+	))
+	if err != nil {
+		t.Fatalf("intercept when: %v", err)
+	}
+
+	chat, err := message.NewChat().Message("hello").Finish()
+	if err != nil {
+		t.Fatalf("chat: %v", err)
+	}
+	if err := acc.MessageSend(from, chat); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+
+	intercepted, err := pending.Wait(10 * time.Second)
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	if intercepted == nil {
+		t.Fatal("want the chat from the paired application intercepted")
 	}
 }
