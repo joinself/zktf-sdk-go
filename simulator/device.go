@@ -31,25 +31,43 @@ const (
 	ContentExchangeResponse  ContentType = ContentType(simffi.ContentExchangeResponse)
 )
 
-// Match selects which incoming messages a rule applies to. Build one with
-// MatchAny, MatchContentType, or MatchRequestID.
+// Match selects which incoming messages a rule or intercept applies to. Every
+// criterion must hold; MatchAny has none.
 type Match struct {
-	kind        simffi.MatchKind
-	contentType ContentType
-	requestID   []byte
+	criteria []simffi.Criterion
 }
 
 // MatchAny matches every incoming message.
-func MatchAny() Match { return Match{kind: simffi.MatchAny} }
+func MatchAny() Match { return Match{} }
 
 // MatchContentType matches messages of a given content type.
 func MatchContentType(ct ContentType) Match {
-	return Match{kind: simffi.MatchContentType, contentType: ct}
+	return Match{criteria: []simffi.Criterion{{Kind: simffi.CriterionContentType, ContentType: simffi.ContentType(ct)}}}
 }
 
 // MatchRequestID matches the message carrying a specific request id.
 func MatchRequestID(id []byte) Match {
-	return Match{kind: simffi.MatchRequestID, requestID: id}
+	return Match{criteria: []simffi.Criterion{{Kind: simffi.CriterionRequestID, Bytes: id}}}
+}
+
+func MatchFrom(sender *signing.PublicKey) Match {
+	return Match{criteria: []simffi.Criterion{{Kind: simffi.CriterionFrom, Bytes: sender.Bytes()}}}
+}
+
+func MatchFromIdentity(identity *signing.PublicKey) Match {
+	return Match{criteria: []simffi.Criterion{{Kind: simffi.CriterionFromIdentity, Bytes: identity.Bytes()}}}
+}
+
+func MatchTo(recipient *signing.PublicKey) Match {
+	return Match{criteria: []simffi.Criterion{{Kind: simffi.CriterionTo, Bytes: recipient.Bytes()}}}
+}
+
+func MatchAll(matches ...Match) Match {
+	var all Match
+	for _, m := range matches {
+		all.criteria = append(all.criteria, m.criteria...)
+	}
+	return all
 }
 
 // Behaviour is how the device reacts to a matched message. Build one with
@@ -199,14 +217,16 @@ func AttachDevice(rpcEndpoint, objectEndpoint, messagingEndpoint string, opts ..
 
 // Expect registers an auto-response rule. Rules are evaluated in registration
 // order; the first match wins.
-func (d *Device) Expect(m Match, b Behaviour) {
-	d.h.Expect(
-		m.kind,
-		simffi.ContentType(m.contentType),
-		m.requestID,
-		b.action,
-		uint64(b.delay/time.Millisecond),
-	)
+func (d *Device) Expect(m Match, b Behaviour) error {
+	return d.h.ExpectMatch(m.criteria, b.action, uint64(b.delay/time.Millisecond))
+}
+
+func (d *Device) PairwiseAddress(counterparty *signing.PublicKey) (*signing.PublicKey, error) {
+	b, err := d.h.PairwiseAddress(counterparty.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return signing.FromBytes(b)
 }
 
 // Address returns the device's zktf address.
@@ -271,6 +291,14 @@ func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
 		return nil
 	}
 	return &InterceptedFuture{f: f, device: d}
+}
+
+func (d *Device) InterceptWhen(m Match) (*InterceptedFuture, error) {
+	f, err := d.h.InterceptMatch(m.criteria)
+	if err != nil {
+		return nil, err
+	}
+	return &InterceptedFuture{f: f, device: d}, nil
 }
 
 // Wait blocks until the message is diverted or timeout elapses, returning nil

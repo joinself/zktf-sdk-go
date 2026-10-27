@@ -32,6 +32,8 @@ func (s *Status) Error() string {
 		return "simulator: sdk error"
 	case C.ZKTF_SIM_INVALID_INPUT:
 		return "simulator: invalid input"
+	case C.ZKTF_SIM_NOT_FOUND:
+		return "simulator: not found"
 	default:
 		return "simulator: unknown error"
 	}
