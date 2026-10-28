@@ -509,6 +509,16 @@ func (d *OperationDescriptionReference) Controller() *SigningPublicKey {
 	return newSigningPublicKey(C.zktf_identity_operation_description_reference_controller(d.ptr))
 }
 
+// Commitment returns the referenced controller document's commitment hash, or nil.
+func (d *OperationDescriptionReference) Commitment() []byte {
+	defer runtime.KeepAlive(d)
+	p := C.zktf_identity_operation_description_reference_commitment(d.ptr)
+	if p == nil {
+		return nil
+	}
+	return C.GoBytes(unsafe.Pointer(p), commitmentLen)
+}
+
 // IdentityOperationDescription is a key description recorded in a document
 // (embedded or referenced).
 type IdentityOperationDescription struct {

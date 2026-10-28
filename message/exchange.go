@@ -34,7 +34,6 @@ const (
 type ResponseStatus uint32
 
 const (
-	StatusUnknown       ResponseStatus = ResponseStatus(ffi.ResponseStatusUnknown)
 	StatusOK            ResponseStatus = ResponseStatus(ffi.ResponseStatusOK)
 	StatusAccepted      ResponseStatus = ResponseStatus(ffi.ResponseStatusAccepted)
 	StatusCreated       ResponseStatus = ResponseStatus(ffi.ResponseStatusCreated)

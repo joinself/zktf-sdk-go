@@ -378,6 +378,9 @@ func (d *DescReference) Controller() *signing.PublicKey {
 	return ffi.ToSigningPublicKey(k).(*signing.PublicKey)
 }
 
+// Commitment returns the referenced controller document's commitment hash, or nil.
+func (d *DescReference) Commitment() []byte { return d.h.Commitment() }
+
 // Lookup is the constructed lookup query.
 type Lookup struct {
 	h *ffi.IdentityLookup
