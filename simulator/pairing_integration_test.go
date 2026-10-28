@@ -247,6 +247,13 @@ func TestInterceptFromPairedApplication(t *testing.T) {
 func applicationUser(t *testing.T) (*account.Account, *simulator.Device) {
 	t.Helper()
 
+	acc, users := applicationUsers(t, 1)
+	return acc, users[0]
+}
+
+func applicationUsers(t *testing.T, count int) (*account.Account, []*simulator.Device) {
+	t.Helper()
+
 	network := simulator.NewEphemeralNetwork()
 	app, err := network.ApplicationCreate("Acme Ltd", "Acme Test")
 	if err != nil {
@@ -268,16 +275,20 @@ func applicationUser(t *testing.T) (*account.Account, *simulator.Device) {
 		t.Fatal("server did not report paired")
 	}
 
-	user := simulator.NewDevice(network)
-	t.Cleanup(user.Close)
-	if err := user.Expect(simulator.MatchAny(), simulator.Accept()); err != nil {
-		t.Fatalf("expect: %v", err)
-	}
-	if err := user.Register(app); err != nil {
-		t.Fatalf("register: %v", err)
+	users := make([]*simulator.Device, count)
+	for i := range users {
+		user := simulator.NewDevice(network)
+		t.Cleanup(user.Close)
+		if err := user.Expect(simulator.MatchAny(), simulator.Accept()); err != nil {
+			t.Fatalf("expect: %v", err)
+		}
+		if err := user.Register(app); err != nil {
+			t.Fatalf("register: %v", err)
+		}
+		users[i] = user
 	}
 
-	return acc, user
+	return acc, users
 }
 
 func credentialTypes(t *testing.T, encoded [][]byte) []string {
@@ -402,5 +413,117 @@ func TestSignIdentityReturnsLivenessAndAnchor(t *testing.T) {
 	}
 	if len(signed.Anchors) != 1 || !hasType(credentialTypes(t, signed.Anchors), "BiometricAnchorCredential") {
 		t.Fatalf("want one biometric anchor credential, got %v", credentialTypes(t, signed.Anchors))
+	}
+}
+
+func TestSignIdentityAddsReferencedController(t *testing.T) {
+	acc, users := applicationUsers(t, 2)
+	founder, joiner := users[0], users[1]
+	founderController, _ := mintController(t, founder)
+	joinerController, _ := mintController(t, joiner)
+
+	invocationOf := func(controller *signing.PublicKey) (*signing.PublicKey, []byte) {
+		document, err := acc.IdentityResolve(identity.AddressZktf(controller))
+		if err != nil {
+			t.Fatalf("resolve controller: %v", err)
+		}
+		keys := document.SigningKeys(identity.WithRoles(identity.KeyRoleInvocation))
+		if len(keys) == 0 {
+			t.Fatal("want a controller invocation key")
+		}
+		return keys[0], document.Commitment()
+	}
+	founderKey, founderCommitment := invocationOf(founderController)
+	joinerKey, joinerCommitment := invocationOf(joinerController)
+
+	organisation, err := founder.SigningKeyCreate()
+	if err != nil {
+		t.Fatalf("organisation identifier: %v", err)
+	}
+	method := uint16(identity.AddressMethodZktf)
+	create, err := identity.NewOperationBuilder().
+		ID(organisation).
+		Sequence(0).
+		Timestamp(time.Now()).
+		GrantSigningReferenced(method, founderController, founderKey, founderCommitment, identity.KeyRoleInvocation).
+		Finish()
+	if err != nil {
+		t.Fatalf("build create: %v", err)
+	}
+	created, err := founder.SignIdentity(create, nil)
+	if err != nil {
+		t.Fatalf("sign create: %v", err)
+	}
+	decoded, err := identity.DecodeOperation(organisation, created.Operation)
+	if err != nil {
+		t.Fatalf("decode create: %v", err)
+	}
+	if err := acc.IdentityExecute(decoded); err != nil {
+		t.Fatalf("execute create: %v", err)
+	}
+
+	document, err := acc.IdentityResolve(identity.AddressZktf(organisation))
+	if err != nil {
+		t.Fatalf("resolve organisation: %v", err)
+	}
+	update, err := document.Create().
+		Timestamp(time.Now().Add(time.Second)).
+		GrantSigningReferenced(method, joinerController, joinerKey, joinerCommitment, identity.KeyRoleInvocation).
+		Finish()
+	if err != nil {
+		t.Fatalf("build update: %v", err)
+	}
+
+	var merged *identity.Operation
+	for _, user := range []*simulator.Device{founder, joiner} {
+		signed, err := user.SignIdentity(update, nil)
+		if err != nil {
+			t.Fatalf("sign update: %v", err)
+		}
+		if len(signed.Liveness) != 1 {
+			t.Fatalf("want one liveness credential, got %d", len(signed.Liveness))
+		}
+		decoded, err := identity.DecodeOperation(organisation, signed.Operation)
+		if err != nil {
+			t.Fatalf("decode update: %v", err)
+		}
+		if merged == nil {
+			merged = decoded
+		} else if err := merged.Merge(decoded); err != nil {
+			t.Fatalf("merge: %v", err)
+		}
+	}
+	if err := acc.IdentityExecute(merged); err != nil {
+		t.Fatalf("execute update: %v", err)
+	}
+
+	document, err = acc.IdentityResolve(identity.AddressZktf(organisation))
+	if err != nil {
+		t.Fatalf("resolve organisation: %v", err)
+	}
+	if got := len(document.SigningKeys(identity.WithRoles(identity.KeyRoleInvocation))); got != 2 {
+		t.Fatalf("want 2 invocation keys, got %d", got)
+	}
+
+	commitments := map[string][]byte{
+		string(founderKey.Bytes()): founderCommitment,
+		string(joinerKey.Bytes()):  joinerCommitment,
+	}
+	for _, description := range document.Descriptions() {
+		reference := description.AsReference()
+		if reference == nil {
+			continue
+		}
+		want, ok := commitments[string(reference.AsSigning().Bytes())]
+		if !ok {
+			continue
+		}
+		if !bytes.Equal(reference.Commitment(), want) {
+			t.Fatalf("reference commitment %x, want %x", reference.Commitment(), want)
+		}
+		delete(commitments, string(reference.AsSigning().Bytes()))
+	}
+	if len(commitments) != 0 {
+		t.Fatalf("missing %d controller references", len(commitments))
 	}
 }
