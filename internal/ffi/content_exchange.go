@@ -39,6 +39,7 @@ const (
 type ResponseStatus uint32
 
 const (
+	ResponseStatusUnknown       ResponseStatus = C.RESPONSE_STATUS_UNKNOWN
 	ResponseStatusOK            ResponseStatus = C.RESPONSE_STATUS_OK
 	ResponseStatusAccepted      ResponseStatus = C.RESPONSE_STATUS_ACCEPTED
 	ResponseStatusCreated       ResponseStatus = C.RESPONSE_STATUS_CREATED
