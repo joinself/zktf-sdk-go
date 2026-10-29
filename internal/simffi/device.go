@@ -252,9 +252,10 @@ func (d *Device) SigningKeyCreate() ([]byte, error) {
 }
 
 type Minted struct {
-	Credential []byte
-	Liveness   [][]byte
-	Anchors    [][]byte
+	Credential   []byte
+	Liveness     [][]byte
+	Anchors      [][]byte
+	Presentation []byte
 }
 
 func (d *Device) MintControllerIdentity(identifier, credential []byte) (*Minted, error) {
@@ -264,18 +265,19 @@ func (d *Device) MintControllerIdentity(identifier, credential []byte) (*Minted,
 	credBuf, credLen := cbytes(credential)
 	defer free(unsafe.Pointer(credBuf))
 
-	var signed *C.zktf_sim_bytes_buffer
+	var signed, presentation *C.zktf_sim_bytes_buffer
 	var liveness, anchors *C.zktf_sim_bytes_list
 	if err := status(C.zktf_sim_device_mint_controller_identity(
-		d.ptr, idBuf, idLen, credBuf, credLen, &signed, &liveness, &anchors,
+		d.ptr, idBuf, idLen, credBuf, credLen, &signed, &liveness, &anchors, &presentation,
 	)); err != nil {
 		return nil, err
 	}
 
 	return &Minted{
-		Credential: goBytesFromBuffer(signed),
-		Liveness:   goBytesFromList(liveness),
-		Anchors:    goBytesFromList(anchors),
+		Credential:   goBytesFromBuffer(signed),
+		Liveness:     goBytesFromList(liveness),
+		Anchors:      goBytesFromList(anchors),
+		Presentation: goBytesFromBuffer(presentation),
 	}, nil
 }
 
@@ -337,26 +339,28 @@ func (d *Device) ControllerAnchor(document []byte, timeoutMs uint64) ([]byte, er
 }
 
 type Signed struct {
-	Operation  []byte
-	Credential []byte
-	Liveness   [][]byte
-	Anchors    [][]byte
+	Operation    []byte
+	Credential   []byte
+	Liveness     [][]byte
+	Anchors      [][]byte
+	Presentation []byte
 }
 
 func (d *Device) SignIdentity(operation, credential unsafe.Pointer) (*Signed, error) {
 	defer runtime.KeepAlive(d)
-	var signedOperation, signedCredential *C.zktf_sim_bytes_buffer
+	var signedOperation, signedCredential, presentation *C.zktf_sim_bytes_buffer
 	var liveness, anchors *C.zktf_sim_bytes_list
 	if err := status(C.zktf_sim_device_sign_identity(
-		d.ptr, operation, credential, &signedOperation, &signedCredential, &liveness, &anchors,
+		d.ptr, operation, credential, &signedOperation, &signedCredential, &liveness, &anchors, &presentation,
 	)); err != nil {
 		return nil, err
 	}
 
 	return &Signed{
-		Operation:  goBytesFromBuffer(signedOperation),
-		Credential: goBytesFromBuffer(signedCredential),
-		Liveness:   goBytesFromList(liveness),
-		Anchors:    goBytesFromList(anchors),
+		Operation:    goBytesFromBuffer(signedOperation),
+		Credential:   goBytesFromBuffer(signedCredential),
+		Liveness:     goBytesFromList(liveness),
+		Anchors:      goBytesFromList(anchors),
+		Presentation: goBytesFromBuffer(presentation),
 	}, nil
 }

@@ -360,9 +360,10 @@ func (d *Device) MintControllerIdentity(identifier *signing.PublicKey, credentia
 		return nil, err
 	}
 	return &MintedIdentity{
-		Credential: minted.Credential,
-		Liveness:   minted.Liveness,
-		Anchors:    minted.Anchors,
+		Credential:   minted.Credential,
+		Liveness:     minted.Liveness,
+		Anchors:      minted.Anchors,
+		Presentation: minted.Presentation,
 	}, nil
 }
 
@@ -386,24 +387,27 @@ func (d *Device) SignIdentity(operation *identity.Operation, details *credential
 		return nil, err
 	}
 	return &SignedIdentity{
-		Operation:  signed.Operation,
-		Credential: signed.Credential,
-		Liveness:   signed.Liveness,
-		Anchors:    signed.Anchors,
+		Operation:    signed.Operation,
+		Credential:   signed.Credential,
+		Liveness:     signed.Liveness,
+		Anchors:      signed.Anchors,
+		Presentation: signed.Presentation,
 	}, nil
 }
 
 type MintedIdentity struct {
-	Credential []byte
-	Liveness   [][]byte
-	Anchors    [][]byte
+	Credential   []byte
+	Liveness     [][]byte
+	Anchors      [][]byte
+	Presentation []byte
 }
 
 type SignedIdentity struct {
-	Operation  []byte
-	Credential []byte
-	Liveness   [][]byte
-	Anchors    [][]byte
+	Operation    []byte
+	Credential   []byte
+	Liveness     [][]byte
+	Anchors      [][]byte
+	Presentation []byte
 }
 
 // Close destroys the device's native account
