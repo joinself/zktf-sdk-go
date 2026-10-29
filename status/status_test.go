@@ -29,6 +29,9 @@ func TestCodeDomainAndNumber(t *testing.T) {
 		{status.DeviceKeyLost, status.DomainDevice, 1},
 		{status.EventPollUnavailable, status.DomainEvent, 2},
 		{status.KeyPairNotFound, status.DomainKeyPair, 5},
+		{status.MessageIdInvalid, status.DomainMessage, 20},
+		{status.RpcNotFound, status.DomainRpc, 19},
+		{status.RpcServiceUnavailable, status.DomainRpc, 28},
 	}
 	for _, tc := range cases {
 		if got := tc.code.Domain(); got != tc.domain {
@@ -39,6 +42,19 @@ func TestCodeDomainAndNumber(t *testing.T) {
 		}
 		if want := status.Code(uint32(tc.domain)<<16 | uint32(tc.number)); tc.code != want {
 			t.Errorf("Code(%#x) != domain %d << 16 | %d", uint32(tc.code), tc.domain, tc.number)
+		}
+	}
+}
+
+func TestTransient(t *testing.T) {
+	for _, c := range []status.Code{status.RpcServiceUnavailable, status.RpcConnectionFailed, status.RpcGatewayTimeout} {
+		if !c.Transient() {
+			t.Errorf("Code(%#x).Transient() = false, want true", uint32(c))
+		}
+	}
+	for _, c := range []status.Code{status.RpcNotFound, status.RpcGone, status.RpcBadRequest, status.KeyPairNotFound} {
+		if c.Transient() {
+			t.Errorf("Code(%#x).Transient() = true, want false", uint32(c))
 		}
 	}
 }

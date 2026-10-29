@@ -527,3 +527,89 @@ func TestSignIdentityAddsReferencedController(t *testing.T) {
 		t.Fatalf("missing %d controller references", len(commitments))
 	}
 }
+
+func TestDiscoveryResponseEchoesAChosenRequestID(t *testing.T) {
+	network := simulator.NewEphemeralNetwork()
+	app, err := network.ApplicationCreate("Acme Ltd", "Acme Test")
+	if err != nil {
+		t.Fatalf("application create: %v", err)
+	}
+
+	paired := make(chan *signing.PublicKey, 1)
+	messages := make(chan *message.Message, 64)
+	acc := messagingServer(t, network, paired, messages)
+	offer, err := acc.SetupPairingOffer()
+	if err != nil {
+		t.Fatalf("setup pairing offer: %v", err)
+	}
+	if err := network.ApplicationPair("Acme Test", offer); err != nil {
+		t.Fatalf("application pair: %v", err)
+	}
+	select {
+	case <-paired:
+	case <-time.After(30 * time.Second):
+		t.Fatal("server did not report paired")
+	}
+
+	user := simulator.NewDevice(network)
+	t.Cleanup(user.Close)
+	if err := user.Expect(simulator.MatchAny(), simulator.Accept()); err != nil {
+		t.Fatalf("expect: %v", err)
+	}
+	if err := user.Register(app); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	inbox, err := acc.InboxDefault()
+	if err != nil {
+		t.Fatalf("inbox: %v", err)
+	}
+	kp, err := acc.GroupNegotiateOutOfBand(inbox, time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatalf("key package: %v", err)
+	}
+
+	id := append([]byte{0x5a, 0x01}, bytes.Repeat([]byte{0x7f}, 18)...)
+	content, err := message.NewDiscoveryRequest().
+		ID(id).
+		DocumentAddress(app).
+		KeyPackage(kp).
+		Expires(time.Now().Add(time.Hour)).
+		Finish()
+	if err != nil {
+		t.Fatalf("discovery request: %v", err)
+	}
+
+	qr := message.NewAnonymousMessage(content)
+	if !bytes.Equal(qr.ID(), id) {
+		t.Fatalf("qr id = %x, want %x", qr.ID(), id)
+	}
+	code, err := qr.Encode()
+	if err != nil {
+		t.Fatalf("encode qr: %v", err)
+	}
+
+	if err := user.Scan(code); err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+
+	deadline := time.After(30 * time.Second)
+	for {
+		select {
+		case m := <-messages:
+			if m.Content().Type() != message.ContentDiscoveryResponse {
+				continue
+			}
+			response, err := message.DiscoveryResponseDecode(m.Content())
+			if err != nil {
+				t.Fatalf("decode discovery response: %v", err)
+			}
+			if !bytes.Equal(response.ResponseTo(), id) {
+				t.Fatalf("response to = %x, want %x", response.ResponseTo(), id)
+			}
+			return
+		case <-deadline:
+			t.Fatal("server did not receive a discovery response")
+		}
+	}
+}

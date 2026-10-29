@@ -38,7 +38,9 @@ const (
 	DomainDevice  uint16 = C.ZKTF_DOMAIN_DEVICE
 	DomainEvent   uint16 = C.ZKTF_DOMAIN_EVENT
 	DomainKeyPair uint16 = C.ZKTF_DOMAIN_KEY_PAIR
+	DomainMessage uint16 = C.ZKTF_DOMAIN_MESSAGE
 	DomainPairing uint16 = C.ZKTF_DOMAIN_PAIRING
+	DomainRpc     uint16 = C.ZKTF_DOMAIN_RPC
 )
 
 const (
@@ -54,6 +56,21 @@ const (
 	StatusPairingCodeInvalid       uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_CODE_INVALID
 	StatusPairingGrantInvalid      uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_GRANT_INVALID
 	StatusPairingRolesInvalid      uint32 = uint32(DomainPairing)<<16 | C.ZKTF_PAIRING_ROLES_INVALID
+	StatusMessageIdInvalid         uint32 = uint32(DomainMessage)<<16 | C.ZKTF_MESSAGE_ID_INVALID
+	StatusRpcAborted               uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_ABORTED
+	StatusRpcBadGateway            uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_BAD_GATEWAY
+	StatusRpcBadRequest            uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_BAD_REQUEST
+	StatusRpcConnectionFailed      uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_CONNECTION_FAILED
+	StatusRpcConnectionTimeout     uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_CONNECTION_TIMEOUT
+	StatusRpcForbidden             uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_FORBIDDEN
+	StatusRpcGatewayTimeout        uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_GATEWAY_TIMEOUT
+	StatusRpcGone                  uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_GONE
+	StatusRpcInternalServerError   uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_INTERNAL_SERVER_ERROR
+	StatusRpcNotFound              uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_NOT_FOUND
+	StatusRpcRequestTimeout        uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_REQUEST_TIMEOUT
+	StatusRpcResourceExhausted     uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_RESOURCE_EXHAUSTED
+	StatusRpcServiceUnavailable    uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_SERVICE_UNAVAILABLE
+	StatusRpcUnauthorized          uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_UNAUTHORIZED
 )
 
 func StatusDomain(code uint32) uint16 {

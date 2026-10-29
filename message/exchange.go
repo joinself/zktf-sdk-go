@@ -318,7 +318,7 @@ func NewExchangeRequest() *ExchangeRequestBuilder {
 	return &ExchangeRequestBuilder{h: ffi.NewExchangeRequestBuilder()}
 }
 
-// ID sets the request id.
+// ID sets the request id. Finish fails unless it is 20 bytes.
 func (b *ExchangeRequestBuilder) ID(id []byte) *ExchangeRequestBuilder {
 	b.h.ID(id)
 	return b

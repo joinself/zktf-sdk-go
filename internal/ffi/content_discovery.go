@@ -78,6 +78,15 @@ func NewDiscoveryRequestBuilder() *DiscoveryRequestBuilder {
 	return b
 }
 
+// ID sets the request id. Finish fails unless it is 20 bytes.
+func (b *DiscoveryRequestBuilder) ID(id []byte) *DiscoveryRequestBuilder {
+	defer runtime.KeepAlive(b)
+	buf, length := cbytes(id)
+	defer free(unsafe.Pointer(buf))
+	C.zktf_message_content_discovery_request_builder_id(b.ptr, buf, length)
+	return b
+}
+
 // DocumentAddress sets an optional document address.
 func (b *DiscoveryRequestBuilder) DocumentAddress(address *SigningPublicKey) *DiscoveryRequestBuilder {
 	defer runtime.KeepAlive(b)
