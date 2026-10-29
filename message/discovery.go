@@ -78,6 +78,13 @@ func NewDiscoveryRequest() *DiscoveryRequestBuilder {
 	return &DiscoveryRequestBuilder{h: ffi.NewDiscoveryRequestBuilder()}
 }
 
+// ID sets the request id, which the response carries back in ResponseTo.
+// Finish fails unless it is 20 bytes.
+func (b *DiscoveryRequestBuilder) ID(id []byte) *DiscoveryRequestBuilder {
+	b.h.ID(id)
+	return b
+}
+
 // DocumentAddress sets an optional document address.
 func (b *DiscoveryRequestBuilder) DocumentAddress(address *signing.PublicKey) *DiscoveryRequestBuilder {
 	b.h.DocumentAddress(ffi.SigningPublicKeyOf(address))

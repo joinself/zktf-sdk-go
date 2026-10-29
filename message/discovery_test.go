@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/joinself/zktf-sdk-go/message"
+	"github.com/joinself/zktf-sdk-go/status"
 	"github.com/joinself/zktf-sdk-go/token"
 )
 
@@ -94,6 +95,46 @@ func TestDiscoveryResponseCarriesSeveralTokensInOrder(t *testing.T) {
 
 		if !bytes.Equal(got, expected) {
 			t.Fatalf("token %d did not survive the round trip in order", i)
+		}
+	}
+}
+
+func TestDiscoveryRequestCarriesAChosenID(t *testing.T) {
+	id := bytes.Repeat([]byte{0xab}, 20)
+
+	content, err := message.NewDiscoveryRequest().ID(id).FromAddress(address(t, 1)).Finish()
+	if err != nil {
+		t.Fatalf("Finish: %v", err)
+	}
+
+	encoded, err := message.NewAnonymousMessage(content).EncodeAsString()
+	if err != nil {
+		t.Fatalf("EncodeAsString: %v", err)
+	}
+	decoded, err := message.AnonymousMessageDecode(encoded)
+	if err != nil {
+		t.Fatalf("AnonymousMessageDecode: %v", err)
+	}
+
+	if !bytes.Equal(decoded.ID(), id) || !bytes.Equal(decoded.Content().ID(), id) {
+		t.Fatalf("ID = %x, want %x", decoded.Content().ID(), id)
+	}
+}
+
+func TestDiscoveryRequestRejectsAnIDOfTheWrongLength(t *testing.T) {
+	for _, id := range [][]byte{{}, make([]byte, 19), make([]byte, 21)} {
+		_, err := message.NewDiscoveryRequest().ID(id).FromAddress(address(t, 1)).Finish()
+		if code, _ := status.Of(err); code != status.MessageIdInvalid {
+			t.Fatalf("len %d: err = %v, want MessageIdInvalid", len(id), err)
+		}
+	}
+}
+
+func TestExchangeRequestRejectsAnIDOfTheWrongLength(t *testing.T) {
+	for _, id := range [][]byte{{}, make([]byte, 16), make([]byte, 21)} {
+		_, err := message.NewExchangeRequest().ID(id).Finish()
+		if code, _ := status.Of(err); code != status.MessageIdInvalid {
+			t.Fatalf("len %d: err = %v, want MessageIdInvalid", len(id), err)
 		}
 	}
 }

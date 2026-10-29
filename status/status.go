@@ -19,7 +19,9 @@ const (
 	DomainDevice  Domain = Domain(ffi.DomainDevice)
 	DomainEvent   Domain = Domain(ffi.DomainEvent)
 	DomainKeyPair Domain = Domain(ffi.DomainKeyPair)
+	DomainMessage Domain = Domain(ffi.DomainMessage)
 	DomainPairing Domain = Domain(ffi.DomainPairing)
+	DomainRpc     Domain = Domain(ffi.DomainRpc)
 )
 
 // A subset of the status codes. Callers compare these against the value
@@ -37,6 +39,21 @@ const (
 	PairingCodeInvalid       Code = Code(ffi.StatusPairingCodeInvalid)
 	PairingGrantInvalid      Code = Code(ffi.StatusPairingGrantInvalid)
 	PairingRolesInvalid      Code = Code(ffi.StatusPairingRolesInvalid)
+	MessageIdInvalid         Code = Code(ffi.StatusMessageIdInvalid)
+	RpcAborted               Code = Code(ffi.StatusRpcAborted)
+	RpcBadGateway            Code = Code(ffi.StatusRpcBadGateway)
+	RpcBadRequest            Code = Code(ffi.StatusRpcBadRequest)
+	RpcConnectionFailed      Code = Code(ffi.StatusRpcConnectionFailed)
+	RpcConnectionTimeout     Code = Code(ffi.StatusRpcConnectionTimeout)
+	RpcForbidden             Code = Code(ffi.StatusRpcForbidden)
+	RpcGatewayTimeout        Code = Code(ffi.StatusRpcGatewayTimeout)
+	RpcGone                  Code = Code(ffi.StatusRpcGone)
+	RpcInternalServerError   Code = Code(ffi.StatusRpcInternalServerError)
+	RpcNotFound              Code = Code(ffi.StatusRpcNotFound)
+	RpcRequestTimeout        Code = Code(ffi.StatusRpcRequestTimeout)
+	RpcResourceExhausted     Code = Code(ffi.StatusRpcResourceExhausted)
+	RpcServiceUnavailable    Code = Code(ffi.StatusRpcServiceUnavailable)
+	RpcUnauthorized          Code = Code(ffi.StatusRpcUnauthorized)
 )
 
 func (c Code) Domain() Domain {
@@ -45,6 +62,23 @@ func (c Code) Domain() Domain {
 
 func (c Code) Number() uint16 {
 	return ffi.StatusNumber(uint32(c))
+}
+
+// Transient reports whether the code is a network or server availability
+// failure that may succeed when retried.
+func (c Code) Transient() bool {
+	switch c {
+	case RpcAborted, RpcBadGateway, RpcConnectionFailed, RpcConnectionTimeout,
+		RpcGatewayTimeout, RpcRequestTimeout, RpcResourceExhausted, RpcServiceUnavailable:
+		return true
+	}
+	return false
+}
+
+// Transient reports whether err carries a transient status.
+func Transient(err error) bool {
+	c, ok := Of(err)
+	return ok && c.Transient()
 }
 
 // Of returns the status code carried by an SDK error and whether the error was
