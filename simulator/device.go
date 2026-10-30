@@ -259,6 +259,10 @@ func (d *Device) Connect(counterparty *signing.PublicKey) error {
 	return d.h.Connect(counterparty.Bytes())
 }
 
+func (d *Device) AcquireEmail(email string) error {
+	return d.h.AcquireEmail(email)
+}
+
 // Send delivers content to an address, as the application layer would after
 // deciding how to answer a request the device left alone.
 func (d *Device) Send(to *signing.PublicKey, content *message.Content) error {
