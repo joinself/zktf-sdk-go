@@ -313,6 +313,13 @@ func (d *Device) Connect(counterparty []byte) error {
 	return status(C.zktf_sim_device_connect(d.ptr, buf, length))
 }
 
+func (d *Device) AcquireEmail(email string) error {
+	defer runtime.KeepAlive(d)
+	address := C.CString(email)
+	defer C.free(unsafe.Pointer(address))
+	return status(C.zktf_sim_device_acquire_email(d.ptr, address))
+}
+
 // keyBytes runs a getter that writes a 33-byte signing key into a caller buffer.
 func keyBytes(getter func(*C.uint8_t) C.enum_zktf_sim_status) ([]byte, error) {
 	buf := C.malloc(signingKeyBytesLen)
