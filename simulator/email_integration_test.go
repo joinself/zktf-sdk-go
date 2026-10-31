@@ -90,7 +90,7 @@ func TestAcquireEmailIsPresentedUnderThePairwiseIdentity(t *testing.T) {
 		PresentationType(credential.TypeEmail).
 		Predicates(predicate.NewTree(predicate.And(
 			predicate.Contains("/type", credential.TypeEmail),
-			predicate.NotEmpty("/credentialSubject/emailAddress"),
+			predicate.NotEmpty(credential.FieldSubjectEmailAddress),
 		)))
 	request, err := presentation.Finish()
 	if err != nil {
@@ -152,7 +152,7 @@ func TestAcquireEmailIsPresentedUnderThePairwiseIdentity(t *testing.T) {
 	var email string
 	for _, c := range valid {
 		if hasType(c.Types(), credential.TypeEmail) {
-			email = c.Claim("/emailAddress")
+			email = c.Claim("/email/emailAddress")
 		}
 	}
 	if email != "alice@acme.test" {
