@@ -11,7 +11,7 @@ import (
 func testKey(t *testing.T) *signing.PublicKey {
 	t.Helper()
 
-	key, err := signing.FromAddress("00ab1d970ba97d16c9339546dcd079066cc66406cfa7d7e421fe6ec8eaaf0fb5ea")
+	key, err := signing.FromAddress("00fe62105cdd09a15976c4a096c84efb8f69cd7f51bf2458db958a2e99a25c9bb5")
 	if err != nil {
 		t.Fatalf("FromAddress: %v", err)
 	}
