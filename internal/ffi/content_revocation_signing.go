@@ -93,6 +93,12 @@ func (r *RevocationSigningResult) Statement() *RevocationStatement {
 	return newRevocationStatement(C.zktf_message_content_revocation_signing_result_statement(r.ptr))
 }
 
+// Presentations returns the signer proofs attached to the result.
+func (r *RevocationSigningResult) Presentations() []*VerifiablePresentation {
+	defer runtime.KeepAlive(r)
+	return verifiablePresentationsFrom(C.zktf_message_content_revocation_signing_result_presentations(r.ptr))
+}
+
 // RevocationSigningResultBuilder builds a revocation-signing result.
 type RevocationSigningResultBuilder struct {
 	ptr *C.zktf_message_content_revocation_signing_result_builder

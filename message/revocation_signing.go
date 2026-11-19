@@ -1,6 +1,7 @@
 package message
 
 import (
+	"github.com/joinself/zktf-sdk-go/credential"
 	"github.com/joinself/zktf-sdk-go/internal/ffi"
 	"github.com/joinself/zktf-sdk-go/revocation"
 )
@@ -107,4 +108,16 @@ func (b *RevocationSigningResponseBuilder) Finish() (*RevocationSigningResponse,
 	}
 
 	return &RevocationSigningResponse{h: r}, nil
+}
+
+// Presentations returns the signer proofs attached to the co-signed statement.
+func (r *RevocationSigningResponse) Presentations() []*credential.VerifiablePresentation {
+	ps := r.h.Presentations()
+	out := make([]*credential.VerifiablePresentation, len(ps))
+
+	for i, p := range ps {
+		out[i] = ffi.ToVerifiablePresentation(p).(*credential.VerifiablePresentation)
+	}
+
+	return out
 }
