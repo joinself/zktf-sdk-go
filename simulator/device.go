@@ -1,6 +1,8 @@
 package simulator
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"time"
@@ -277,8 +279,13 @@ func (d *Device) Scan(anonymousMessage []byte) error {
 	return d.h.Scan(anonymousMessage)
 }
 
-// InterceptedFuture is a pending diverted message. Resolve it with Wait, or
-// discard it with Cancel; either consumes the handle.
+// ErrCancelled is returned by a wait on a future that was cancelled, or whose
+// device was closed.
+var ErrCancelled = simffi.ErrCancelled
+
+// InterceptedFuture is a pending diverted message. Resolve it with Wait,
+// WaitContext or WaitAny, or discard it with Cancel, which also wakes any wait
+// on it.
 type InterceptedFuture struct {
 	f      *simffi.InterceptedFuture
 	device *Device
@@ -306,13 +313,50 @@ func (d *Device) InterceptWhen(m Match) (*InterceptedFuture, error) {
 }
 
 // Wait blocks until the message is diverted or timeout elapses, returning nil
-// on timeout. A zero timeout waits indefinitely. Consumes the handle.
+// on timeout. A zero timeout waits indefinitely. It returns ErrCancelled if
+// the future is cancelled or its device closed meanwhile. Consumes the handle.
 func (i *InterceptedFuture) Wait(timeout time.Duration) (*Intercepted, error) {
 	raw, err := i.f.Wait(uint64(timeout.Milliseconds()))
 	if err != nil || raw == nil {
 		return nil, err
 	}
+	return i.decode(raw)
+}
 
+// WaitContext is Wait bounded by ctx instead of a timeout, returning ctx.Err()
+// once ctx is done. Consumes the handle.
+func (i *InterceptedFuture) WaitContext(ctx context.Context) (*Intercepted, error) {
+	stop := context.AfterFunc(ctx, i.Cancel)
+	defer stop()
+
+	got, err := i.Wait(0)
+	if errors.Is(err, ErrCancelled) && ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return got, err
+}
+
+// WaitAny blocks until any of futures is diverted, one is cancelled, or
+// timeout elapses. A zero timeout waits indefinitely. It returns the index of
+// the future that delivered or was cancelled, or -1 and a nil message on
+// timeout. Only the future that delivered is consumed; cancel the rest once
+// they are no longer wanted.
+func WaitAny(timeout time.Duration, futures ...*InterceptedFuture) (int, *Intercepted, error) {
+	handles := make([]*simffi.InterceptedFuture, len(futures))
+	for n, future := range futures {
+		handles[n] = future.f
+	}
+
+	index, raw, err := simffi.WaitAny(uint64(timeout.Milliseconds()), handles...)
+	if err != nil || raw == nil {
+		return index, nil, err
+	}
+
+	got, err := futures[index].decode(raw)
+	return index, got, err
+}
+
+func (i *InterceptedFuture) decode(raw *simffi.Intercepted) (*Intercepted, error) {
 	from, err := signing.FromBytes(raw.From)
 	if err != nil {
 		return nil, err
@@ -341,7 +385,7 @@ func (i *InterceptedFuture) Wait(timeout time.Duration) (*Intercepted, error) {
 	}, nil
 }
 
-// Cancel discards the handle without taking a message.
+// Cancel discards the handle without taking a message, waking any wait on it.
 func (i *InterceptedFuture) Cancel() { i.f.Cancel() }
 
 // SigningKeyCreate mints a signing keypair the device retains and returns its

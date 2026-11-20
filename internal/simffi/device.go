@@ -7,7 +7,9 @@ package simffi
 import "C"
 
 import (
+	"errors"
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -152,10 +154,44 @@ func (d *Device) Expect(kind MatchKind, contentType ContentType, requestID []byt
 	)
 }
 
-// InterceptedFuture is a pending diverted message. Resolve it with Wait, or
-// discard it with Cancel; either consumes the handle.
+// ErrCancelled is returned by a wait on a future that was cancelled, or whose
+// device was closed.
+var ErrCancelled = errors.New("simulator: wait cancelled")
+
+// InterceptedFuture is a pending diverted message. Resolve it with Wait or
+// WaitAny, or discard it with Cancel, which also wakes any wait on it.
 type InterceptedFuture struct {
-	ptr *C.zktf_sim_future_intercepted
+	mu      sync.Mutex
+	ptr     *C.zktf_sim_future_intercepted
+	waiters int
+	closed  bool
+}
+
+func (f *InterceptedFuture) acquire() *C.zktf_sim_future_intercepted {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.closed {
+		return nil
+	}
+	f.waiters++
+	return f.ptr
+}
+
+func (f *InterceptedFuture) release(consumed bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.waiters--
+	if consumed {
+		f.closed = true
+	}
+	f.freeIfIdle()
+}
+
+func (f *InterceptedFuture) freeIfIdle() {
+	if f.closed && f.waiters == 0 && f.ptr != nil {
+		C.zktf_sim_future_intercepted_cancel(f.ptr)
+		f.ptr = nil
+	}
 }
 
 // Intercept diverts the message carrying requestID and returns the handle it
@@ -175,18 +211,67 @@ func (d *Device) Intercept(requestID []byte) *InterceptedFuture {
 // Wait blocks until a message is diverted or timeoutMs elapses, returning nil
 // on timeout. A zero timeout waits indefinitely. Consumes the handle.
 func (f *InterceptedFuture) Wait(timeoutMs uint64) (*Intercepted, error) {
+	_, msg, err := WaitAny(timeoutMs, f)
+	f.mu.Lock()
+	f.closed = true
+	f.freeIfIdle()
+	f.mu.Unlock()
+	return msg, err
+}
+
+// WaitAny blocks until any of futures is diverted, one is cancelled, or
+// timeoutMs elapses. A zero timeout waits indefinitely. It returns the index
+// of the future that resolved or was cancelled, or -1 on timeout. Only a
+// future that delivered a message is consumed.
+func WaitAny(timeoutMs uint64, futures ...*InterceptedFuture) (int, *Intercepted, error) {
+	ptrs := make([]*C.zktf_sim_future_intercepted, len(futures))
+	acquired := 0
+	defer func() {
+		for _, f := range futures[:acquired] {
+			f.release(false)
+		}
+	}()
+
+	for i, f := range futures {
+		ptrs[i] = f.acquire()
+		if ptrs[i] == nil {
+			return i, nil, ErrCancelled
+		}
+		acquired++
+	}
+	if len(futures) == 0 {
+		return -1, nil, nil
+	}
+
+	var index C.size_t
 	var msg *C.zktf_sim_intercepted
+	code := C.zktf_sim_future_intercepted_wait_any(
+		&ptrs[0],
+		C.size_t(len(ptrs)),
+		C.uint64_t(timeoutMs),
+		&index,
+		&msg,
+	)
 
-	ptr := f.ptr
-	f.ptr = nil
-
-	code := C.zktf_sim_future_intercepted_wait(ptr, C.uint64_t(timeoutMs), &msg)
-	if code == C.ZKTF_SIM_TIMEOUT {
-		return nil, nil
+	switch code {
+	case C.ZKTF_SIM_TIMEOUT:
+		return -1, nil, nil
+	case C.ZKTF_SIM_CANCELLED:
+		return int(index), nil, ErrCancelled
 	}
 	if err := status(code); err != nil {
-		return nil, err
+		return -1, nil, err
 	}
+
+	futures[index].mu.Lock()
+	futures[index].closed = true
+	futures[index].mu.Unlock()
+
+	intercepted, err := readIntercepted(msg)
+	return int(index), intercepted, err
+}
+
+func readIntercepted(msg *C.zktf_sim_intercepted) (*Intercepted, error) {
 	defer C.zktf_sim_intercepted_destroy(msg)
 
 	from, err := keyBytes(func(buf *C.uint8_t) C.enum_zktf_sim_status {
@@ -216,11 +301,18 @@ func (f *InterceptedFuture) Wait(timeoutMs uint64) (*Intercepted, error) {
 	}, nil
 }
 
-// Cancel discards the handle without taking a message.
+// Cancel discards the handle without taking a message, waking any wait on it.
 func (f *InterceptedFuture) Cancel() {
-	ptr := f.ptr
-	f.ptr = nil
-	C.zktf_sim_future_intercepted_cancel(ptr)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.closed {
+		return
+	}
+	f.closed = true
+	if f.waiters > 0 {
+		C.zktf_sim_future_intercepted_interrupt(f.ptr)
+	}
+	f.freeIfIdle()
 }
 
 // Send delivers content, a borrowed zktf_message_content handle owned by the
