@@ -4,6 +4,8 @@ package simulator_test
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -235,13 +237,68 @@ func TestInterceptFromPairedApplication(t *testing.T) {
 		t.Fatalf("send: %v", err)
 	}
 
-	intercepted, err := pending.Wait(10 * time.Second)
+	elsewhere, err := user.InterceptWhen(simulator.MatchContentType(simulator.ContentExchangeRequest))
+	if err != nil {
+		t.Fatalf("intercept when: %v", err)
+	}
+	defer elsewhere.Cancel()
+
+	index, intercepted, err := simulator.WaitAny(10*time.Second, elsewhere, pending)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
-	if intercepted == nil {
-		t.Fatal("want the chat from the paired application intercepted")
+	if index != 1 || intercepted == nil {
+		t.Fatalf("want the chat from the paired application intercepted, got index %d", index)
 	}
+}
+
+func TestInterceptWaitsEndWhenCancelled(t *testing.T) {
+	network := simulator.NewEphemeralNetwork()
+	device := simulator.NewDevice(network)
+
+	intercept := func() *simulator.InterceptedFuture {
+		future, err := device.InterceptWhen(simulator.MatchContentType(simulator.ContentChat))
+		if err != nil {
+			t.Fatalf("intercept when: %v", err)
+		}
+		return future
+	}
+	quickly := func(started time.Time) {
+		t.Helper()
+		if elapsed := time.Since(started); elapsed > 5*time.Second {
+			t.Fatalf("wait took %v", elapsed)
+		}
+	}
+
+	first, second := intercept(), intercept()
+	index, got, err := simulator.WaitAny(100*time.Millisecond, first, second)
+	if index != -1 || got != nil || err != nil {
+		t.Fatalf("want a timeout, got index %d, %v, %v", index, got, err)
+	}
+
+	started := time.Now()
+	time.AfterFunc(100*time.Millisecond, second.Cancel)
+	index, _, err = simulator.WaitAny(30*time.Second, first, second)
+	if index != 1 || !errors.Is(err, simulator.ErrCancelled) {
+		t.Fatalf("want the second future cancelled, got index %d, %v", index, err)
+	}
+	quickly(started)
+
+	started = time.Now()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	if _, err := first.WaitContext(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("want the deadline, got %v", err)
+	}
+	quickly(started)
+
+	started = time.Now()
+	pending := intercept()
+	time.AfterFunc(100*time.Millisecond, device.Close)
+	if _, err := pending.Wait(30 * time.Second); !errors.Is(err, simulator.ErrCancelled) {
+		t.Fatalf("want closing the device to end the wait, got %v", err)
+	}
+	quickly(started)
 }
 
 func applicationUser(t *testing.T) (*account.Account, *simulator.Device) {
