@@ -24,6 +24,17 @@ func (s *Status) Error() string {
 	return C.GoString(C.zktf_status_message(C.zktf_status(s.code)))
 }
 
+// Is reports whether target is a *Status with the same code.
+func (s *Status) Is(target error) bool {
+	t, ok := target.(*Status)
+	return ok && t.code == s.code
+}
+
+// NewStatus returns the error for a non-zero status code.
+func NewStatus(code uint32) error {
+	return &Status{code: code}
+}
+
 // status converts a raw zktf_status result into a Go error. A zero code (success)
 // returns nil; any other code returns a *Status.
 func status(code C.zktf_status) error {
@@ -41,6 +52,7 @@ const (
 	DomainMessage uint16 = C.ZKTF_DOMAIN_MESSAGE
 	DomainPairing uint16 = C.ZKTF_DOMAIN_PAIRING
 	DomainRpc     uint16 = C.ZKTF_DOMAIN_RPC
+	DomainValue   uint16 = C.ZKTF_DOMAIN_VALUE
 )
 
 const (
@@ -71,6 +83,14 @@ const (
 	StatusRpcResourceExhausted     uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_RESOURCE_EXHAUSTED
 	StatusRpcServiceUnavailable    uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_SERVICE_UNAVAILABLE
 	StatusRpcUnauthorized          uint32 = uint32(DomainRpc)<<16 | C.ZKTF_RPC_UNAUTHORIZED
+	StatusValueKeyInvalid          uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_KEY_INVALID
+	StatusValueValueTooLarge       uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_VALUE_TOO_LARGE
+	StatusValueTransactionTooLarge uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_TRANSACTION_TOO_LARGE
+	StatusValueBusy                uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_BUSY
+	StatusValueTransactionClosed   uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_TRANSACTION_CLOSED
+	StatusValueTransactionActive   uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_TRANSACTION_ACTIVE
+	StatusValueCheckpointInvalid   uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_CHECKPOINT_INVALID
+	StatusValueCursorInvalid       uint32 = uint32(DomainValue)<<16 | C.ZKTF_VALUE_CURSOR_INVALID
 )
 
 func StatusDomain(code uint32) uint16 {
