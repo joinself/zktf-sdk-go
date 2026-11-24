@@ -8,8 +8,8 @@ import (
 
 // ValueTransaction reads and writes the value store within a single
 // transaction. It is only valid inside the function passed to
-// Account.ValueTransaction and must not be shared with other goroutines; once
-// that function returns, every call fails with status.ErrValueTransactionClosed.
+// Account.ValueTransaction; once that function returns, every call fails with
+// status.ErrValueTransactionClosed.
 type ValueTransaction struct {
 	t *ffi.ValueTxn
 }
@@ -89,10 +89,9 @@ func (s ValueScan) After(cursor ValueCursor) ValueScan {
 
 // ValueTransaction runs fn as one transaction on the account's value store.
 // The writes fn makes are committed when it returns nil and discarded when it
-// returns an error or panics; the error is returned unchanged and the panic is
-// re-raised. A timeout <= 0 waits until the lock is free; otherwise the call
-// fails with status.ErrValueBusy once it elapses. fn runs on the calling
-// goroutine and must not hand txn to other goroutines.
+// returns an error or panics; the error is returned unchanged and the panic
+// propagates. A timeout <= 0 waits until the lock is free; otherwise the call
+// fails with status.ErrValueBusy once it elapses.
 func (a *Account) ValueTransaction(timeout time.Duration, fn func(txn *ValueTransaction) error) error {
 	return a.h.ValueTransaction(timeout, func(t *ffi.ValueTxn) error {
 		return fn(&ValueTransaction{t: t})

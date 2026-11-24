@@ -3,6 +3,7 @@ package account_test
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -342,19 +343,27 @@ func TestValueTransactionClosedAfterReturn(t *testing.T) {
 	}
 }
 
-func TestValueTransactionFromOtherGoroutine(t *testing.T) {
+func TestValueTransactionRollsBackOnGoexit(t *testing.T) {
 	acc := newValueAccount(t)
 
-	err := acc.ValueTransaction(0, func(txn *account.ValueTransaction) error {
-		done := make(chan error)
-		go func() { done <- txn.Store("k", []byte("v"), time.Time{}) }()
-		if err := <-done; !errors.Is(err, status.ErrValueTransactionClosed) {
-			t.Errorf("Store from other goroutine = %v, want ErrValueTransactionClosed", err)
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("ValueTransaction: %v", err)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = acc.ValueTransaction(0, func(txn *account.ValueTransaction) error {
+			if err := txn.Store("discarded", []byte("x"), time.Time{}); err != nil {
+				return err
+			}
+			runtime.Goexit()
+			return nil
+		})
+	}()
+	<-done
+
+	if _, ok := lookupValue(t, acc, "discarded"); ok {
+		t.Fatal("write survived Goexit")
+	}
+	if err := acc.ValueTransaction(time.Second, func(*account.ValueTransaction) error { return nil }); err != nil {
+		t.Fatalf("ValueTransaction after Goexit: %v", err)
 	}
 }
 

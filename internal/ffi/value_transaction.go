@@ -3,32 +3,21 @@ package ffi
 /*
 #include <zktf-sdk.h>
 #include <stdlib.h>
-
-extern zktf_status goValueTransaction(zktf_value_txn txn, uintptr_t handle);
-
-static zktf_status c_value_transaction(zktf_value_txn txn, void *user_data) {
-	return goValueTransaction(txn, (uintptr_t)user_data);
-}
-
-static zktf_status zktf_account_value_transaction_handle(zktf_account *account, int64_t timeout_ms, uintptr_t handle) {
-	return zktf_account_value_transaction(account, timeout_ms, c_value_transaction, (void *)handle);
-}
 */
 import "C"
 
 import (
 	"runtime"
-	"runtime/cgo"
-	"sync/atomic"
+	"sync"
 	"time"
 	"unsafe"
 )
 
-// ValueTxn is a value store transaction. It is only usable on the calling
-// goroutine and only until the function passed to ValueTransaction returns.
+// ValueTxn is a value store transaction, usable only until the function passed
+// to ValueTransaction returns.
 type ValueTxn struct {
-	id     C.zktf_value_txn
-	closed atomic.Bool
+	mu  sync.RWMutex
+	ptr *C.zktf_value_txn
 }
 
 // ValueEntry is a stored value with its unix timestamps (seconds). A zero
@@ -68,54 +57,53 @@ type ValuePage struct {
 	Next    []byte
 }
 
-type valueTransactionCall struct {
-	fn         func(*ValueTxn) error
-	err        error
-	panicked   bool
-	panicValue any
-}
-
 // ValueTransaction runs fn as one transaction on the account's value store,
 // committing when fn returns nil. A timeout <= 0 waits until the lock is free.
 func (a *Account) ValueTransaction(timeout time.Duration, fn func(*ValueTxn) error) error {
 	defer runtime.KeepAlive(a)
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 
-	call := &valueTransactionCall{fn: fn}
-	h := cgo.NewHandle(call)
-	defer h.Delete()
-
-	code := C.zktf_account_value_transaction_handle(a.ptr, valueTimeoutMS(timeout), C.uintptr_t(h))
-
-	if call.panicked {
-		panic(call.panicValue)
+	var ptr *C.zktf_value_txn
+	if err := status(C.zktf_account_value_transaction_begin(a.ptr, valueTimeoutMS(timeout), &ptr)); err != nil {
+		return err
 	}
-	if call.err != nil {
-		return call.err
+	txn := &ValueTxn{ptr: ptr}
+	defer txn.destroy()
+
+	if err := fn(txn); err != nil {
+		return err
 	}
 
-	return status(code)
+	return txn.commit()
 }
 
-//export goValueTransaction
-func goValueTransaction(id C.zktf_value_txn, h C.uintptr_t) (code C.zktf_status) {
-	call := cgo.Handle(uintptr(h)).Value().(*valueTransactionCall)
-	txn := &ValueTxn{id: id}
-	defer txn.closed.Store(true)
+func (t *ValueTxn) commit() error {
+	ptr, err := t.acquire()
+	if err != nil {
+		return err
+	}
+	defer t.mu.RUnlock()
 
-	defer func() {
-		if r := recover(); r != nil {
-			call.panicked = true
-			call.panicValue = r
-			code = C.ZKTF_STATUS_UNKNOWN
-		}
-	}()
+	return status(C.zktf_value_txn_commit(ptr))
+}
 
-	if err := call.fn(txn); err != nil {
-		call.err = err
-		return C.ZKTF_STATUS_UNKNOWN
+func (t *ValueTxn) destroy() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	C.zktf_value_txn_destroy(t.ptr)
+	t.ptr = nil
+}
+
+func (t *ValueTxn) acquire() (*C.zktf_value_txn, error) {
+	t.mu.RLock()
+	if t.ptr == nil {
+		t.mu.RUnlock()
+		return nil, NewStatus(StatusValueTransactionClosed)
 	}
 
-	return C.ZKTF_STATUS_OK
+	return t.ptr, nil
 }
 
 func valueTimeoutMS(d time.Duration) C.int64_t {
@@ -126,25 +114,20 @@ func valueTimeoutMS(d time.Duration) C.int64_t {
 	return C.int64_t((d + time.Millisecond - 1) / time.Millisecond)
 }
 
-func (t *ValueTxn) open() error {
-	if t.closed.Load() {
-		return NewStatus(StatusValueTransactionClosed)
-	}
-	return nil
-}
-
 // Lookup returns the value stored under key, including this transaction's
 // writes. The boolean is false when no value is stored for that key.
 func (t *ValueTxn) Lookup(key string) ([]byte, bool, error) {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return nil, false, err
 	}
+	defer t.mu.RUnlock()
 
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
 	var buf *C.zktf_bytes_buffer
-	code := C.zktf_value_txn_lookup(t.id, k, &buf)
+	code := C.zktf_value_txn_lookup(ptr, k, &buf)
 	if code == C.ZKTF_STATUS_VALUE_NOT_FOUND {
 		return nil, false, nil
 	}
@@ -158,15 +141,17 @@ func (t *ValueTxn) Lookup(key string) ([]byte, bool, error) {
 // Entry returns the value stored under key with its timestamps. The boolean
 // is false when no value is stored for that key.
 func (t *ValueTxn) Entry(key string) (ValueEntry, bool, error) {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return ValueEntry{}, false, err
 	}
+	defer t.mu.RUnlock()
 
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
 	var entry *C.zktf_value_entry
-	code := C.zktf_value_txn_entry(t.id, k, &entry)
+	code := C.zktf_value_txn_entry(ptr, k, &entry)
 	if code == C.ZKTF_STATUS_VALUE_NOT_FOUND {
 		return ValueEntry{}, false, nil
 	}
@@ -181,9 +166,11 @@ func (t *ValueTxn) Entry(key string) (ValueEntry, bool, error) {
 // Store buffers a write of value under key. A zero expiresUnix means the value
 // never expires.
 func (t *ValueTxn) Store(key string, value []byte, expiresUnix int64) error {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return err
 	}
+	defer t.mu.RUnlock()
 
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
@@ -198,33 +185,37 @@ func (t *ValueTxn) Store(key string, value []byte, expiresUnix int64) error {
 		defer C.zktf_value_store_options_destroy(options)
 	}
 
-	return status(C.zktf_value_txn_store(t.id, k, valBuf, valLen, options))
+	return status(C.zktf_value_txn_store(ptr, k, valBuf, valLen, options))
 }
 
 // Remove buffers removal of the value stored under key.
 func (t *ValueTxn) Remove(key string) error {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return err
 	}
+	defer t.mu.RUnlock()
 
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
-	return status(C.zktf_value_txn_remove(t.id, k))
+	return status(C.zktf_value_txn_remove(ptr, k))
 }
 
 // Expires sets when the value under key expires; zero expiresUnix clears it.
 // The boolean is false when no value is stored for that key.
 func (t *ValueTxn) Expires(key string, expiresUnix int64) (bool, error) {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return false, err
 	}
+	defer t.mu.RUnlock()
 
 	k := cstring(key)
 	defer free(unsafe.Pointer(k))
 
 	var exists C.bool
-	if err := status(C.zktf_value_txn_expires(t.id, k, C.int64_t(expiresUnix), &exists)); err != nil {
+	if err := status(C.zktf_value_txn_expires(ptr, k, C.int64_t(expiresUnix), &exists)); err != nil {
 		return false, err
 	}
 
@@ -234,12 +225,14 @@ func (t *ValueTxn) Expires(key string, expiresUnix int64) (bool, error) {
 // Checkpoint marks the transaction's current writes so Restore can return to
 // them.
 func (t *ValueTxn) Checkpoint() (uint64, error) {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return 0, err
 	}
+	defer t.mu.RUnlock()
 
 	var checkpoint C.uint64_t
-	if err := status(C.zktf_value_txn_checkpoint(t.id, &checkpoint)); err != nil {
+	if err := status(C.zktf_value_txn_checkpoint(ptr, &checkpoint)); err != nil {
 		return 0, err
 	}
 
@@ -248,18 +241,22 @@ func (t *ValueTxn) Checkpoint() (uint64, error) {
 
 // Restore undoes every write made since checkpoint.
 func (t *ValueTxn) Restore(checkpoint uint64) error {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return err
 	}
+	defer t.mu.RUnlock()
 
-	return status(C.zktf_value_txn_restore(t.id, C.uint64_t(checkpoint)))
+	return status(C.zktf_value_txn_restore(ptr, C.uint64_t(checkpoint)))
 }
 
 // Scan reads one page of scan, including this transaction's writes.
 func (t *ValueTxn) Scan(scan ValueScan) (ValuePage, error) {
-	if err := t.open(); err != nil {
+	ptr, err := t.acquire()
+	if err != nil {
 		return ValuePage{}, err
 	}
+	defer t.mu.RUnlock()
 
 	s, err := newValueScan(scan)
 	if err != nil {
@@ -268,7 +265,7 @@ func (t *ValueTxn) Scan(scan ValueScan) (ValuePage, error) {
 	defer C.zktf_value_scan_destroy(s)
 
 	var page *C.zktf_value_page
-	if err := status(C.zktf_value_txn_scan(t.id, s, &page)); err != nil {
+	if err := status(C.zktf_value_txn_scan(ptr, s, &page)); err != nil {
 		return ValuePage{}, err
 	}
 	defer C.zktf_value_page_destroy(page)
