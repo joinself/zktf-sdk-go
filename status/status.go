@@ -22,6 +22,7 @@ const (
 	DomainMessage Domain = Domain(ffi.DomainMessage)
 	DomainPairing Domain = Domain(ffi.DomainPairing)
 	DomainRpc     Domain = Domain(ffi.DomainRpc)
+	DomainValue   Domain = Domain(ffi.DomainValue)
 )
 
 // A subset of the status codes. Callers compare these against the value
@@ -54,6 +55,26 @@ const (
 	RpcResourceExhausted     Code = Code(ffi.StatusRpcResourceExhausted)
 	RpcServiceUnavailable    Code = Code(ffi.StatusRpcServiceUnavailable)
 	RpcUnauthorized          Code = Code(ffi.StatusRpcUnauthorized)
+	ValueKeyInvalid          Code = Code(ffi.StatusValueKeyInvalid)
+	ValueValueTooLarge       Code = Code(ffi.StatusValueValueTooLarge)
+	ValueTransactionTooLarge Code = Code(ffi.StatusValueTransactionTooLarge)
+	ValueBusy                Code = Code(ffi.StatusValueBusy)
+	ValueTransactionClosed   Code = Code(ffi.StatusValueTransactionClosed)
+	ValueTransactionActive   Code = Code(ffi.StatusValueTransactionActive)
+	ValueCheckpointInvalid   Code = Code(ffi.StatusValueCheckpointInvalid)
+	ValueCursorInvalid       Code = Code(ffi.StatusValueCursorInvalid)
+)
+
+// Sentinel errors for the value store, for use with errors.Is.
+var (
+	ErrValueKeyInvalid          = ffi.NewStatus(uint32(ValueKeyInvalid))
+	ErrValueValueTooLarge       = ffi.NewStatus(uint32(ValueValueTooLarge))
+	ErrValueTransactionTooLarge = ffi.NewStatus(uint32(ValueTransactionTooLarge))
+	ErrValueBusy                = ffi.NewStatus(uint32(ValueBusy))
+	ErrValueTransactionClosed   = ffi.NewStatus(uint32(ValueTransactionClosed))
+	ErrValueTransactionActive   = ffi.NewStatus(uint32(ValueTransactionActive))
+	ErrValueCheckpointInvalid   = ffi.NewStatus(uint32(ValueCheckpointInvalid))
+	ErrValueCursorInvalid       = ffi.NewStatus(uint32(ValueCursorInvalid))
 )
 
 func (c Code) Domain() Domain {

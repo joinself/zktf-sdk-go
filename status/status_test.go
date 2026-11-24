@@ -1,6 +1,7 @@
 package status_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/joinself/zktf-sdk-go/status"
@@ -32,6 +33,9 @@ func TestCodeDomainAndNumber(t *testing.T) {
 		{status.MessageIdInvalid, status.DomainMessage, 20},
 		{status.RpcNotFound, status.DomainRpc, 19},
 		{status.RpcServiceUnavailable, status.DomainRpc, 28},
+		{status.ValueKeyInvalid, status.DomainValue, 1},
+		{status.ValueBusy, status.DomainValue, 4},
+		{status.ValueCursorInvalid, status.DomainValue, 8},
 	}
 	for _, tc := range cases {
 		if got := tc.code.Domain(); got != tc.domain {
@@ -55,6 +59,32 @@ func TestTransient(t *testing.T) {
 	for _, c := range []status.Code{status.RpcNotFound, status.RpcGone, status.RpcBadRequest, status.KeyPairNotFound} {
 		if c.Transient() {
 			t.Errorf("Code(%#x).Transient() = true, want false", uint32(c))
+		}
+	}
+}
+
+func TestValueSentinels(t *testing.T) {
+	cases := []struct {
+		err  error
+		code status.Code
+	}{
+		{status.ErrValueKeyInvalid, status.ValueKeyInvalid},
+		{status.ErrValueValueTooLarge, status.ValueValueTooLarge},
+		{status.ErrValueTransactionTooLarge, status.ValueTransactionTooLarge},
+		{status.ErrValueBusy, status.ValueBusy},
+		{status.ErrValueTransactionClosed, status.ValueTransactionClosed},
+		{status.ErrValueTransactionActive, status.ValueTransactionActive},
+		{status.ErrValueCheckpointInvalid, status.ValueCheckpointInvalid},
+		{status.ErrValueCursorInvalid, status.ValueCursorInvalid},
+	}
+	for i, tc := range cases {
+		if code, ok := status.Of(tc.err); !ok || code != tc.code {
+			t.Errorf("status.Of(%v) = %#x, %v, want %#x", tc.err, uint32(code), ok, uint32(tc.code))
+		}
+		for j, other := range cases {
+			if got := errors.Is(tc.err, other.err); got != (i == j) {
+				t.Errorf("errors.Is(%v, %v) = %v", tc.err, other.err, got)
+			}
 		}
 	}
 }
